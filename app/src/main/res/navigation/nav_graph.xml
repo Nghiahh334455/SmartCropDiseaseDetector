@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/nav_home">
+
+    <fragment
+        android:id="@+id/nav_home"
+        android:name="com.example.smartcrop.ui.home.HomeFragment"
+        android:label="Trang chủ"
+        tools:layout="@layout/fragment_home" />
+
+    <fragment
+        android:id="@+id/nav_library"
+        android:name="com.example.smartcrop.ui.library.LibraryFragment"
+        android:label="Thư viện bệnh"
+        tools:layout="@layout/fragment_library" />
+
+    <fragment
+        android:id="@+id/nav_forum"
+        android:name="com.example.smartcrop.ui.forum.ForumFragment"
+        android:label="Diễn đàn cộng đồng"
+        tools:layout="@layout/fragment_forum" />
+
+    <fragment
+        android:id="@+id/nav_profile"
+        android:name="com.example.smartcrop.ui.profile.ProfileFragment"
+        android:label="Cá nhân"
+        tools:layout="@layout/fragment_profile" />
+</navigation>

@@ -1,0 +1,100 @@
+package com.example.smartcrop.ui.library;
+
+import android.content.Intent;
+import android.view.LayoutInflater;
+import android.view.ViewGroup;
+import android.widget.Filter;
+import android.widget.Filterable;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
+import com.example.smartcrop.databinding.ItemDiseaseBinding;
+import com.example.smartcrop.models.DiseaseModel;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class LibraryAdapter extends RecyclerView.Adapter<LibraryAdapter.ViewHolder> implements Filterable {
+
+    private final List<DiseaseModel> diseaseList;
+    private final List<DiseaseModel> diseaseListFull;
+
+    public LibraryAdapter(List<DiseaseModel> diseaseList) {
+        this.diseaseList = diseaseList;
+        this.diseaseListFull = new ArrayList<>(diseaseList);
+    }
+
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        ItemDiseaseBinding binding = ItemDiseaseBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+        return new ViewHolder(binding);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        DiseaseModel disease = diseaseList.get(position);
+        holder.binding.tvDiseaseTitle.setText(disease.name);
+        holder.binding.tvDiseaseShortDesc.setText(disease.description);
+
+        Glide.with(holder.itemView.getContext())
+                .load(disease.imageUrl)
+                .into(holder.binding.ivDiseaseThumbnail);
+
+        holder.itemView.setOnClickListener(v -> {
+            Intent intent = new Intent(v.getContext(), DiseaseDetailActivity.class);
+            intent.putExtra("name", disease.name);
+            intent.putExtra("description", disease.description);
+            intent.putExtra("image", disease.imageUrl);
+            intent.putExtra("treatment", disease.treatment);
+            v.getContext().startActivity(intent);
+        });
+    }
+
+    @Override
+    public int getItemCount() {
+        return diseaseList.size();
+    }
+
+    @Override
+    public Filter getFilter() {
+        return diseaseFilter;
+    }
+
+    private final Filter diseaseFilter = new Filter() {
+        @Override
+        protected FilterResults performFiltering(CharSequence constraint) {
+            List<DiseaseModel> filteredList = new ArrayList<>();
+            if (constraint == null || constraint.length() == 0) {
+                filteredList.addAll(diseaseListFull);
+            } else {
+                String filterPattern = constraint.toString().toLowerCase().trim();
+                for (DiseaseModel item : diseaseListFull) {
+                    if (item.name.toLowerCase().contains(filterPattern)) {
+                        filteredList.add(item);
+                    }
+                }
+            }
+            FilterResults results = new FilterResults();
+            results.values = filteredList;
+            return results;
+        }
+
+        @Override
+        protected void publishResults(CharSequence constraint, FilterResults results) {
+            diseaseList.clear();
+            diseaseList.addAll((List) results.values);
+            notifyDataSetChanged();
+        }
+    };
+
+    static class ViewHolder extends RecyclerView.ViewHolder {
+        ItemDiseaseBinding binding;
+        ViewHolder(ItemDiseaseBinding binding) {
+            super(binding.getRoot());
+            this.binding = binding;
+        }
+    }
+}
