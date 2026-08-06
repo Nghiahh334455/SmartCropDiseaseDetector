@@ -1,5 +1,5 @@
-- [ ] Cập nhật `fragment_profile.xml` (Chuyển Thông báo vào menu Tài khoản)
-- [ ] Cập nhật `ProfileFragment.java` (Logic Badge chấm đỏ trong menu)
-- [ ] Kiểm tra `NotificationActivity.java` (Điều hướng bài viết)
-- [ ] Kiểm tra và Build
+- [ ] Tạo tài nguyên giao diện mới (`bg_bottom_sheet.xml`, `dialog_ai_chat.xml`, `dialog_ai_response.xml`)
+- [ ] Nâng cấp giao diện `fragment_library.xml` (Header màu sắc, icon AI mới)
+- [ ] Cập nhật `LibraryFragment.java` (Chuyển sang dùng BottomSheetDialog cho AI)
+- [ ] Kiểm tra và Build hệ thống
 - [ ] Commit & Push Git

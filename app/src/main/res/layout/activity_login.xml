@@ -8,14 +8,12 @@
     android:orientation="vertical"
     android:padding="32dp">
 
-    <com.google.android.material.imageview.ShapeableImageView
-        android:layout_width="140dp"
-        android:layout_height="140dp"
+    <ImageView
+        android:layout_width="160dp"
+        android:layout_height="160dp"
         android:layout_marginBottom="32dp"
-        android:src="@drawable/logo_app"
-        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Large"
-        app:strokeColor="@color/primary_light"
-        app:strokeWidth="2dp" />
+        android:src="@drawable/logo_login"
+        android:scaleType="fitCenter" />
 
     <TextView
         android:layout_width="wrap_content"

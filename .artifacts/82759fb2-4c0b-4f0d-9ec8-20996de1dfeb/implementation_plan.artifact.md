@@ -1,34 +1,38 @@
-# Implementation Plan - Tối ưu hóa Hệ thống Thông báo (v12.1)
+# Implementation Plan - Nâng cấp Giao diện Thư viện & Chuyên gia AI (v11.1)
 
-Kế hoạch này thực hiện việc di chuyển lối vào thông báo vào mục "Tài khoản" để dễ thấy hơn, đồng thời bổ sung chấm đỏ báo hiệu trực tiếp trong menu.
+Kế hoạch này tập trung vào việc hiện đại hóa giao diện Thư viện bệnh và thay thế các hộp thoại hỏi đáp AI cũ kỹ bằng thiết kế Bottom Sheet chuyên nghiệp, màu sắc hơn.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> **Vị trí Thông báo mới**: Thay vì dùng icon chuông nhỏ ở góc ảnh đại diện (khó thấy), tôi sẽ chuyển "Thông báo" thành một mục lớn trong danh sách "Tài khoản".
-> **Chấm đỏ trong Menu**: Một chấm đỏ sẽ hiện ngay cạnh chữ "Thông báo" trong menu Cá nhân nếu bạn có thông báo chưa đọc.
-> **Điều hướng**: Đảm bảo việc nhấn vào thông báo trong danh sách sẽ mở đúng bài viết tương ứng.
+> **Giao diện Chat AI**: Thay vì dùng ô nhập văn bản đơn giản, tôi sẽ sử dụng **Bottom Sheet** với phong cách thiết kế hiện đại, có icon chuyên gia và hiệu ứng chuyển cảnh mượt mà.
+> **Màu sắc Thư viện**: Cập nhật thanh tìm kiếm và header Thư viện với các dải màu gradient hoặc bo góc mềm mại hơn để tăng tính thẩm mỹ.
 
 ## Proposed Changes
 
-### 1. Giao diện Cá nhân (Profile UI)
-#### [MODIFY] [fragment_profile.xml](file:///D:/Androi_DATN/app/src/main/res/layout/fragment_profile.xml)
-- Loại bỏ icon chuông FrameLayout ở góc header.
-- Thêm một `RelativeLayout` chứa `MaterialButton` (Thông báo) và một `View` (Badge chấm đỏ) vào trong CardView "Tài khoản".
-- Sắp xếp thứ tự: Chỉnh sửa thông tin -> Thông báo -> Lịch sử chẩn đoán.
+### 1. Tài nguyên Giao diện (Resources)
+#### [NEW] `bg_bottom_sheet.xml`
+- Tạo nền trắng bo tròn 24dp cho các hộp thoại Bottom Sheet.
 
-### 2. Logic Cá nhân (Profile Logic)
-#### [MODIFY] [ProfileFragment.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/profile/ProfileFragment.java)
-- Ánh xạ nút "Thông báo" mới trong card menu.
-- Cập nhật logic `listenForUnreadNotifications` để ẩn hiện chấm đỏ ngay trong mục menu này.
+#### [NEW] `dialog_ai_chat.xml`
+- Thiết kế màn hình đặt câu hỏi cho AI: Có Avatar "Thần Nông AI", nhãn trạng thái "Trực tuyến", và ô nhập liệu phong cách Material 3.
 
-### 3. Kiểm tra Logic Gửi Thông báo
-#### [VERIFY] [ForumAdapter.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/forum/ForumAdapter.java) & [PostDetailActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/forum/PostDetailActivity.java)
-- Đảm bảo khi gửi thông báo, field `read` được đặt là `false` để Badge có thể nhận diện.
+#### [NEW] `dialog_ai_response.xml`
+- Thiết kế màn hình hiển thị câu trả lời: Nội dung nằm trong bong bóng chat (bubble) màu xanh nhạt, dễ đọc và đẹp mắt.
+
+### 2. Thư viện bệnh (Library UI)
+#### [MODIFY] [fragment_library.xml](file:///D:/Androi_DATN/app/src/main/res/layout/fragment_library.xml)
+- Nâng cấp `AppBarLayout` và thanh tìm kiếm với hiệu ứng màu sắc sinh động hơn.
+- Thêm icon AI bắt mắt hơn (ví dụ: biểu tượng robot hoặc hạt mầm công nghệ).
+
+### 3. Logic Xử lý (Logic)
+#### [MODIFY] [LibraryFragment.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/library/LibraryFragment.java)
+- Thay thế logic `AlertDialog` bằng việc hiển thị các `BottomSheetDialog`.
+- Cải thiện trải nghiệm người dùng với các thông báo tải (loading) đẹp mắt trong lúc đợi AI phản hồi.
 
 ## Verification Plan
 
 ### Manual Verification
-- **Giao diện**: Vào trang Cá nhân, kiểm tra xem mục "Thông báo" có hiện trong danh sách "Tài khoản" không.
-- **Badge**: Nhờ người khác Like bài viết -> Kiểm tra xem có chấm đỏ hiện ra ở mục "Thông báo" và icon "Cá nhân" ở dưới không.
-- **Điều hướng**: Nhấn vào "Thông báo" -> Nhấn vào một thông báo cụ thể -> Kiểm tra xem có mở đúng bài viết không.
+- **Thư viện**: Kiểm tra xem thanh tìm kiếm và header có "màu sắc" và đẹp hơn không.
+- **Hỏi AI**: Nhấn vào nút AI -> Kiểm tra Bottom Sheet đặt câu hỏi có hiện lên mượt mà không.
+- **Phản hồi**: Gửi câu hỏi -> Kiểm tra xem câu trả lời có hiện trong bong bóng chat đẹp mắt không.

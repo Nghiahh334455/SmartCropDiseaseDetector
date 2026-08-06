@@ -9,23 +9,24 @@
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/primary">
+        android:background="@color/white"
+        app:elevation="0dp">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbarLibrary"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:title="Thư viện cây trồng"
-            app:titleTextColor="@color/white" />
+            app:titleTextColor="@color/primary_dark" />
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="16dp"
             android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="@color/white"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
+            app:cardBackgroundColor="#F0F2F5"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
             app:strokeWidth="0dp">
 
             <LinearLayout
@@ -40,23 +41,23 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     app:iconifiedByDefault="false"
+                    app:queryBackground="@android:color/transparent"
                     app:queryHint="Tìm kiếm tên bệnh..."
                     app:searchIcon="@android:drawable/ic_menu_search" />
 
                 <View
                     android:layout_width="1dp"
                     android:layout_height="24dp"
-                    android:background="#EEEEEE" />
+                    android:layout_marginEnd="4dp"
+                    android:background="@color/gray_light" />
 
-                <ImageView
-                    android:id="@+id/ivAskAI"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:padding="10dp"
+                <ImageButton
+                    android:id="@+id/btnAskAI"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@android:drawable/ic_menu_help"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?attr/selectableItemBackgroundBorderless"
+                    android:padding="12dp"
                     app:tint="@color/primary" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

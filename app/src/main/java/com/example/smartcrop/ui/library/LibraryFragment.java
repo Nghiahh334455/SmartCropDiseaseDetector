@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import android.widget.Toast;
 
+import com.example.smartcrop.R;
 import com.example.smartcrop.api.ApiService;
 import com.example.smartcrop.api.RetrofitClient;
 import com.example.smartcrop.databinding.FragmentLibraryBinding;
@@ -26,6 +27,8 @@ import java.util.List;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 public class LibraryFragment extends Fragment {
 
@@ -49,7 +52,6 @@ public class LibraryFragment extends Fragment {
         
         adapter = new LibraryAdapter(diseases);
         binding.rvLibrary.setAdapter(adapter);
-        binding.rvLibrary.setAdapter(adapter);
 
         // Setup Search
         binding.searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
@@ -65,29 +67,28 @@ public class LibraryFragment extends Fragment {
             }
         });
 
-        binding.ivAskAI.setOnClickListener(v -> showAISearchDialog());
+        binding.btnAskAI.setOnClickListener(v -> showAISearchDialog());
     }
 
     private void showAISearchDialog() {
-        android.widget.EditText etInput = new android.widget.EditText(getContext());
-        etInput.setHint("Ví dụ: Cách trị bệnh đạo ôn lúa...");
-        etInput.setPadding(40, 40, 40, 40);
+        BottomSheetDialog dialog = new BottomSheetDialog(getContext());
+        View view = getLayoutInflater().inflate(R.layout.dialog_ai_chat, null);
+        dialog.setContentView(view);
 
-        new androidx.appcompat.app.AlertDialog.Builder(getContext())
-                .setTitle("Hỏi Chuyên Gia Thần Nông AI")
-                .setView(etInput)
-                .setPositiveButton("Hỏi AI", (dialog, which) -> {
-                    String question = etInput.getText().toString().trim();
-                    if (!question.isEmpty()) {
-                        callChatAPI(question);
-                    }
-                })
-                .setNegativeButton("Đóng", null)
-                .show();
+        android.widget.EditText etInput = view.findViewById(R.id.etAIQuestion);
+        view.findViewById(R.id.btnAskAI).setOnClickListener(v -> {
+            String question = etInput.getText().toString().trim();
+            if (!question.isEmpty()) {
+                dialog.dismiss();
+                callChatAPI(question);
+            }
+        });
+
+        dialog.show();
     }
 
     private void callChatAPI(String question) {
-        Toast.makeText(getContext(), "Đang hỏi chuyên gia AI...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(getContext(), "Thần Nông AI đang phản hồi...", Toast.LENGTH_SHORT).show();
         
         ApiService apiService = RetrofitClient.getApiService();
         apiService.askAI(question).enqueue(new Callback<ChatResponse>() {
@@ -96,7 +97,7 @@ public class LibraryFragment extends Fragment {
                 if (response.isSuccessful() && response.body() != null) {
                     showAIResponse(response.body().getResponse());
                 } else {
-                    Toast.makeText(getContext(), "AI bận, vui lòng thử lại sau!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Chuyên gia bận, vui lòng thử lại!", Toast.LENGTH_SHORT).show();
                 }
             }
 
@@ -108,11 +109,16 @@ public class LibraryFragment extends Fragment {
     }
 
     private void showAIResponse(String answer) {
-        new androidx.appcompat.app.AlertDialog.Builder(getContext())
-                .setTitle("Lời khuyên từ Thần Nông AI")
-                .setMessage(answer)
-                .setPositiveButton("Đã hiểu", null)
-                .show();
+        BottomSheetDialog dialog = new BottomSheetDialog(getContext());
+        View view = getLayoutInflater().inflate(R.layout.dialog_ai_response, null);
+        dialog.setContentView(view);
+
+        android.widget.TextView tvAnswer = view.findViewById(R.id.tvAIAnswer);
+        tvAnswer.setText(answer);
+
+        view.findViewById(R.id.btnCloseAI).setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
     }
 
     @Override
