@@ -12,9 +12,9 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@android:drawable/sym_def_app_icon"
-        android:label="Smart Crop"
-        android:roundIcon="@android:drawable/sym_def_app_icon"
+        android:icon="@drawable/logo_app"
+        android:label="Thần Nông AI"
+        android:roundIcon="@drawable/logo_app"
         android:supportsRtl="true"
         android:theme="@style/Theme.SmartCrop"
         android:usesCleartextTraffic="true"
@@ -49,6 +49,15 @@
         <activity
             android:name=".ui.library.DiseaseDetailActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".ui.forum.PostDetailActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.forum.CreatePostActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name=".MainActivity"

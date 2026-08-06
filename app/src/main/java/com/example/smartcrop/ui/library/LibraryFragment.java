@@ -11,11 +11,21 @@ import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import android.widget.Toast;
+
+import com.example.smartcrop.api.ApiService;
+import com.example.smartcrop.api.RetrofitClient;
 import com.example.smartcrop.databinding.FragmentLibraryBinding;
+import com.example.smartcrop.models.ChatResponse;
 import com.example.smartcrop.models.DiseaseModel;
+import com.example.smartcrop.utils.DiseaseProvider;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class LibraryFragment extends Fragment {
 
@@ -35,39 +45,10 @@ public class LibraryFragment extends Fragment {
 
         binding.rvLibrary.setLayoutManager(new LinearLayoutManager(getContext()));
         
-        List<DiseaseModel> diseases = new ArrayList<>();
-        
-        diseases.add(new DiseaseModel(
-                "Bệnh đạo ôn lúa", 
-                "Bệnh do nấm Pyricularia oryzae gây ra, xuất hiện các vết đốm hình mắt én trên lá, có màu xám tro ở giữa và nâu đỏ ở mép.", 
-                "https://nongnghiep.vn/files/news/2021/04/01/dao-on-la-1617260544.jpg",
-                "1. Sử dụng giống kháng bệnh.\n2. Không bón quá nhiều phân đạm.\n3. Khi bệnh xuất hiện, ngưng bón đạm và phun các thuốc như: Beam, Filia, Fuji-one."));
-
-        diseases.add(new DiseaseModel(
-                "Bệnh sương mai Tomato", 
-                "Vết bệnh ban đầu là những đốm nhỏ màu xanh tái, sau đó lan rộng thành những mảng lớn màu nâu đen, làm lá bị cháy khô.", 
-                "https://nongnghiep.farm/wp-content/uploads/2023/12/benh-suong-mai-ca-chua-Late-Blight.jpg",
-                "1. Vệ sinh đồng ruộng sạch sẽ.\n2. Trồng mật độ vừa phải, thoáng khí.\n3. Sử dụng các loại thuốc gốc đồng hoặc hoạt chất Metalaxyl, Mancozeb."));
-
-        diseases.add(new DiseaseModel(
-                "Bệnh héo xanh vi khuẩn", 
-                "Cây đang xanh tốt bỗng dưng héo rũ đột ngột vào ban ngày và tươi lại vào ban đêm, sau vài ngày cây chết hẳn.", 
-                "https://nongnghiep.farm/wp-content/uploads/2023/11/benh-heo-xanh-vi-khuan.jpg",
-                "1. Luân canh cây trồng khác họ.\n2. Xử lý đất bằng vôi bột trước khi trồng.\n3. Khi phát hiện cây bệnh phải nhổ bỏ và tiêu hủy ngay."));
-
-        diseases.add(new DiseaseModel(
-                "Bệnh bạc lá lúa", 
-                "Do vi khuẩn Xanthomonas oryzae gây ra, vết bệnh bắt đầu từ mép lá rồi lan dần vào trong, có màu vàng trắng.", 
-                "https://cdn.tgdd.vn/Files/2021/08/21/1376822/benh-bac-la-lua-la-gi-nguyen-nhan-va-cach-phong-tru-hieu-qua-202108212132333792.jpg",
-                "1. Chọn giống kháng vi khuẩn.\n2. Bón phân cân đối N-P-K.\n3. Sử dụng các thuốc đặc trị vi khuẩn như: Xanthomix, Totan."));
-
-        diseases.add(new DiseaseModel(
-                "Bệnh rỉ sắt cà phê", 
-                "Mặt dưới lá xuất hiện các đốm nhỏ màu vàng nhạt, sau đó phủ một lớp bột màu da cam như rỉ sắt.", 
-                "https://nongnghiep.farm/wp-content/uploads/2023/12/benh-ri-sat-ca-phe.jpg",
-                "1. Tỉa cành tạo tán cho thông thoáng.\n2. Bón phân đầy đủ để tăng sức đề kháng.\n3. Phun các loại thuốc chứa hoạt chất Hexaconazole hoặc gốc đồng."));
+        List<DiseaseModel> diseases = DiseaseProvider.getAllDiseases();
         
         adapter = new LibraryAdapter(diseases);
+        binding.rvLibrary.setAdapter(adapter);
         binding.rvLibrary.setAdapter(adapter);
 
         // Setup Search
@@ -83,6 +64,55 @@ public class LibraryFragment extends Fragment {
                 return true;
             }
         });
+
+        binding.ivAskAI.setOnClickListener(v -> showAISearchDialog());
+    }
+
+    private void showAISearchDialog() {
+        android.widget.EditText etInput = new android.widget.EditText(getContext());
+        etInput.setHint("Ví dụ: Cách trị bệnh đạo ôn lúa...");
+        etInput.setPadding(40, 40, 40, 40);
+
+        new androidx.appcompat.app.AlertDialog.Builder(getContext())
+                .setTitle("Hỏi Chuyên Gia Thần Nông AI")
+                .setView(etInput)
+                .setPositiveButton("Hỏi AI", (dialog, which) -> {
+                    String question = etInput.getText().toString().trim();
+                    if (!question.isEmpty()) {
+                        callChatAPI(question);
+                    }
+                })
+                .setNegativeButton("Đóng", null)
+                .show();
+    }
+
+    private void callChatAPI(String question) {
+        Toast.makeText(getContext(), "Đang hỏi chuyên gia AI...", Toast.LENGTH_SHORT).show();
+        
+        ApiService apiService = RetrofitClient.getApiService();
+        apiService.askAI(question).enqueue(new Callback<ChatResponse>() {
+            @Override
+            public void onResponse(Call<ChatResponse> call, Response<ChatResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    showAIResponse(response.body().getResponse());
+                } else {
+                    Toast.makeText(getContext(), "AI bận, vui lòng thử lại sau!", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ChatResponse> call, Throwable t) {
+                Toast.makeText(getContext(), "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void showAIResponse(String answer) {
+        new androidx.appcompat.app.AlertDialog.Builder(getContext())
+                .setTitle("Lời khuyên từ Thần Nông AI")
+                .setMessage(answer)
+                .setPositiveButton("Đã hiểu", null)
+                .show();
     }
 
     @Override

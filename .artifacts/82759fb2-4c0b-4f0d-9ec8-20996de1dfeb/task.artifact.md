@@ -1,0 +1,9 @@
+- [x] Làm đẹp màn hình Đăng nhập (Logo & Bố cục)
+- [x] Tích hợp tìm kiếm AI trong Thư viện bệnh
+    - [x] Cập nhật `fragment_library.xml` (Nút Hỏi AI)
+    - [x] Cập nhật `LibraryFragment.java` (Logic gọi API tư vấn)
+- [x] Nâng cấp hệ thống Bình luận (Tương tác & Trả lời)
+    - [x] Cập nhật `CommentModel.java` (Thêm fields reactions)
+    - [x] Cập nhật `item_comment.xml` (Thêm nút Thích, Buồn, Trả lời)
+    - [x] Cập nhật `CommentAdapter.java` (Xử lý sự kiện nhấn)
+- [x] Kiểm tra và Build toàn bộ hệ thống

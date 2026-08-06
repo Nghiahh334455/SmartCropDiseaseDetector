@@ -35,6 +35,15 @@ import com.example.smartcrop.database.AppDatabase;
 import com.example.smartcrop.database.HistoryEntity;
 import com.example.smartcrop.databinding.ActivityMainBinding;
 import com.example.smartcrop.models.PredictResponse;
+import com.example.smartcrop.utils.DiseaseProvider;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+
+import java.io.ByteArrayOutputStream;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -59,6 +68,7 @@ public class DiagnosisActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private Uri imageUri;
     private Bitmap originalBitmap;
+    private String currentDiseaseName = "";
     private static final String CHANNEL_ID = "SmartCropWarning";
 
     // ActivityResultLauncher for Camera
@@ -102,11 +112,18 @@ public class DiagnosisActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        setSupportActionBar(binding.toolbarDiagnosis);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
+        binding.toolbarDiagnosis.setNavigationOnClickListener(v -> finish());
+
         createNotificationChannel();
         checkPermissions();
 
         binding.btnCamera.setOnClickListener(v -> openCamera());
         binding.btnGallery.setOnClickListener(v -> openGallery());
+        binding.btnPostForum.setOnClickListener(v -> showPostDialog());
 
         // Handle intent from HomeFragment
         String action = getIntent().getStringExtra("action");
@@ -149,10 +166,17 @@ public class DiagnosisActivity extends AppCompatActivity {
         showLoading(true);
         OkHttpClient client = new OkHttpClient();
 
+        String userEmail = "unknown@example.com";
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null && user.getEmail() != null) {
+            userEmail = user.getEmail();
+        }
+
         RequestBody requestBody = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("file", imageFile.getName(),
                         RequestBody.create(imageFile, MediaType.parse("image/jpeg")))
+                .addFormDataPart("user_email", userEmail)
                 .build();
 
         // Địa chỉ IP máy tính chạy FastAPI
@@ -183,9 +207,19 @@ public class DiagnosisActivity extends AppCompatActivity {
                     String responseData = response.body().string();
                     try {
                         org.json.JSONObject json = new org.json.JSONObject(responseData);
-                        String disease = json.getString("disease");
                         double confidence = json.getDouble("confidence");
-                        String treatment = json.getString("treatment");
+                        
+                        // Parse treatment_details
+                        org.json.JSONObject details = json.getJSONObject("treatment_details");
+                        String diseaseNameVi = details.getString("disease_name_vi");
+                        String severity = details.getString("severity");
+                        String symptoms = details.getString("symptoms");
+                        String bioTreatment = details.getString("biological_treatment");
+                        String chemTreatment = details.getString("chemical_treatment");
+                        String prevention = details.getString("prevention");
+                        
+                        // Parse Gemini Advice
+                        String aiAdvice = json.getString("ai_expert_advice");
 
                         // Lấy tọa độ Bounding Box
                         org.json.JSONObject bbox = json.getJSONObject("bbox");
@@ -195,29 +229,60 @@ public class DiagnosisActivity extends AppCompatActivity {
                         int y2 = bbox.getInt("y2");
 
                         runOnUiThread(() -> {
-                            // Cập nhật kết quả lên UI
-                            binding.tvDiseaseName.setText("Bệnh: " + disease);
-                            binding.tvConfidence.setText(String.format("Độ tin cậy: %.1f%%", confidence));
-                            binding.tvTreatment.setText("Điều trị: " + treatment);
+                            // Cập nhật kết quả lên UI Dashboard
+                            binding.tvDiseaseName.setText(diseaseNameVi);
+                            binding.tvConfidence.setText(String.format("Độ tin cậy: %.2f%%", confidence));
+                            binding.tvSeverity.setText("Mức độ: " + severity);
+
+                            currentDiseaseName = diseaseNameVi;
+                            binding.btnPostForum.setVisibility(View.VISIBLE);
+
+                            // Cài đặt màu sắc theo mức độ nghiêm trọng
+                            updateSeverityUI(severity);
+
+                            binding.tvAiAdvice.setText(aiAdvice);
+                            binding.tvSymptoms.setText(symptoms);
+                            binding.tvBioTreatment.setText(bioTreatment);
+                            binding.tvChemTreatment.setText(chemTreatment);
+                            binding.tvPrevention.setText(prevention);
 
                             // Tiến hành vẽ Bounding Box lên Bitmap ảnh trên Android
                             drawBoundingBoxOnImage(x1, y1, x2, y2);
 
-                            // Lưu vào lịch sử
-                            saveToHistory(disease, confidence, treatment);
+                            // Lưu vào lịch sử (Sử dụng tên tiếng Việt và gom các biện pháp lại)
+                            String fullTreatment = "Sinh học: " + bioTreatment + "\nHóa học: " + chemTreatment;
+                            saveToHistory(diseaseNameVi, confidence, fullTreatment);
 
-                            // Logic cảnh báo
-                            if (confidence > 85) {
-                                showEmergencyDialog(disease);
-                                sendNotification(disease);
+                            // Logic cảnh báo khẩn cấp (Nếu mức độ Rất cao)
+                            if (severity.contains("Rất cao") || confidence > 85) {
+                                showEmergencyDialog(diseaseNameVi);
+                                sendNotification(diseaseNameVi);
                             }
+
+                            // Tăng bộ đếm bệnh thường gặp trên Firestore
+                            incrementDiseaseCount(diseaseNameVi);
                         });
                     } catch (org.json.JSONException e) {
                         e.printStackTrace();
+                        runOnUiThread(() -> Toast.makeText(DiagnosisActivity.this, "Lỗi phân tích dữ liệu!", Toast.LENGTH_SHORT).show());
                     }
+                } else {
+                    runOnUiThread(() -> Toast.makeText(DiagnosisActivity.this, "Server trả về lỗi: " + response.code(), Toast.LENGTH_SHORT).show());
                 }
             }
         });
+    }
+
+    private void updateSeverityUI(String severity) {
+        if (severity.contains("Rất cao") || severity.contains("Nguy hiểm")) {
+            binding.tvSeverity.setBackgroundResource(R.drawable.bg_badge_red);
+        } else if (severity.contains("Trung bình")) {
+            binding.tvSeverity.setBackgroundResource(R.drawable.bg_badge_orange);
+        } else if (severity.contains("An toàn") || severity.contains("Khỏe mạnh")) {
+            binding.tvSeverity.setBackgroundResource(R.drawable.bg_badge_green);
+        } else {
+            binding.tvSeverity.setBackgroundResource(R.drawable.bg_badge_gray);
+        }
     }
 
     private void drawBoundingBoxOnImage(int x1, int y1, int x2, int y2) {
@@ -286,6 +351,88 @@ public class DiagnosisActivity extends AppCompatActivity {
             outputStream.flush();
         }
         return tempFile;
+    }
+
+    private void incrementDiseaseCount(String diseaseName) {
+        FirebaseFirestore.getInstance().collection("disease_stats")
+                .document(diseaseName)
+                .update("count", FieldValue.increment(1))
+                .addOnFailureListener(e -> {
+                    // Nếu document chưa tồn tại, tạo mới
+                    java.util.Map<String, Object> data = new java.util.HashMap<>();
+                    data.put("name", diseaseName);
+                    data.put("count", 1);
+                    FirebaseFirestore.getInstance().collection("disease_stats")
+                            .document(diseaseName)
+                            .set(data);
+                });
+    }
+
+    private void showPostDialog() {
+        android.widget.EditText etQuestion = new android.widget.EditText(this);
+        etQuestion.setHint("Nhập câu hỏi của bạn về bệnh này...");
+        etQuestion.setPadding(40, 40, 40, 40);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Đăng bài lên diễn đàn")
+                .setView(etQuestion)
+                .setPositiveButton("Đăng bài", (dialog, which) -> {
+                    String question = etQuestion.getText().toString().trim();
+                    if (!question.isEmpty()) {
+                        postToForum(question);
+                    } else {
+                        Toast.makeText(this, "Vui lòng nhập nội dung câu hỏi", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private void postToForum(String question) {
+        if (originalBitmap == null) return;
+        showLoading(true);
+
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        String uid = user != null ? user.getUid() : "anonymous";
+        String userName = user != null && user.getDisplayName() != null ? user.getDisplayName() : "Người dùng Thần Nông AI";
+
+        // 1. Upload ảnh lên Firebase Storage
+        String fileName = "forum_" + System.currentTimeMillis() + ".jpg";
+        StorageReference storageRef = FirebaseStorage.getInstance().getReference().child("forum_images/" + fileName);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        originalBitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
+        byte[] data = baos.toByteArray();
+
+        storageRef.putBytes(data)
+                .addOnSuccessListener(taskSnapshot -> storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
+                    // 2. Lưu thông tin vào Firestore
+                    java.util.Map<String, Object> post = new java.util.HashMap<>();
+                    post.put("uid", uid);
+                    post.put("author", userName);
+                    post.put("question", question);
+                    post.put("imageUrl", uri.toString());
+                    post.put("disease", currentDiseaseName);
+                    post.put("timestamp", System.currentTimeMillis());
+                    post.put("likes", 0);
+                    post.put("commentsCount", 0);
+                    post.put("likedBy", new java.util.ArrayList<String>());
+
+                    FirebaseFirestore.getInstance().collection("forum_posts")
+                            .add(post)
+                            .addOnSuccessListener(documentReference -> {
+                                showLoading(false);
+                                Toast.makeText(this, "Đã đăng bài thành công!", Toast.LENGTH_SHORT).show();
+                            })
+                            .addOnFailureListener(e -> {
+                                showLoading(false);
+                                Toast.makeText(this, "Lỗi đăng bài: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            });
+                }))
+                .addOnFailureListener(e -> {
+                    showLoading(false);
+                    Toast.makeText(this, "Lỗi tải ảnh: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
     }
 
     private void saveToHistory(String disease, double confidence, String treatment) {

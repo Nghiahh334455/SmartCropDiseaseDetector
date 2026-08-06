@@ -39,16 +39,25 @@ public class LibraryAdapter extends RecyclerView.Adapter<LibraryAdapter.ViewHold
         holder.binding.tvDiseaseTitle.setText(disease.name);
         holder.binding.tvDiseaseShortDesc.setText(disease.description);
 
-        Glide.with(holder.itemView.getContext())
-                .load(disease.imageUrl)
-                .into(holder.binding.ivDiseaseThumbnail);
+        // Load thumbnail (ảnh đầu tiên trong list nội bộ)
+        if (disease.imageResources != null && !disease.imageResources.isEmpty()) {
+            String thumbnailName = disease.imageResources.get(0);
+            int resId = holder.itemView.getContext().getResources().getIdentifier(thumbnailName, "drawable", holder.itemView.getContext().getPackageName());
+            if (resId != 0) {
+                Glide.with(holder.itemView.getContext())
+                        .load(resId)
+                        .placeholder(android.R.drawable.ic_menu_gallery)
+                        .into(holder.binding.ivDiseaseThumbnail);
+            } else {
+                Glide.with(holder.itemView.getContext())
+                        .load(android.R.drawable.ic_menu_gallery)
+                        .into(holder.binding.ivDiseaseThumbnail);
+            }
+        }
 
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(v.getContext(), DiseaseDetailActivity.class);
             intent.putExtra("name", disease.name);
-            intent.putExtra("description", disease.description);
-            intent.putExtra("image", disease.imageUrl);
-            intent.putExtra("treatment", disease.treatment);
             v.getContext().startActivity(intent);
         });
     }

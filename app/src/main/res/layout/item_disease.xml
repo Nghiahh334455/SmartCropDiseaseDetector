@@ -9,17 +9,18 @@
     android:focusable="true"
     android:foreground="?attr/selectableItemBackground"
     app:cardCornerRadius="16dp"
-    app:cardElevation="2dp">
+    app:cardElevation="2dp"
+    app:strokeWidth="0dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="8dp">
+        android:padding="12dp">
 
         <com.google.android.material.card.MaterialCardView
-            android:layout_width="100dp"
-            android:layout_height="100dp"
+            android:layout_width="110dp"
+            android:layout_height="110dp"
             app:cardCornerRadius="12dp"
             app:cardElevation="0dp">
 
@@ -37,8 +38,7 @@
             android:layout_marginStart="16dp"
             android:layout_weight="1"
             android:gravity="center_vertical"
-            android:orientation="vertical"
-            android:paddingVertical="4dp">
+            android:orientation="vertical">
 
             <TextView
                 android:id="@+id/tvDiseaseTitle"
@@ -46,29 +46,20 @@
                 android:layout_height="wrap_content"
                 android:text="Tên bệnh"
                 android:textColor="@color/black"
-                android:textSize="17sp"
+                android:textSize="18sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tvDiseaseShortDesc"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="6dp"
                 android:ellipsize="end"
-                android:maxLines="2"
-                android:text="Mô tả ngắn gọn về bệnh và triệu chứng..."
+                android:maxLines="3"
+                android:text="Mô tả chi tiết về triệu chứng và tác hại của bệnh đối với cây trồng..."
                 android:textColor="@color/gray_dark"
-                android:textSize="13sp" />
-
-            <com.google.android.material.chip.Chip
-                android:layout_width="wrap_content"
-                android:layout_height="32dp"
-                android:layout_marginTop="4dp"
-                android:text="Xem chi tiết"
-                android:textSize="11sp"
-                app:chipBackgroundColor="@color/background"
-                app:chipCornerRadius="8dp"
-                app:chipStrokeWidth="0dp" />
+                android:textSize="14sp"
+                android:lineSpacingExtra="2dp" />
 
         </LinearLayout>
     </LinearLayout>
