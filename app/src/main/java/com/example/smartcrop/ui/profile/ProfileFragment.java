@@ -88,6 +88,28 @@ public class ProfileFragment extends Fragment {
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
         });
+
+        binding.btnNotifications.setOnClickListener(v -> {
+            startActivity(new Intent(getContext(), NotificationActivity.class));
+        });
+
+        listenForUnreadNotifications();
+    }
+
+    private void listenForUnreadNotifications() {
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid == null) return;
+
+        FirebaseFirestore.getInstance().collection("users")
+                .document(uid)
+                .collection("notifications")
+                .whereEqualTo("read", false)
+                .addSnapshotListener((value, error) -> {
+                    if (error != null || value == null) return;
+                    if (isAdded()) {
+                        binding.viewNotificationBadge.setVisibility(value.size() > 0 ? View.VISIBLE : View.GONE);
+                    }
+                });
     }
 
     private void loadSharedPosts() {

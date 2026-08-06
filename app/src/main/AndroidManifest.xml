@@ -60,6 +60,11 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
+            android:name=".ui.profile.NotificationActivity"
+            android:exported="false"
+            android:label="Thông báo" />
+
+        <activity
             android:name=".MainActivity"
             android:exported="false" />
 

@@ -1,9 +1,8 @@
-- [x] Làm đẹp màn hình Đăng nhập (Logo & Bố cục)
-- [x] Tích hợp tìm kiếm AI trong Thư viện bệnh
-    - [x] Cập nhật `fragment_library.xml` (Nút Hỏi AI)
-    - [x] Cập nhật `LibraryFragment.java` (Logic gọi API tư vấn)
-- [x] Nâng cấp hệ thống Bình luận (Tương tác & Trả lời)
-    - [x] Cập nhật `CommentModel.java` (Thêm fields reactions)
-    - [x] Cập nhật `item_comment.xml` (Thêm nút Thích, Buồn, Trả lời)
-    - [x] Cập nhật `CommentAdapter.java` (Xử lý sự kiện nhấn)
-- [x] Kiểm tra và Build toàn bộ hệ thống
+- [ ] Tạo `NotificationModel.java` (Dữ liệu thông báo)
+- [ ] Tạo `activity_notifications.xml` & `NotificationAdapter.java` (Giao diện danh sách)
+- [ ] Cập nhật `fragment_profile.xml` (Icon chuông thông báo)
+- [ ] Tạo `NotificationActivity.java` (Xử lý màn hình thông báo)
+- [ ] Cập nhật `ForumAdapter.java` & `PostDetailActivity.java` (Gửi thông báo khi có tương tác)
+- [ ] Cập nhật `MainActivity.java` (Lắng nghe thông báo & hiện Badge đỏ)
+- [ ] Kiểm tra và Build
+- [ ] Commit & Push Git

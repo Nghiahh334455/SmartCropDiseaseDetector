@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.bumptech.glide.Glide;
 import com.example.smartcrop.databinding.ActivityPostDetailBinding;
 import com.example.smartcrop.models.CommentModel;
+import com.example.smartcrop.models.NotificationModel;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -182,7 +183,34 @@ public class PostDetailActivity extends AppCompatActivity {
                     FirebaseFirestore.getInstance().collection("forum_posts")
                             .document(postId)
                             .update("commentsCount", FieldValue.increment(1));
+                    
+                    // Send notification
+                    FirebaseFirestore.getInstance().collection("forum_posts").document(postId).get()
+                            .addOnSuccessListener(postDoc -> {
+                                String ownerUid = postDoc.getString("uid");
+                                String pContent = postDoc.getString("question");
+                                if (ownerUid != null && !ownerUid.equals(user.getUid())) {
+                                    sendNotification(ownerUid, "COMMENT", postId, pContent);
+                                }
+                            });
                 });
+    }
+
+    private void sendNotification(String targetUid, String type, String postId, String postContent) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) return;
+
+        String senderName = user.getDisplayName() != null ? user.getDisplayName() : "Một người dùng";
+        String senderAvatar = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : "";
+
+        NotificationModel notification = new NotificationModel(
+                "", type, senderName, senderAvatar, user.getUid(), postId, postContent, System.currentTimeMillis(), false
+        );
+
+        FirebaseFirestore.getInstance().collection("users")
+                .document(targetUid)
+                .collection("notifications")
+                .add(notification);
     }
 
     private void displayPost(Map<String, Object> post) {

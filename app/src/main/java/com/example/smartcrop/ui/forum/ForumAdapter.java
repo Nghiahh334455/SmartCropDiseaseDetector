@@ -18,6 +18,7 @@ import com.example.smartcrop.databinding.ItemPostBinding;
 import com.example.smartcrop.models.DiseaseModel;
 import com.example.smartcrop.ui.library.DiseaseDetailActivity;
 import com.example.smartcrop.utils.DiseaseProvider;
+import com.example.smartcrop.models.NotificationModel;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -223,13 +224,25 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
         } else {
             FirebaseFirestore.getInstance().collection("forum_posts")
                     .document(postId)
-                    .update("likedBy", FieldValue.arrayUnion(currentUid));
+                    .update("likedBy", FieldValue.arrayUnion(currentUid))
+                    .addOnSuccessListener(aVoid -> {
+                        // Send notification to post owner
+                        FirebaseFirestore.getInstance().collection("forum_posts").document(postId).get()
+                                .addOnSuccessListener(doc -> {
+                                    String ownerUid = doc.getString("uid");
+                                    String content = doc.getString("question");
+                                    if (ownerUid != null && !ownerUid.equals(currentUid)) {
+                                        sendNotification(ownerUid, "LIKE", postId, content);
+                                    }
+                                });
+                    });
         }
     }
 
     private void sharePost(Map<String, Object> post, String postId) {
         String content = (String) post.get("question");
         String author = (String) post.get("author");
+        String ownerUid = (String) post.get("uid");
         
         // Save to my profile
         if (currentUid != null) {
@@ -238,6 +251,10 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
             shareData.put("originalPostId", postId);
             shareData.put("shareTimestamp", System.currentTimeMillis());
             FirebaseFirestore.getInstance().collection("user_shares").add(shareData);
+
+            if (ownerUid != null && !ownerUid.equals(currentUid)) {
+                sendNotification(ownerUid, "SHARE", postId, content);
+            }
         }
 
         // External Android Share
@@ -245,6 +262,23 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
         shareIntent.setType("text/plain");
         shareIntent.putExtra(Intent.EXTRA_TEXT, "Bài viết từ " + author + " trên Thần Nông AI: " + content);
         context.startActivity(Intent.createChooser(shareIntent, "Chia sẻ bài viết"));
+    }
+
+    private void sendNotification(String targetUid, String type, String postId, String postContent) {
+        com.google.firebase.auth.FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) return;
+
+        String senderName = user.getDisplayName() != null ? user.getDisplayName() : "Một người dùng";
+        String senderAvatar = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : "";
+
+        NotificationModel notification = new NotificationModel(
+                "", type, senderName, senderAvatar, user.getUid(), postId, postContent, System.currentTimeMillis(), false
+        );
+
+        FirebaseFirestore.getInstance().collection("users")
+                .document(targetUid)
+                .collection("notifications")
+                .add(notification);
     }
 
     @Override
