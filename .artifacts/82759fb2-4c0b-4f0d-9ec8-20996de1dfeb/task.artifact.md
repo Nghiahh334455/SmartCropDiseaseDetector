@@ -1,8 +1,5 @@
-- [ ] Tạo `NotificationModel.java` (Dữ liệu thông báo)
-- [ ] Tạo `activity_notifications.xml` & `NotificationAdapter.java` (Giao diện danh sách)
-- [ ] Cập nhật `fragment_profile.xml` (Icon chuông thông báo)
-- [ ] Tạo `NotificationActivity.java` (Xử lý màn hình thông báo)
-- [ ] Cập nhật `ForumAdapter.java` & `PostDetailActivity.java` (Gửi thông báo khi có tương tác)
-- [ ] Cập nhật `MainActivity.java` (Lắng nghe thông báo & hiện Badge đỏ)
+- [ ] Cập nhật `fragment_profile.xml` (Chuyển Thông báo vào menu Tài khoản)
+- [ ] Cập nhật `ProfileFragment.java` (Logic Badge chấm đỏ trong menu)
+- [ ] Kiểm tra `NotificationActivity.java` (Điều hướng bài viết)
 - [ ] Kiểm tra và Build
 - [ ] Commit & Push Git

@@ -106,7 +106,7 @@ public class ProfileFragment extends Fragment {
                 .whereEqualTo("read", false)
                 .addSnapshotListener((value, error) -> {
                     if (error != null || value == null) return;
-                    if (isAdded()) {
+                    if (isAdded() && binding != null) {
                         binding.viewNotificationBadge.setVisibility(value.size() > 0 ? View.VISIBLE : View.GONE);
                     }
                 });

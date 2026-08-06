@@ -1,46 +1,34 @@
-# Implementation Plan - Hệ thống Thông báo & Badge (v12)
+# Implementation Plan - Tối ưu hóa Hệ thống Thông báo (v12.1)
 
-Kế hoạch này thực hiện việc bổ sung hệ thống thông báo cho người dùng khi có tương tác (Like, Comment, Share) trên bài viết của họ, bao gồm dấu chấm đỏ báo hiệu (Badge) và màn hình danh sách thông báo.
+Kế hoạch này thực hiện việc di chuyển lối vào thông báo vào mục "Tài khoản" để dễ thấy hơn, đồng thời bổ sung chấm đỏ báo hiệu trực tiếp trong menu.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> **Chấm đỏ báo hiệu (Badge)**: Tôi sẽ thêm một chấm đỏ nhỏ ở mục "Cá nhân" trên thanh điều hướng phía dưới (Bottom Navigation) khi có thông báo mới chưa đọc.
-> **Thông báo thời gian thực**: Sử dụng Firestore SnapshotListener để cập nhật thông báo ngay lập tức.
-> **Điều hướng**: Khi nhấn vào một thông báo, ứng dụng sẽ mở đúng bài viết liên quan trong màn hình Chi tiết bài viết.
+> **Vị trí Thông báo mới**: Thay vì dùng icon chuông nhỏ ở góc ảnh đại diện (khó thấy), tôi sẽ chuyển "Thông báo" thành một mục lớn trong danh sách "Tài khoản".
+> **Chấm đỏ trong Menu**: Một chấm đỏ sẽ hiện ngay cạnh chữ "Thông báo" trong menu Cá nhân nếu bạn có thông báo chưa đọc.
+> **Điều hướng**: Đảm bảo việc nhấn vào thông báo trong danh sách sẽ mở đúng bài viết tương ứng.
 
 ## Proposed Changes
 
-### 1. Dữ liệu (Data Model)
-#### [NEW] `NotificationModel.java`
-- Chứa các thông tin: `id`, `type` (Like/Comment/Share), `senderName`, `senderAvatar`, `postId`, `timestamp`, `isRead`.
+### 1. Giao diện Cá nhân (Profile UI)
+#### [MODIFY] [fragment_profile.xml](file:///D:/Androi_DATN/app/src/main/res/layout/fragment_profile.xml)
+- Loại bỏ icon chuông FrameLayout ở góc header.
+- Thêm một `RelativeLayout` chứa `MaterialButton` (Thông báo) và một `View` (Badge chấm đỏ) vào trong CardView "Tài khoản".
+- Sắp xếp thứ tự: Chỉnh sửa thông tin -> Thông báo -> Lịch sử chẩn đoán.
 
-### 2. Giao diện (UI)
-#### [NEW] `activity_notifications.xml`
-- Màn hình hiển thị danh sách các thông báo theo thứ tự thời gian mới nhất.
+### 2. Logic Cá nhân (Profile Logic)
+#### [MODIFY] [ProfileFragment.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/profile/ProfileFragment.java)
+- Ánh xạ nút "Thông báo" mới trong card menu.
+- Cập nhật logic `listenForUnreadNotifications` để ẩn hiện chấm đỏ ngay trong mục menu này.
 
-#### [NEW] `NotificationAdapter.java`
-- Adapter để hiển thị từng mục thông báo (Avatar người tương tác, nội dung thông báo, thời gian).
-
-#### [MODIFY] `fragment_profile.xml`
-- Thêm một nút **"Thông báo" (Icon chuông)** ở góc trên bên phải của màn hình Cá nhân để người dùng truy cập danh sách thông báo.
-
-### 3. Logic Thông báo (Logic)
-#### [MODIFY] `ForumAdapter.java` & `PostDetailActivity.java`
-- Thêm code để tạo một bản ghi mới trong collection `notifications` trên Firestore mỗi khi có người nhấn Like, gửi Bình luận hoặc Share bài viết.
-- Bản ghi này sẽ được gửi tới chủ sở hữu bài viết (`post.uid`).
-
-#### [MODIFY] `MainActivity.java`
-- Thêm logic lắng nghe collection `notifications` của người dùng hiện tại.
-- Nếu có thông báo nào có `isRead == false`, hiển thị dấu chấm đỏ (Badge) lên icon "Cá nhân" ở BottomNavigationView.
-
-#### [MODIFY] `NotificationActivity.java`
-- Hiển thị danh sách thông báo. Khi nhấn vào mục nào thì cập nhật `isRead = true` và chuyển sang `PostDetailActivity`.
+### 3. Kiểm tra Logic Gửi Thông báo
+#### [VERIFY] [ForumAdapter.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/forum/ForumAdapter.java) & [PostDetailActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/forum/PostDetailActivity.java)
+- Đảm bảo khi gửi thông báo, field `read` được đặt là `false` để Badge có thể nhận diện.
 
 ## Verification Plan
 
 ### Manual Verification
-- **Like**: Dùng tài khoản A like bài viết của tài khoản B -> Kiểm tra tài khoản B có hiện chấm đỏ không.
-- **Badge**: Nhấn vào tab "Cá nhân" -> Kiểm tra icon chuông có chấm đỏ không.
-- **Màn hình**: Nhấn vào chuông -> Xem danh sách thông báo.
-- **Điều hướng**: Nhấn vào thông báo comment -> Kiểm tra có mở đúng bài viết đó không.
+- **Giao diện**: Vào trang Cá nhân, kiểm tra xem mục "Thông báo" có hiện trong danh sách "Tài khoản" không.
+- **Badge**: Nhờ người khác Like bài viết -> Kiểm tra xem có chấm đỏ hiện ra ở mục "Thông báo" và icon "Cá nhân" ở dưới không.
+- **Điều hướng**: Nhấn vào "Thông báo" -> Nhấn vào một thông báo cụ thể -> Kiểm tra xem có mở đúng bài viết không.

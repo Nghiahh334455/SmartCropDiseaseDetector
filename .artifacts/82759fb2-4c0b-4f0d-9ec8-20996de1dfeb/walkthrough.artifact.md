@@ -1,34 +1,28 @@
-# Walkthrough - Nâng cấp Logo, Thư viện AI & Hệ thống Tương tác (v11)
+# Walkthrough - Hệ thống Thông báo Thời gian thực (v12)
 
-Tôi đã hoàn thành bản cập nhật v11 với các tính năng mạng xã hội nâng cao, tích hợp trí tuệ nhân tạo và tinh chỉnh thẩm mỹ màn hình Đăng nhập.
+Tôi đã hoàn thành việc triển khai hệ thống thông báo thông minh, giúp bạn luôn cập nhật được các tương tác mới nhất trên bài viết của mình.
 
-## Các thay đổi quan trọng
+## Các tính năng mới
 
-### 1. Màn hình Đăng nhập Chuyên nghiệp
-- **Logo mới**: Đã thay thế icon mặc định bằng `logo_app` chính thức của **Thần Nông AI**.
-- **Thiết kế bo tròn**: Logo được bao quanh bởi viền xanh dịu mắt, kết hợp với phông chữ đậm nét tạo cảm giác tin cậy ngay từ cái nhìn đầu tiên.
+### 1. Badge Chấm đỏ Báo hiệu
+- **Bottom Navigation**: Một chấm đỏ nhỏ kèm số lượng thông báo chưa đọc sẽ xuất hiện ngay trên mục **"Cá nhân"** ở thanh điều hướng dưới cùng.
+- **Icon Chuông**: Trong màn hình Cá nhân, tôi đã thêm một biểu tượng hình chuông. Nếu có thông báo mới, chuông này cũng sẽ hiển thị chấm đỏ báo hiệu.
 
-### 2. Chuyên gia AI trong Thư viện
-- **Nút Hỏi AI**: Đã thêm biểu tượng dấu hỏi (?) trên thanh tìm kiếm của Thư viện.
-- **Tư vấn trực tiếp**: Khi bạn gặp vấn đề không tìm thấy trong thư viện, hãy nhấn nút này và đặt câu hỏi. Ứng dụng sẽ kết nối với máy chủ AI để đưa ra lời khuyên cụ thể cho vườn cây của bạn.
-- > [!TIP]
-  > Để tính năng này hoạt động, hãy đảm bảo máy chủ (FastAPI) của bạn đã được khởi động và có endpoint `/chat`.
+### 2. Trung tâm Thông báo Chi tiết
+- **Màn hình mới**: Khi nhấn vào icon chuông, bạn sẽ được đưa tới màn hình **"Thông báo"**.
+- **Nội dung phong phú**: Danh sách hiển thị rõ ràng ai đã Like, ai đã Bình luận hoặc Chia sẻ bài viết nào của bạn, kèm theo thời gian cụ thể (ví dụ: "vừa xong", "2 giờ trước").
+- **Phân biệt trạng thái**: Các thông báo chưa đọc sẽ có màu nền xanh nhạt và chấm đỏ bên cạnh để bạn dễ dàng nhận biết.
 
-### 3. Hệ thống Bình luận "Siêu Tương tác"
-- **Cảm xúc (Reactions)**: Bây giờ bạn có thể thể hiện cảm xúc **Thích** hoặc **Buồn** trên từng bình luận.
-- **Trả lời bình luận**: Khi nhấn nút "Trả lời", tên người nhận sẽ tự động được nhắc đến (@tên) trong ô nhập, giúp cuộc thảo luận rõ ràng hơn.
-- **Avatar đồng bộ**: Đã sửa lỗi không hiện avatar trong màn hình chi tiết bài viết và danh sách bình luận.
-
-### 4. Sửa lỗi Tải ảnh & Chia sẻ
-- **Upload ổn định**: Tối ưu hóa quy trình đọc file từ thiết bị để tránh các lỗi "Object does not exist".
-- **Chia sẻ toàn diện**: Nút Chia sẻ hiện tại đã hỗ trợ gửi nội dung bài viết sang các ứng dụng khác (Zalo, Facebook...).
+### 3. Điều hướng Thông minh
+- **Nhấn là tới**: Khi bạn nhấn vào một thông báo, ứng dụng sẽ tự động mở đúng bài viết đó trong màn hình chi tiết để bạn có thể xem và phản hồi ngay lập tức.
+- **Tự động đánh dấu**: Sau khi nhấn xem, thông báo đó sẽ tự động được đánh dấu là "Đã đọc" và chấm đỏ sẽ biến mất.
 
 ---
 
-## Kết quả kiểm tra
+## Kết quả kiểm tra & Git
 - **Build**: Thành công (Build Successful).
-- **Thẩm mỹ**: Logo đăng nhập hiện đúng thiết kế mới.
-- **Tương tác**: Nút Thích/Buồn trên bình luận hoạt động mượt mà.
+- **Git**: Đã commit và push toàn bộ thay đổi lên branch `master`.
+- **Dữ liệu**: Hệ thống sử dụng Firestore Sub-collection nên tốc độ cực nhanh và tiết kiệm dữ liệu.
 
-> [!CAUTION]
-> **Kết nối Server**: Nếu bạn dùng điện thoại thật, hãy nhớ đổi `127.0.0.1` trong `RetrofitClient.java` thành địa chỉ IP local của máy tính (ví dụ: `192.168.1.xx`) để app có thể gọi được API AI nhé!
+> [!TIP]
+> **Thử ngay**: Bạn hãy dùng một tài khoản khác để Like hoặc Bình luận vào bài viết của mình. Bạn sẽ thấy chấm đỏ hiện lên ngay lập tức ở tab "Cá nhân" mà không cần phải tắt app mở lại!
