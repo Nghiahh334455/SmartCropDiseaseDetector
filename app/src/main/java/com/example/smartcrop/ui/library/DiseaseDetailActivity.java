@@ -1,10 +1,15 @@
 package com.example.smartcrop.ui.library;
 
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.smartcrop.R;
+import com.example.smartcrop.api.ApiService;
+import com.example.smartcrop.api.RetrofitClient;
 import com.example.smartcrop.databinding.ActivityDiseaseDetailBinding;
 import com.example.smartcrop.models.DiseaseModel;
 import com.example.smartcrop.utils.DiseaseProvider;
@@ -17,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 
 import android.widget.EditText;
+
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 public class DiseaseDetailActivity extends AppCompatActivity {
 
@@ -77,22 +84,33 @@ public class DiseaseDetailActivity extends AppCompatActivity {
         }
 
         binding.btnShareToForum.setOnClickListener(v -> {
-            EditText etStatus = new EditText(this);
-            etStatus.setHint("Nhập nội dung câu hỏi hoặc status của bạn...");
-            etStatus.setPadding(40, 40, 40, 40);
-
-            new androidx.appcompat.app.AlertDialog.Builder(this)
-                    .setTitle("Đăng lên bảng tin")
-                    .setView(etStatus)
-                    .setPositiveButton("Đăng ngay", (dialog, which) -> {
-                        String status = etStatus.getText().toString().trim();
-                        // Lấy ảnh đầu tiên làm ảnh đại diện bài đăng
-                        String mainImage = disease.imageResources.get(0);
-                        shareToForum(disease.name, status, mainImage);
-                    })
-                    .setNegativeButton("Hủy", null)
-                    .show();
+            showShareDialog(disease);
         });
+    }
+
+    private void showShareDialog(com.example.smartcrop.models.DiseaseModel disease) {
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View view = getLayoutInflater().inflate(R.layout.dialog_share_post, null);
+        dialog.setContentView(view);
+
+        com.google.android.material.imageview.ShapeableImageView ivPreview = view.findViewById(R.id.ivSharePreview);
+        android.widget.TextView tvName = view.findViewById(R.id.tvShareDiseaseName);
+        android.widget.EditText etStatus = view.findViewById(R.id.etShareStatus);
+
+        tvName.setText(disease.name);
+        if (disease.imageResources != null && !disease.imageResources.isEmpty()) {
+            int resId = getResources().getIdentifier(disease.imageResources.get(0), "drawable", getPackageName());
+            if (resId != 0) ivPreview.setImageResource(resId);
+        }
+
+        view.findViewById(R.id.btnConfirmShare).setOnClickListener(v -> {
+            String status = etStatus.getText().toString().trim();
+            String mainImage = (disease.imageResources != null && !disease.imageResources.isEmpty()) ? disease.imageResources.get(0) : "";
+            dialog.dismiss();
+            shareToForum(disease.name, status, mainImage);
+        });
+
+        dialog.show();
     }
 
     private void shareToForum(String name, String status, String imageName) {
@@ -102,23 +120,26 @@ public class DiseaseDetailActivity extends AppCompatActivity {
             return;
         }
 
-        String displayStatus = (status != null && !status.isEmpty()) ? status : "Mọi người cùng xem thông tin về: " + name;
+        // Nếu nội dung trống thì để trống hoặc dùng nhãn mặc định
+        String displayStatus = (status != null && !status.isEmpty()) ? status : "";
+        String userPhotoUrl = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null;
 
-        Map<String, Object> post = new HashMap<>();
-        post.put("uid", user.getUid());
-        post.put("author", user.getDisplayName() != null ? user.getDisplayName() : "Người dùng Thần Nông AI");
-        post.put("question", displayStatus);
-        post.put("imageUrl", imageName); // Gửi tên resource thay vì placeholder
-        post.put("disease", name);
-        post.put("timestamp", System.currentTimeMillis());
-        post.put("likes", 0);
-        post.put("commentsCount", 0);
-        post.put("likedBy", new java.util.ArrayList<String>());
+        ApiService apiService = RetrofitClient.getApiService();
+        apiService.createPost(user.getUid(), user.getDisplayName(), displayStatus, userPhotoUrl, imageName, name)
+                .enqueue(new retrofit2.Callback<Map<String, String>>() {
+                    @Override
+                    public void onResponse(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull retrofit2.Response<Map<String, String>> response) {
+                        if (response.isSuccessful()) {
+                            Toast.makeText(DiseaseDetailActivity.this, "Đã chia sẻ lên diễn đàn!", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(DiseaseDetailActivity.this, "Lỗi khi chia sẻ: " + response.code(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
 
-        FirebaseFirestore.getInstance().collection("forum_posts")
-                .add(post)
-                .addOnSuccessListener(documentReference -> {
-                    Toast.makeText(this, "Đã chia sẻ lên bảng tin!", Toast.LENGTH_SHORT).show();
+                    @Override
+                    public void onFailure(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull Throwable t) {
+                        Toast.makeText(DiseaseDetailActivity.this, "Lỗi kết nối Server", Toast.LENGTH_SHORT).show();
+                    }
                 });
     }
 }

@@ -35,7 +35,9 @@ public class CommonDiseaseAdapter extends RecyclerView.Adapter<CommonDiseaseAdap
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Map<String, Object> stat = diseaseStats.get(position);
         String name = (String) stat.get("name");
-        long count = (long) stat.get("count");
+        
+        Object c = stat.get("count");
+        long count = (c instanceof Double) ? ((Double) c).longValue() : (int) c;
 
         holder.binding.tvCommonDiseaseName.setText(name);
         holder.binding.tvCommonDiseaseCount.setText(count + " lượt chẩn đoán");

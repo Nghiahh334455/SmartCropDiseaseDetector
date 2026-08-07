@@ -1,52 +1,38 @@
-# Implementation Plan - Silent Diagnosis, FB Comments & SQL Server Migration (v13)
+# Implementation Plan - Khắc phục lỗi 422, Tải ảnh & Nâng cấp Giao diện Chia sẻ (v13.2)
 
-Kế hoạch này thực hiện các thay đổi cốt lõi về trải nghiệm người dùng và chuyển đổi toàn bộ hệ thống lưu trữ sang Microsoft SQL Server.
+Kế hoạch này thực hiện việc sửa lỗi truyền dữ liệu (422) sang SQL Server, tối ưu hóa quy trình tải ảnh và cải thiện thẩm mỹ cho tính năng chia sẻ bệnh.
 
 ## User Review Required
 
-> [!CAUTION]
-> **Chuyển đổi sang SQL Server (MSSQL)**: Đây là một bước ngoặt lớn.
-> 1. Tôi sẽ cung cấp **File Script SQL (.sql)** để bạn chạy trong SQL Server Management Studio (SSMS) nhằm tạo bảng.
-> 2. Tôi sẽ cung cấp mã nguồn **FastAPI (Python)** mới để làm cầu nối giữa Android và SQL Server. Bạn sẽ cần cài đặt `pyodbc` và driver SQL Server cho Python.
-> 3. Toàn bộ dữ liệu Diễn đàn, Bình luận, Thông báo sẽ được chuyển từ Firestore sang SQL Server. Firebase Auth vẫn giữ nguyên để bảo mật đăng nhập.
-
 > [!IMPORTANT]
-> **Bình luận & Chẩn đoán**:
-> - Loại bỏ nút "Buồn" trong bình luận. Giữ lại "Thích" và "Trả lời".
-> - Bình luận trả lời sẽ thụt lề ngay bên dưới bình luận gốc.
-> - Chẩn đoán sẽ không còn hiện thông báo "Đã gửi Gmail" gây phiền phức. Nếu lá khỏe mạnh, hệ thống sẽ im lặng hoàn toàn.
+> **Khắc phục lỗi 422**: Lỗi này xảy ra do một số thông tin (như tên người dùng hoặc ảnh đại diện) bị gửi đi với giá trị rỗng hoặc sai định dạng. Tôi sẽ chuẩn hóa dữ liệu trên cả Android và Backend để đảm bảo mọi bài đăng đều thành công.
+> **Tải ảnh từ máy**: Tôi sẽ nâng cấp logic tải ảnh để đảm bảo ứng dụng chỉ tiếp tục lưu dữ liệu sau khi tệp ảnh đã được ghi thành công trên Cloud.
+> **Giao diện Chia sẻ mới**: Thay vì hộp thoại nhập chữ đơn giản, tính năng chia sẻ từ Thư viện/Chẩn đoán sẽ được lột xác với giao diện chuyên nghiệp như Facebook.
 
 ## Proposed Changes
 
-### 1. Chẩn đoán & Gmail (Diagnosis logic)
-#### [MODIFY] [DiagnosisActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/DiagnosisActivity.java)
-- Loại bỏ lời gọi `showEmergencyDialog`.
-- Thêm kiểm tra: Nếu kết quả là "Khỏe mạnh" (Healthy), không thực hiện gửi email hoặc hiện thông báo.
-
-### 2. Bình luận kiểu Facebook (Social Interactions)
-#### [MODIFY] [CommentModel.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/models/CommentModel.java)
-- Thêm trường `parent_id` (int) để xác định bình luận này trả lời cho ai.
-
-#### [MODIFY] [item_comment.xml](file:///D:/Androi_DATN/app/src/main/res/layout/item_comment.xml)
-- Xóa nút "Buồn" (`btnSadComment`).
-- Tinh chỉnh `margin` để hỗ trợ hiển thị lồng nhau.
-
-#### [MODIFY] [CommentAdapter.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/forum/CommentAdapter.java)
-- Cập nhật logic: Nếu `parent_id != null`, tăng `paddingLeft` của view và ẩn nút "Trả lời".
-
-### 3. Hệ thống Backend & SQL Server
-#### [NEW] `mssql_schema.sql`
-- Script tạo các bảng: `Users`, `Posts`, `Comments`, `Notifications`.
-
-#### [NEW] `backend/main.py`
-- Backend FastAPI kết nối MSSQL (thay thế logic Firestore cũ).
+### 1. Khắc phục lỗi 422 (FastAPI Validation)
+#### [MODIFY] [backend_v13.py](file:///D:/Androi_DATN/backend_v13.py)
+- Chuyển các trường `author`, `question`, `uid` sang dạng tùy chọn (`Optional`) hoặc có giá trị mặc định để tránh lỗi khi Android gửi thiếu trường.
+- Thêm log chi tiết để theo dõi dữ liệu nhận được từ App.
 
 #### [MODIFY] [ApiService.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/api/ApiService.java)
-- Định nghĩa lại các Endpoint để Android giao tiếp với SQL Server thông qua FastAPI.
+- Sử dụng `@Field` với giá trị dự phòng (fallback) để không bao giờ gửi giá trị `null` lên server.
+
+### 2. Sửa lỗi Tải ảnh (Firebase Storage & SQL Sync)
+#### [MODIFY] [CreatePostActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/forum/CreatePostActivity.java) & [EditProfileActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/profile/EditProfileActivity.java)
+- Sử dụng phương thức `taskSnapshot.getMetadata().getReference().getDownloadUrl()` để lấy link ảnh bền vững nhất.
+- Bổ sung thông báo lỗi chi tiết khi quá trình tải ảnh thất bại.
+
+### 3. Nâng cấp Giao diện Chia sẻ (Elegant Sharing UI)
+#### [MODIFY] [DiseaseDetailActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/library/DiseaseDetailActivity.java) & [DiagnosisActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/DiagnosisActivity.java)
+- Thiết kế lại hộp thoại chia sẻ: Hiển thị ảnh xem trước của bệnh, tên bệnh rõ ràng và ô nhập trạng thái phong cách Material 3.
+- Cho phép đăng bài ngay cả khi không nhập nội dung văn bản.
 
 ## Verification Plan
 
 ### Manual Verification
-- **Chẩn đoán**: Chụp ảnh lá bệnh -> Kiểm tra xem email có tự gửi ngầm không. Chụp lá khỏe -> Kiểm tra xem app có im lặng không.
-- **Bình luận**: Nhấn "Trả lời" -> Viết nội dung -> Kiểm tra xem bình luận mới có nằm dưới và thụt lề không.
-- **SQL Server**: Mở SSMS, chạy lệnh `SELECT * FROM Comments` để kiểm tra dữ liệu đã vào database chưa.
+- **Đăng bài**: Thử đăng bài chỉ có chữ, chỉ có ảnh, hoặc cả hai.
+- **Thay Avatar**: Cập nhật ảnh hồ sơ và kiểm tra xem các bài viết mới có hiện Avatar mới không.
+- **Chia sẻ**: Vào Thư viện, nhấn "Chia sẻ" và kiểm tra xem bài viết có xuất hiện trên Diễn đàn mà không cần nhập chữ không.
+- **Lỗi 422**: Theo dõi log Backend để đảm bảo không còn phản hồi 422 từ server.

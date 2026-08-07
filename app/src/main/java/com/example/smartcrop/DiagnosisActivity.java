@@ -36,6 +36,7 @@ import com.example.smartcrop.database.HistoryEntity;
 import com.example.smartcrop.databinding.ActivityMainBinding;
 import com.example.smartcrop.models.PredictResponse;
 import com.example.smartcrop.utils.DiseaseProvider;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FieldValue;
@@ -51,6 +52,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Map;
 import java.util.concurrent.Executors;
 
 import okhttp3.Call;
@@ -254,15 +256,17 @@ public class DiagnosisActivity extends AppCompatActivity {
                             saveToHistory(diseaseNameVi, confidence, fullTreatment);
 
                             // Logic cảnh báo khẩn cấp (Chỉ khi phát hiện BỆNH, không phải lá khỏe)
-                            boolean isHealthy = diseaseNameVi.toLowerCase().contains("khỏe mạnh") || diseaseNameVi.toLowerCase().contains("an toàn");
+                            boolean isHealthy = diseaseNameVi.toLowerCase().contains("khỏe mạnh") || diseaseNameVi.toLowerCase().contains("an toàn") || diseaseNameVi.toLowerCase().contains("healthy");
                             
                             if (!isHealthy && (severity.contains("Rất cao") || confidence > 85)) {
-                                // Tự động gửi email ngầm (không hiện AlertDialog gây phiền)
+                                // Tự động gửi email ngầm (KHÔNG hiện AlertDialog, KHÔNG báo Gmail cho lá khỏe)
                                 sendNotification(diseaseNameVi);
                             }
 
-                            // Tăng bộ đếm bệnh thường gặp trên Firestore
-                            incrementDiseaseCount(diseaseNameVi);
+                            // Tăng bộ đếm bệnh thường gặp trên SQL Server (Chỉ tính nếu có BỆNH)
+                            if (!isHealthy) {
+                                incrementDiseaseCount(diseaseNameVi);
+                            }
                         });
                     } catch (org.json.JSONException e) {
                         e.printStackTrace();
@@ -306,12 +310,7 @@ public class DiagnosisActivity extends AppCompatActivity {
     }
 
     private void showEmergencyDialog(String disease) {
-        new AlertDialog.Builder(this)
-                .setTitle("CẢNH BÁO NGUY HIỂM")
-                .setMessage("Hệ thống phát hiện bệnh " + disease + " mức độ nghiêm trọng! Đã gửi email cảnh báo cho chủ vườn. Hãy cách ly vùng bệnh ngay.")
-                .setIcon(android.R.drawable.ic_dialog_alert)
-                .setPositiveButton("OK", null)
-                .show();
+        // Da loai bo thong bao Gmail gay phien
     }
 
     private void sendNotification(String disease) {
@@ -356,38 +355,41 @@ public class DiagnosisActivity extends AppCompatActivity {
     }
 
     private void incrementDiseaseCount(String diseaseName) {
-        FirebaseFirestore.getInstance().collection("disease_stats")
-                .document(diseaseName)
-                .update("count", FieldValue.increment(1))
-                .addOnFailureListener(e -> {
-                    // Nếu document chưa tồn tại, tạo mới
-                    java.util.Map<String, Object> data = new java.util.HashMap<>();
-                    data.put("name", diseaseName);
-                    data.put("count", 1);
-                    FirebaseFirestore.getInstance().collection("disease_stats")
-                            .document(diseaseName)
-                            .set(data);
-                });
+        ApiService apiService = RetrofitClient.getApiService();
+        apiService.incrementDiseaseCount(diseaseName).enqueue(new retrofit2.Callback<java.util.Map<String, String>>() {
+            @Override
+            public void onResponse(@NonNull retrofit2.Call<java.util.Map<String, String>> call, @NonNull retrofit2.Response<java.util.Map<String, String>> response) {
+                // Success
+            }
+
+            @Override
+            public void onFailure(@NonNull retrofit2.Call<java.util.Map<String, String>> call, @NonNull Throwable t) {
+                // Log error
+            }
+        });
     }
 
     private void showPostDialog() {
-        android.widget.EditText etQuestion = new android.widget.EditText(this);
-        etQuestion.setHint("Nhập câu hỏi của bạn về bệnh này...");
-        etQuestion.setPadding(40, 40, 40, 40);
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View view = getLayoutInflater().inflate(R.layout.dialog_share_post, null);
+        dialog.setContentView(view);
 
-        new AlertDialog.Builder(this)
-                .setTitle("Đăng bài lên diễn đàn")
-                .setView(etQuestion)
-                .setPositiveButton("Đăng bài", (dialog, which) -> {
-                    String question = etQuestion.getText().toString().trim();
-                    if (!question.isEmpty()) {
-                        postToForum(question);
-                    } else {
-                        Toast.makeText(this, "Vui lòng nhập nội dung câu hỏi", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .setNegativeButton("Hủy", null)
-                .show();
+        com.google.android.material.imageview.ShapeableImageView ivPreview = view.findViewById(R.id.ivSharePreview);
+        android.widget.TextView tvName = view.findViewById(R.id.tvShareDiseaseName);
+        android.widget.EditText etStatus = view.findViewById(R.id.etShareStatus);
+
+        tvName.setText(currentDiseaseName);
+        if (originalBitmap != null) {
+            ivPreview.setImageBitmap(originalBitmap);
+        }
+
+        view.findViewById(R.id.btnConfirmShare).setOnClickListener(v -> {
+            String question = etStatus.getText().toString().trim();
+            dialog.dismiss();
+            postToForum(question);
+        });
+
+        dialog.show();
     }
 
     private void postToForum(String question) {
@@ -395,8 +397,15 @@ public class DiagnosisActivity extends AppCompatActivity {
         showLoading(true);
 
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        String uid = user != null ? user.getUid() : "anonymous";
-        String userName = user != null && user.getDisplayName() != null ? user.getDisplayName() : "Người dùng Thần Nông AI";
+        if (user == null) {
+            showLoading(false);
+            Toast.makeText(this, "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String uid = user.getUid();
+        String userName = (user.getDisplayName() != null && !user.getDisplayName().isEmpty()) ? user.getDisplayName() : "Người dùng Thần Nông AI";
+        String userPhotoUrl = (user.getPhotoUrl() != null) ? user.getPhotoUrl().toString() : "";
 
         // 1. Upload ảnh lên Firebase Storage
         String fileName = "forum_" + System.currentTimeMillis() + ".jpg";
@@ -408,27 +417,25 @@ public class DiagnosisActivity extends AppCompatActivity {
 
         storageRef.putBytes(data)
                 .addOnSuccessListener(taskSnapshot -> storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                    // 2. Lưu thông tin vào Firestore
-                    java.util.Map<String, Object> post = new java.util.HashMap<>();
-                    post.put("uid", uid);
-                    post.put("author", userName);
-                    post.put("question", question);
-                    post.put("imageUrl", uri.toString());
-                    post.put("disease", currentDiseaseName);
-                    post.put("timestamp", System.currentTimeMillis());
-                    post.put("likes", 0);
-                    post.put("commentsCount", 0);
-                    post.put("likedBy", new java.util.ArrayList<String>());
+                    // 2. Lưu thông tin vào SQL Server (thay vì Firestore)
+                    ApiService apiService = RetrofitClient.getApiService();
+                    apiService.createPost(uid, userName, question, userPhotoUrl, uri.toString(), currentDiseaseName)
+                            .enqueue(new retrofit2.Callback<Map<String, String>>() {
+                                @Override
+                                public void onResponse(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull retrofit2.Response<Map<String, String>> response) {
+                                    showLoading(false);
+                                    if (response.isSuccessful()) {
+                                        Toast.makeText(DiagnosisActivity.this, "Đã đăng bài thành công lên diễn đàn!", Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        Toast.makeText(DiagnosisActivity.this, "Lỗi Server: " + response.code(), Toast.LENGTH_SHORT).show();
+                                    }
+                                }
 
-                    FirebaseFirestore.getInstance().collection("forum_posts")
-                            .add(post)
-                            .addOnSuccessListener(documentReference -> {
-                                showLoading(false);
-                                Toast.makeText(this, "Đã đăng bài thành công!", Toast.LENGTH_SHORT).show();
-                            })
-                            .addOnFailureListener(e -> {
-                                showLoading(false);
-                                Toast.makeText(this, "Lỗi đăng bài: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                @Override
+                                public void onFailure(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull Throwable t) {
+                                    showLoading(false);
+                                    Toast.makeText(DiagnosisActivity.this, "Lỗi kết nối SQL Server", Toast.LENGTH_SHORT).show();
+                                }
                             });
                 }))
                 .addOnFailureListener(e -> {

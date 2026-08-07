@@ -15,7 +15,10 @@ import com.example.smartcrop.databinding.ActivityEditProfileBinding;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -82,54 +85,43 @@ public class EditProfileActivity extends AppCompatActivity {
         showLoading(true);
 
         if (selectedImageUri != null) {
-            String localPath = saveImageToInternalStorage(selectedImageUri);
-            if (localPath != null) {
-                // Save path to SharedPreferences
-                getSharedPreferences("SmartCropPrefs", MODE_PRIVATE)
-                        .edit()
-                        .putString("profile_image_" + currentUser.getUid(), localPath)
-                        .apply();
-                
-                updateProfile(newName);
-            } else {
-                showLoading(false);
-                Toast.makeText(this, "Lỗi lưu ảnh nội bộ", Toast.LENGTH_SHORT).show();
-            }
+            // 1. Upload ảnh lên Firebase Storage
+            StorageReference storageRef = FirebaseStorage.getInstance().getReference()
+                    .child("user_avatars/" + currentUser.getUid() + ".jpg");
+
+            storageRef.putFile(selectedImageUri)
+                    .addOnSuccessListener(taskSnapshot -> {
+                        // Lấy URL an toàn nhất
+                        storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
+                            updateFirebaseProfile(newName, uri);
+                        }).addOnFailureListener(e -> {
+                            showLoading(false);
+                            Toast.makeText(this, "Lỗi lấy link ảnh: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        });
+                    })
+                    .addOnFailureListener(e -> {
+                        showLoading(false);
+                        Toast.makeText(this, "Lỗi tải ảnh lên Cloud: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    });
         } else {
-            updateProfile(newName);
+            // Chỉ cập nhật tên
+            updateFirebaseProfile(newName, currentUser.getPhotoUrl());
         }
     }
 
-    private String saveImageToInternalStorage(Uri uri) {
-        try {
-            InputStream is = getContentResolver().openInputStream(uri);
-            File file = new File(getFilesDir(), "profile_" + currentUser.getUid() + ".jpg");
-            OutputStream os = new FileOutputStream(file);
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = is.read(buffer)) > 0) {
-                os.write(buffer, 0, length);
-            }
-            os.flush();
-            os.close();
-            is.close();
-            return file.getAbsolutePath();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    private void updateProfile(String name) {
+    private void updateFirebaseProfile(String name, Uri photoUri) {
+        String uriStr = (photoUri != null) ? photoUri.toString() : "";
+        
         UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
                 .setDisplayName(name)
+                .setPhotoUri(Uri.parse(uriStr))
                 .build();
 
         currentUser.updateProfile(profileUpdates)
                 .addOnCompleteListener(task -> {
                     showLoading(false);
                     if (task.isSuccessful()) {
-                        Toast.makeText(EditProfileActivity.this, "Cập nhật thành công", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(EditProfileActivity.this, "Cập nhật hồ sơ thành công!", Toast.LENGTH_SHORT).show();
                         finish();
                     } else {
                         Toast.makeText(EditProfileActivity.this, "Cập nhật thất bại", Toast.LENGTH_SHORT).show();

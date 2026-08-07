@@ -1,7 +1,6 @@
-- [ ] Cập nhật `DiagnosisActivity.java` (Chẩn đoán thầm lặng, lọc lá khỏe)
-- [ ] Cập nhật `CommentModel.java` & `item_comment.xml` (Bình luận FB, bỏ nút Buồn)
-- [ ] Cập nhật `CommentAdapter.java` (Hiển thị bình luận lồng nhau)
-- [ ] Cung cấp `mssql_schema.sql` (Script tạo bảng cho SQL Server)
-- [ ] Cung cấp `main_v13.py` (Mã nguồn Backend FastAPI mới kết nối MSSQL)
-- [ ] Cập nhật `ApiService.java` & Logic Diễn đàn trên Android (Chuyển từ Firestore sang API)
-- [ ] Kiểm tra và Build
+- [ ] Cập nhật `backend_v13.py` (Linh hoạt hóa tham số đầu vào, fix 422)
+- [ ] Cập nhật `CreatePostActivity.java` (Fix upload ảnh & logic gửi dữ liệu an toàn)
+- [ ] Cập nhật `EditProfileActivity.java` (Đảm bảo đồng bộ Avatar thành công 100%)
+- [ ] Nâng cấp giao diện chia sẻ trong `DiseaseDetailActivity.java` & `DiagnosisActivity.java`
+- [ ] Kiểm tra và Build toàn bộ hệ thống
+- [ ] Commit & Push Git

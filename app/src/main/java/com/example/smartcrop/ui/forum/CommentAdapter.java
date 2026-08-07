@@ -48,9 +48,9 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.ViewHold
         String commentId = commentIds.get(position);
 
         // Hiển thị bình luận lồng nhau: Nếu là phản hồi thì thụt lề và ẩn nút Trả lời
-        boolean isReply = comment.parentCommentId != null && !comment.parentCommentId.isEmpty();
+        boolean isReply = comment.parentCommentId != null;
         ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) holder.itemView.getLayoutParams();
-        params.leftMargin = isReply ? 100 : 0; // Thụt lề 100px
+        params.leftMargin = isReply ? 100 : 0; // Thụt lề 100px cho trả lời
         holder.itemView.setLayoutParams(params);
         
         holder.binding.btnReplyComment.setVisibility(isReply ? View.GONE : View.VISIBLE);

@@ -81,6 +81,13 @@ public interface ApiService {
     @POST("/notifications/read/{notif_id}")
     Call<Map<String, String>> markNotifAsRead(@Path("notif_id") int notifId);
 
+    @GET("/disease_stats/top")
+    Call<List<Map<String, Object>>> getTopDiseases();
+
+    @FormUrlEncoded
+    @POST("/disease_stats/increment")
+    Call<Map<String, String>> incrementDiseaseCount(@Field("name") String name);
+
     @FormUrlEncoded
     @POST("/notifications")
     Call<Map<String, String>> sendNotification(

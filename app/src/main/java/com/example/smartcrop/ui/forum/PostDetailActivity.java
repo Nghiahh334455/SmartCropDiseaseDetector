@@ -97,9 +97,7 @@ public class PostDetailActivity extends AppCompatActivity {
             public void onReply(CommentModel comment) {
                 binding.etComment.setText("@" + comment.authorName + " ");
                 binding.etComment.requestFocus();
-                currentReplyParentId = comment.authorUid; // Or better, use a real comment doc ID
-                // For simplicity in this demo, let's use the author Uid as a marker.
-                // In a full relational DB, we'd use the numeric comment primary key.
+                currentReplyParentId = String.valueOf(comment.id); // Lưu ID của bình luận cha
                 
                 android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
                 if (imm != null) imm.showSoftInput(binding.etComment, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
@@ -116,7 +114,13 @@ public class PostDetailActivity extends AppCompatActivity {
 
     private void listenForComments() {
         if (postId == null) return;
-        int pId = Integer.parseInt(postId);
+        
+        int pId;
+        try {
+            pId = (int) Double.parseDouble(postId);
+        } catch (Exception e) {
+            pId = Integer.parseInt(postId);
+        }
         
         ApiService apiService = RetrofitClient.getApiService();
         apiService.getComments(pId).enqueue(new retrofit2.Callback<List<CommentModel>>() {
@@ -151,11 +155,19 @@ public class PostDetailActivity extends AppCompatActivity {
             return;
         }
 
-        int pId = Integer.parseInt(postId);
+        int pId;
+        try {
+            pId = (int) Double.parseDouble(postId);
+        } catch (Exception e) {
+            pId = Integer.parseInt(postId);
+        }
+        
         String authorPhotoUrl = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null;
+        
+        Integer parentId = (currentReplyParentId != null) ? Integer.parseInt(currentReplyParentId) : null;
 
         ApiService apiService = RetrofitClient.getApiService();
-        apiService.addComment(pId, user.getDisplayName(), user.getUid(), content, authorPhotoUrl, currentReplyParentId)
+        apiService.addComment(pId, user.getDisplayName(), user.getUid(), content, authorPhotoUrl, String.valueOf(parentId))
                 .enqueue(new retrofit2.Callback<Map<String, String>>() {
                     @Override
                     public void onResponse(retrofit2.Call<Map<String, String>> call, retrofit2.Response<Map<String, String>> response) {

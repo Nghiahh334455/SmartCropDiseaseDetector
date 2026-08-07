@@ -24,11 +24,14 @@ def get_db():
 async def create_post(
     uid: str = Form(...),
     author: str = Form(...),
-    question: str = Form(...),
+    question: str = Form(""), # Cho phép nội dung trống
     userPhotoUrl: Optional[str] = Form(None),
     imageUrl: Optional[str] = Form(None),
     disease: str = Form("Chia sẻ từ cộng đồng")
 ):
+    print(f"DEBUG: Receiving post from {author} (UID: {uid})")
+    print(f"DEBUG: Content: {question[:50]}..., Image: {imageUrl}")
+
     db = get_db()
     cursor = db.cursor()
     cursor.execute(
@@ -36,7 +39,7 @@ async def create_post(
         (uid, author, userPhotoUrl, question, imageUrl, disease)
     )
     db.commit()
-    return {"status": "success"}
+    return {"status": "success", "message": "Post created successfully"}
 
 @app.get("/posts")
 async def get_posts():
@@ -68,13 +71,19 @@ async def add_comment(
     authorUid: str = Form(...),
     content: str = Form(...),
     authorPhotoUrl: Optional[str] = Form(None),
-    parentCommentId: Optional[int] = Form(None)
+    parentCommentId: Optional[str] = Form(None) # Changed to str to handle 'null' string from Android if sent
 ):
     db = get_db()
     cursor = db.cursor()
+
+    # Clean parentCommentId
+    p_id = None
+    if parentCommentId and parentCommentId != "null":
+        p_id = int(parentCommentId)
+
     cursor.execute(
         "INSERT INTO Comments (postId, authorName, authorUid, content, authorPhotoUrl, parentCommentId) VALUES (?, ?, ?, ?, ?, ?)",
-        (postId, authorName, authorUid, content, authorPhotoUrl, parentCommentId)
+        (postId, authorName, authorUid, content, authorPhotoUrl, p_id)
     )
     cursor.execute("UPDATE Posts SET commentsCount = (SELECT COUNT(*) FROM Comments WHERE postId = ?) WHERE id = ?", (postId, postId))
     db.commit()
@@ -163,7 +172,7 @@ async def get_notifications(uid: str):
         })
     return notifs
 
-@app.post("/notifications/read/{notif_id}")
+@app.get("/notifications/read/{notif_id}")
 async def mark_as_read(notif_id: int):
     db = get_db()
     cursor = db.cursor()
@@ -171,6 +180,29 @@ async def mark_as_read(notif_id: int):
     db.commit()
     return {"status": "success"}
 
+# --- DISEASE STATS ---
+@app.post("/disease_stats/increment")
+async def increment_disease_stats(name: str = Form(...)):
+    db = get_db()
+    cursor = db.cursor()
+    # Check if exists
+    cursor.execute("SELECT 1 FROM DiseaseStats WHERE diseaseName = ?", (name,))
+    exists = cursor.fetchone()
+    if exists:
+        cursor.execute("UPDATE DiseaseStats SET count = count + 1 WHERE diseaseName = ?", (name,))
+    else:
+        cursor.execute("INSERT INTO DiseaseStats (diseaseName, count) VALUES (?, 1)", (name,))
+    db.commit()
+    return {"status": "success"}
+
+@app.get("/disease_stats/top")
+async def get_top_diseases():
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT TOP 5 diseaseName, count FROM DiseaseStats ORDER BY count DESC")
+    rows = cursor.fetchall()
+    return [{"name": row[0], "count": row[1]} for row in rows]
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

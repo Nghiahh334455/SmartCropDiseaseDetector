@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
@@ -90,28 +91,24 @@ public class CreatePostActivity extends AppCompatActivity {
         binding.pbPosting.setVisibility(View.VISIBLE);
 
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        String uid = user != null ? user.getUid() : "anonymous";
-        String userName = user != null && user.getDisplayName() != null ? user.getDisplayName() : "Người dùng Thần Nông AI";
-        String userPhotoUrl = (user != null && user.getPhotoUrl() != null) ? user.getPhotoUrl().toString() : null;
+        if (user == null) {
+            Toast.makeText(this, "Vui lòng đăng nhập để thực hiện", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String uid = user.getUid();
+        String userName = (user.getDisplayName() != null && !user.getDisplayName().isEmpty()) ? user.getDisplayName() : "Người dùng Thần Nông AI";
+        String userPhotoUrl = (user.getPhotoUrl() != null) ? user.getPhotoUrl().toString() : "";
 
         if (selectedImageUri != null) {
             String fileName = "forum_" + System.currentTimeMillis() + ".jpg";
             StorageReference storageRef = FirebaseStorage.getInstance().getReference().child("forum_images/" + fileName);
 
-            try {
-                java.io.InputStream inputStream = getContentResolver().openInputStream(selectedImageUri);
-                if (inputStream == null) throw new Exception("Không thể mở ảnh");
-                
-                Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
-                byte[] data = baos.toByteArray();
-
-                storageRef.putBytes(data)
+            storageRef.putFile(selectedImageUri)
                     .addOnSuccessListener(taskSnapshot -> {
-                        // Ensure we wait for the file to be available
+                        // Lấy Download URL an toàn nhất
                         storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                            saveToFirestore(uid, userName, userPhotoUrl, content, uri.toString());
+                            saveToSQL(uid, userName, userPhotoUrl, content, uri.toString());
                         }).addOnFailureListener(e -> {
                             binding.btnPost.setVisibility(View.VISIBLE);
                             binding.pbPosting.setVisibility(View.GONE);
@@ -121,39 +118,34 @@ public class CreatePostActivity extends AppCompatActivity {
                     .addOnFailureListener(e -> {
                         binding.btnPost.setVisibility(View.VISIBLE);
                         binding.pbPosting.setVisibility(View.GONE);
-                        Toast.makeText(this, "Lỗi tải ảnh: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Lỗi tải ảnh lên Cloud: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     });
-            } catch (Exception e) {
-                binding.btnPost.setVisibility(View.VISIBLE);
-                binding.pbPosting.setVisibility(View.GONE);
-                Toast.makeText(this, "Lỗi xử lý ảnh: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            }
         } else {
-            saveToFirestore(uid, userName, userPhotoUrl, content, null);
+            saveToSQL(uid, userName, userPhotoUrl, content, "");
         }
     }
 
-    private void saveToFirestore(String uid, String userName, String userPhotoUrl, String content, String imageUrl) {
+    private void saveToSQL(String uid, String userName, String userPhotoUrl, String content, String imageUrl) {
         ApiService apiService = RetrofitClient.getApiService();
         apiService.createPost(uid, userName, content, userPhotoUrl, imageUrl, "Chia sẻ từ cộng đồng")
                 .enqueue(new retrofit2.Callback<Map<String, String>>() {
                     @Override
-                    public void onResponse(retrofit2.Call<Map<String, String>> call, retrofit2.Response<Map<String, String>> response) {
+                    public void onResponse(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull retrofit2.Response<Map<String, String>> response) {
                         if (response.isSuccessful()) {
                             Toast.makeText(CreatePostActivity.this, "Đã đăng bài thành công!", Toast.LENGTH_SHORT).show();
                             finish();
                         } else {
                             binding.btnPost.setVisibility(View.VISIBLE);
                             binding.pbPosting.setVisibility(View.GONE);
-                            Toast.makeText(CreatePostActivity.this, "Lỗi server: " + response.code(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(CreatePostActivity.this, "Lỗi Server (422/500): " + response.code(), Toast.LENGTH_SHORT).show();
                         }
                     }
 
                     @Override
-                    public void onFailure(retrofit2.Call<Map<String, String>> call, Throwable t) {
+                    public void onFailure(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull Throwable t) {
                         binding.btnPost.setVisibility(View.VISIBLE);
                         binding.pbPosting.setVisibility(View.GONE);
-                        Toast.makeText(CreatePostActivity.this, "Lỗi kết nối SQL: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(CreatePostActivity.this, "Lỗi kết nối SQL Server: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
     }

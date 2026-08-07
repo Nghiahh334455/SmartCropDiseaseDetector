@@ -10,12 +10,12 @@ public class CommentModel {
     public long timestamp;
     public String authorUid;
     public String authorPhotoUrl;
-    public String parentCommentId; // Nếu != null thì là phản hồi của bình luận này
-    public Map<String, Boolean> likedBy = new HashMap<>(); // UID -> true
+    public Integer parentCommentId; // SQL Server ID of parent comment
+    public Map<String, Boolean> likedBy = new HashMap<>();
 
-    public CommentModel() {} // Required for Firestore
+    public CommentModel() {}
 
-    public CommentModel(String authorName, String content, long timestamp, String authorUid, String authorPhotoUrl, String parentCommentId) {
+    public CommentModel(String authorName, String content, long timestamp, String authorUid, String authorPhotoUrl, Integer parentCommentId) {
         this.authorName = authorName;
         this.content = content;
         this.timestamp = timestamp;

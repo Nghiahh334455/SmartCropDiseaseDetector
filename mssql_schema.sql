@@ -49,5 +49,8 @@ CREATE TABLE Notifications (
     postId INT,
     postContent NVARCHAR(MAX),
     timestamp DATETIME DEFAULT GETDATE(),
-    isRead BIT DEFAULT 0
+-- 5. Bảng thống kê bệnh (Disease Stats)
+CREATE TABLE DiseaseStats (
+    diseaseName NVARCHAR(255) PRIMARY KEY,
+    count INT DEFAULT 1
 );

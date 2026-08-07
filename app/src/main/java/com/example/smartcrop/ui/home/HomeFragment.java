@@ -15,6 +15,8 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import com.bumptech.glide.Glide;
 import com.example.smartcrop.DiagnosisActivity;
+import com.example.smartcrop.api.ApiService;
+import com.example.smartcrop.api.RetrofitClient;
 import com.example.smartcrop.databinding.FragmentHomeBinding;
 import com.example.smartcrop.ui.history.HistoryActivity;
 import com.google.firebase.auth.FirebaseAuth;
@@ -180,20 +182,23 @@ public class HomeFragment extends Fragment {
     }
 
     private void loadCommonDiseases() {
-        FirebaseFirestore.getInstance().collection("disease_stats")
-                .orderBy("count", Query.Direction.DESCENDING)
-                .limit(5)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<Map<String, Object>> stats = new ArrayList<>();
-                    for (com.google.firebase.firestore.DocumentSnapshot doc : queryDocumentSnapshots) {
-                        stats.add(doc.getData());
-                    }
+        ApiService apiService = RetrofitClient.getApiService();
+        apiService.getTopDiseases().enqueue(new retrofit2.Callback<List<Map<String, Object>>>() {
+            @Override
+            public void onResponse(retrofit2.Call<List<Map<String, Object>>> call, retrofit2.Response<List<Map<String, Object>>> response) {
+                if (response.isSuccessful() && response.body() != null) {
                     if (isAdded()) {
-                        CommonDiseaseAdapter adapter = new CommonDiseaseAdapter(stats);
+                        CommonDiseaseAdapter adapter = new CommonDiseaseAdapter(response.body());
                         binding.rvCommonDiseases.setAdapter(adapter);
                     }
-                });
+                }
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<List<Map<String, Object>>> call, Throwable t) {
+                // Fail silently or log
+            }
+        });
     }
 
     @Override

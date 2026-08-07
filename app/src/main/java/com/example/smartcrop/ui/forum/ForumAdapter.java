@@ -216,7 +216,19 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
 
     private void toggleLike(String postId, boolean isLiked) {
         if (currentUid == null) return;
-        int pId = (int) Double.parseDouble(postId); // SQL ID is numeric
+        
+        // Sửa lỗi Parse ID bài viết từ SQL (GSON có thể trả về 1.0 thay vì 1)
+        int pId;
+        try {
+            pId = (int) Double.parseDouble(postId);
+        } catch (Exception e) {
+            try {
+                pId = Integer.parseInt(postId);
+            } catch (Exception ex) {
+                Toast.makeText(context, "ID bài viết không hợp lệ", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
 
         ApiService apiService = RetrofitClient.getApiService();
         apiService.toggleLike(currentUid, pId).enqueue(new retrofit2.Callback<Map<String, String>>() {
@@ -239,16 +251,23 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
         String author = (String) post.get("author");
         String ownerUid = (String) post.get("uid");
         
+        int pId;
+        try {
+            pId = (int) Double.parseDouble(postId);
+        } catch (Exception e) {
+            pId = Integer.parseInt(postId);
+        }
+
         // Save to my profile
         if (currentUid != null) {
             Map<String, Object> shareData = new HashMap<>(post);
             shareData.put("sharedByUid", currentUid);
-            shareData.put("originalPostId", postId);
+            shareData.put("originalPostId", String.valueOf(pId));
             shareData.put("shareTimestamp", System.currentTimeMillis());
             FirebaseFirestore.getInstance().collection("user_shares").add(shareData);
 
             if (ownerUid != null && !ownerUid.equals(currentUid)) {
-                sendNotification(ownerUid, "SHARE", postId, content);
+                sendNotification(ownerUid, "SHARE", pId, content);
             }
         }
 
@@ -259,21 +278,26 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
         context.startActivity(Intent.createChooser(shareIntent, "Chia sẻ bài viết"));
     }
 
-    private void sendNotification(String targetUid, String type, String postId, String postContent) {
+    private void sendNotification(String targetUid, String type, int postId, String postContent) {
         com.google.firebase.auth.FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) return;
 
         String senderName = user.getDisplayName() != null ? user.getDisplayName() : "Một người dùng";
         String senderAvatar = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : "";
 
-        NotificationModel notification = new NotificationModel(
-                "", type, senderName, senderAvatar, user.getUid(), postId, postContent, System.currentTimeMillis(), false
-        );
+        ApiService apiService = RetrofitClient.getApiService();
+        apiService.sendNotification(targetUid, senderName, senderAvatar, type, postId, postContent)
+                .enqueue(new retrofit2.Callback<Map<String, String>>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<Map<String, String>> call, retrofit2.Response<Map<String, String>> response) {
+                        // Success
+                    }
 
-        FirebaseFirestore.getInstance().collection("users")
-                .document(targetUid)
-                .collection("notifications")
-                .add(notification);
+                    @Override
+                    public void onFailure(retrofit2.Call<Map<String, String>> call, Throwable t) {
+                        // Log
+                    }
+                });
     }
 
     @Override
