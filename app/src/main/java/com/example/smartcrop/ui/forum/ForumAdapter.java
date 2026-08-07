@@ -14,6 +14,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.smartcrop.R;
+import com.example.smartcrop.api.ApiService;
+import com.example.smartcrop.api.RetrofitClient;
 import com.example.smartcrop.databinding.ItemPostBinding;
 import com.example.smartcrop.models.DiseaseModel;
 import com.example.smartcrop.ui.library.DiseaseDetailActivity;
@@ -58,10 +60,12 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
         String author = (String) post.get("author");
         String question = (String) post.get("question");
         String diseaseName = (String) post.get("disease");
-        long timestamp = (long) post.get("timestamp");
         
-        List<String> likedBy = (List<String>) post.get("likedBy");
-        if (likedBy == null) likedBy = new ArrayList<>();
+        // SQL timestamp is a bit different
+        long timestamp = 0;
+        Object ts = post.get("timestamp");
+        if (ts instanceof Double) timestamp = ((Double) ts).longValue();
+        else if (ts instanceof Long) timestamp = (Long) ts;
 
         holder.binding.tvPostAuthor.setText(author);
         holder.binding.tvPostQuestion.setText(question);
@@ -75,21 +79,16 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
             holder.binding.chipDisease.setText(diseaseName);
         }
 
-        int likes = likedBy.size();
-        holder.binding.tvLikeCount.setText(likes + " lượt thích");
-        holder.binding.tvCommentCount.setText(post.get("commentsCount") + " bình luận");
+        Object lCount = post.get("likesCount");
+        int likes = (lCount instanceof Double) ? ((Double) lCount).intValue() : (int) lCount;
+        
+        Object cCount = post.get("commentsCount");
+        int comments = (cCount instanceof Double) ? ((Double) cCount).intValue() : (int) cCount;
 
-        // Like UI Update
-        boolean isLiked = likedBy.contains(currentUid);
-        if (isLiked) {
-            holder.binding.btnLike.setIconResource(android.R.drawable.btn_star_big_on);
-            holder.binding.btnLike.setTextColor(context.getResources().getColor(com.google.android.material.R.color.design_default_color_primary));
-            holder.binding.btnLike.setText("Đã thích");
-        } else {
-            holder.binding.btnLike.setIconResource(android.R.drawable.btn_star_big_off);
-            holder.binding.btnLike.setTextColor(Color.GRAY);
-            holder.binding.btnLike.setText("Thích");
-        }
+        holder.binding.tvLikeCount.setText(likes + " lượt thích");
+        holder.binding.tvCommentCount.setText(comments + " bình luận");
+
+        holder.binding.btnLike.setOnClickListener(v -> toggleLike(postId, false));
 
         // Avatar logic
         String userPhotoUrl = (String) post.get("userPhotoUrl");
@@ -126,7 +125,7 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
         }
 
         // Click listeners
-        holder.binding.btnLike.setOnClickListener(v -> toggleLike(postId, isLiked));
+        holder.binding.btnLike.setOnClickListener(v -> toggleLike(postId, false));
         holder.binding.btnShare.setOnClickListener(v -> sharePost(post, postId));
         
         holder.binding.ivPostMenu.setOnClickListener(v -> showMenu(v, post, postId, position));
@@ -217,26 +216,22 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
 
     private void toggleLike(String postId, boolean isLiked) {
         if (currentUid == null) return;
-        if (isLiked) {
-            FirebaseFirestore.getInstance().collection("forum_posts")
-                    .document(postId)
-                    .update("likedBy", FieldValue.arrayRemove(currentUid));
-        } else {
-            FirebaseFirestore.getInstance().collection("forum_posts")
-                    .document(postId)
-                    .update("likedBy", FieldValue.arrayUnion(currentUid))
-                    .addOnSuccessListener(aVoid -> {
-                        // Send notification to post owner
-                        FirebaseFirestore.getInstance().collection("forum_posts").document(postId).get()
-                                .addOnSuccessListener(doc -> {
-                                    String ownerUid = doc.getString("uid");
-                                    String content = doc.getString("question");
-                                    if (ownerUid != null && !ownerUid.equals(currentUid)) {
-                                        sendNotification(ownerUid, "LIKE", postId, content);
-                                    }
-                                });
-                    });
-        }
+        int pId = (int) Double.parseDouble(postId); // SQL ID is numeric
+
+        ApiService apiService = RetrofitClient.getApiService();
+        apiService.toggleLike(currentUid, pId).enqueue(new retrofit2.Callback<Map<String, String>>() {
+            @Override
+            public void onResponse(retrofit2.Call<Map<String, String>> call, retrofit2.Response<Map<String, String>> response) {
+                if (response.isSuccessful()) {
+                    notifyDataSetChanged(); // In real app, we should only update one item
+                }
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<Map<String, String>> call, Throwable t) {
+                Toast.makeText(context, "Lỗi like", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void sharePost(Map<String, Object> post, String postId) {

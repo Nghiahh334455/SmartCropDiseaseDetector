@@ -253,9 +253,11 @@ public class DiagnosisActivity extends AppCompatActivity {
                             String fullTreatment = "Sinh học: " + bioTreatment + "\nHóa học: " + chemTreatment;
                             saveToHistory(diseaseNameVi, confidence, fullTreatment);
 
-                            // Logic cảnh báo khẩn cấp (Nếu mức độ Rất cao)
-                            if (severity.contains("Rất cao") || confidence > 85) {
-                                showEmergencyDialog(diseaseNameVi);
+                            // Logic cảnh báo khẩn cấp (Chỉ khi phát hiện BỆNH, không phải lá khỏe)
+                            boolean isHealthy = diseaseNameVi.toLowerCase().contains("khỏe mạnh") || diseaseNameVi.toLowerCase().contains("an toàn");
+                            
+                            if (!isHealthy && (severity.contains("Rất cao") || confidence > 85)) {
+                                // Tự động gửi email ngầm (không hiện AlertDialog gây phiền)
                                 sendNotification(diseaseNameVi);
                             }
 

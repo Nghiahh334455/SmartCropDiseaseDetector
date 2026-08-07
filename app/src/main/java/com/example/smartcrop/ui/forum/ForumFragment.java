@@ -10,13 +10,19 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import android.widget.Toast;
+
+import com.example.smartcrop.api.ApiService;
+import com.example.smartcrop.api.RetrofitClient;
 import com.example.smartcrop.databinding.FragmentForumBinding;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class ForumFragment extends Fragment {
 
@@ -52,20 +58,30 @@ public class ForumFragment extends Fragment {
 
     private void listenForPosts() {
         binding.swipeRefresh.setRefreshing(true);
-        FirebaseFirestore.getInstance().collection("forum_posts")
-                .orderBy("timestamp", Query.Direction.DESCENDING)
-                .addSnapshotListener((value, error) -> {
-                    if (isAdded()) binding.swipeRefresh.setRefreshing(false);
-                    if (error != null || value == null) return;
-
+        
+        ApiService apiService = RetrofitClient.getApiService();
+        apiService.getPosts().enqueue(new Callback<List<Map<String, Object>>>() {
+            @Override
+            public void onResponse(Call<List<Map<String, Object>>> call, Response<List<Map<String, Object>>> response) {
+                if (isAdded()) binding.swipeRefresh.setRefreshing(false);
+                if (response.isSuccessful() && response.body() != null) {
                     postList.clear();
                     postIds.clear();
-                    for (com.google.firebase.firestore.DocumentSnapshot doc : value) {
-                        postList.add(doc.getData());
-                        postIds.add(doc.getId());
+                    for (Map<String, Object> post : response.body()) {
+                        postList.add(post);
+                        // SQL ID is integer, convert to string for compatibility with existing adapter if needed
+                        postIds.add(String.valueOf(post.get("id")));
                     }
                     adapter.notifyDataSetChanged();
-                });
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Map<String, Object>>> call, Throwable t) {
+                if (isAdded()) binding.swipeRefresh.setRefreshing(false);
+                Toast.makeText(getContext(), "Lỗi tải dữ liệu từ SQL Server", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override

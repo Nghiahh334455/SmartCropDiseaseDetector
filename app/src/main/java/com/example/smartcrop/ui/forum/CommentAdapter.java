@@ -25,7 +25,6 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.ViewHold
 
     public interface OnCommentInteractionListener {
         void onLike(String commentId, boolean isLike);
-        void onSad(String commentId, boolean isSad);
         void onReply(CommentModel comment);
     }
 
@@ -48,6 +47,14 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.ViewHold
         CommentModel comment = commentList.get(position);
         String commentId = commentIds.get(position);
 
+        // Hiển thị bình luận lồng nhau: Nếu là phản hồi thì thụt lề và ẩn nút Trả lời
+        boolean isReply = comment.parentCommentId != null && !comment.parentCommentId.isEmpty();
+        ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) holder.itemView.getLayoutParams();
+        params.leftMargin = isReply ? 100 : 0; // Thụt lề 100px
+        holder.itemView.setLayoutParams(params);
+        
+        holder.binding.btnReplyComment.setVisibility(isReply ? View.GONE : View.VISIBLE);
+
         holder.binding.tvCommentAuthor.setText(comment.authorName);
         holder.binding.tvCommentContent.setText(comment.content);
         holder.binding.tvCommentTime.setText(DateUtils.getRelativeTimeSpanString(comment.timestamp));
@@ -60,27 +67,22 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.ViewHold
 
         // Reactions logic
         int likeCount = comment.likedBy.size();
-        int sadCount = comment.sadBy.size();
         
-        if (likeCount > 0 || sadCount > 0) {
+        if (likeCount > 0) {
             holder.binding.layoutReactions.setVisibility(View.VISIBLE);
-            holder.binding.tvReactionCount.setText(String.valueOf(likeCount + sadCount));
-            // Show star if likes, otherwise something else or just star
-            holder.binding.ivReactionIcon.setImageResource(likeCount >= sadCount ? android.R.drawable.btn_star_big_on : android.R.drawable.ic_menu_info_details);
+            holder.binding.tvReactionCount.setText(String.valueOf(likeCount));
+            holder.binding.ivReactionIcon.setImageResource(android.R.drawable.btn_star_big_on);
         } else {
             holder.binding.layoutReactions.setVisibility(View.GONE);
         }
 
-        // Highlight if current user liked/sad
+        // Highlight if current user liked
         boolean isLiked = comment.likedBy.containsKey(currentUid);
-        boolean isSad = comment.sadBy.containsKey(currentUid);
 
         holder.binding.btnLikeComment.setTextColor(isLiked ? holder.itemView.getContext().getResources().getColor(R.color.primary) : holder.itemView.getContext().getResources().getColor(R.color.gray_dark));
-        holder.binding.btnSadComment.setTextColor(isSad ? holder.itemView.getContext().getResources().getColor(R.color.error) : holder.itemView.getContext().getResources().getColor(R.color.gray_dark));
 
         // Click listeners
         holder.binding.btnLikeComment.setOnClickListener(v -> listener.onLike(commentId, !isLiked));
-        holder.binding.btnSadComment.setOnClickListener(v -> listener.onSad(commentId, !isSad));
         holder.binding.btnReplyComment.setOnClickListener(v -> listener.onReply(comment));
     }
 

@@ -7,10 +7,13 @@ import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 
+import com.example.smartcrop.api.ApiService;
+import com.example.smartcrop.api.RetrofitClient;
 import com.example.smartcrop.databinding.ActivityMainV2Binding;
 import com.google.android.material.badge.BadgeDrawable;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -36,21 +39,28 @@ public class MainActivity extends AppCompatActivity {
         String uid = FirebaseAuth.getInstance().getUid();
         if (uid == null) return;
 
-        FirebaseFirestore.getInstance().collection("users")
-                .document(uid)
-                .collection("notifications")
-                .whereEqualTo("read", false)
-                .addSnapshotListener((value, error) -> {
-                    if (error != null || value == null) return;
-                    int count = value.size();
+        ApiService apiService = RetrofitClient.getApiService();
+        apiService.getNotifications(uid).enqueue(new retrofit2.Callback<List<com.example.smartcrop.models.NotificationModel>>() {
+            @Override
+            public void onResponse(retrofit2.Call<List<com.example.smartcrop.models.NotificationModel>> call, retrofit2.Response<List<com.example.smartcrop.models.NotificationModel>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    int unreadCount = 0;
+                    for (com.example.smartcrop.models.NotificationModel n : response.body()) {
+                        if (!n.isRead()) unreadCount++;
+                    }
+                    
                     BadgeDrawable badge = binding.bottomNav.getOrCreateBadge(R.id.nav_profile);
-                    if (count > 0) {
+                    if (unreadCount > 0) {
                         badge.setVisible(true);
-                        badge.setNumber(count);
+                        badge.setNumber(unreadCount);
                     } else {
                         badge.setVisible(false);
-                        badge.clearNumber();
                     }
-                });
+                }
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<List<com.example.smartcrop.models.NotificationModel>> call, Throwable t) {}
+        });
     }
 }

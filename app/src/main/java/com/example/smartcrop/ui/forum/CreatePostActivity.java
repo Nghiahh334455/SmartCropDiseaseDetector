@@ -12,6 +12,8 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
+import com.example.smartcrop.api.ApiService;
+import com.example.smartcrop.api.RetrofitClient;
 import com.example.smartcrop.databinding.ActivityCreatePostBinding;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -132,28 +134,27 @@ public class CreatePostActivity extends AppCompatActivity {
     }
 
     private void saveToFirestore(String uid, String userName, String userPhotoUrl, String content, String imageUrl) {
-        Map<String, Object> post = new HashMap<>();
-        post.put("uid", uid);
-        post.put("author", userName);
-        post.put("userPhotoUrl", userPhotoUrl);
-        post.put("question", content);
-        post.put("imageUrl", imageUrl);
-        post.put("disease", "Chia sẻ từ cộng đồng"); // This will be hidden by ForumAdapter
-        post.put("timestamp", System.currentTimeMillis());
-        post.put("likes", 0);
-        post.put("commentsCount", 0);
-        post.put("likedBy", new ArrayList<String>());
+        ApiService apiService = RetrofitClient.getApiService();
+        apiService.createPost(uid, userName, content, userPhotoUrl, imageUrl, "Chia sẻ từ cộng đồng")
+                .enqueue(new retrofit2.Callback<Map<String, String>>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<Map<String, String>> call, retrofit2.Response<Map<String, String>> response) {
+                        if (response.isSuccessful()) {
+                            Toast.makeText(CreatePostActivity.this, "Đã đăng bài thành công!", Toast.LENGTH_SHORT).show();
+                            finish();
+                        } else {
+                            binding.btnPost.setVisibility(View.VISIBLE);
+                            binding.pbPosting.setVisibility(View.GONE);
+                            Toast.makeText(CreatePostActivity.this, "Lỗi server: " + response.code(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
 
-        FirebaseFirestore.getInstance().collection("forum_posts")
-                .add(post)
-                .addOnSuccessListener(doc -> {
-                    Toast.makeText(this, "Đã đăng bài thành công!", Toast.LENGTH_SHORT).show();
-                    finish();
-                })
-                .addOnFailureListener(e -> {
-                    binding.btnPost.setVisibility(View.VISIBLE);
-                    binding.pbPosting.setVisibility(View.GONE);
-                    Toast.makeText(this, "Lỗi lưu bài viết: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    @Override
+                    public void onFailure(retrofit2.Call<Map<String, String>> call, Throwable t) {
+                        binding.btnPost.setVisibility(View.VISIBLE);
+                        binding.pbPosting.setVisibility(View.GONE);
+                        Toast.makeText(CreatePostActivity.this, "Lỗi kết nối SQL: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
                 });
     }
 }

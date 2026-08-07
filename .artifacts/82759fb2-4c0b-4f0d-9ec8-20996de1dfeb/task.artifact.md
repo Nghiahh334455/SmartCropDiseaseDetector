@@ -1,5 +1,7 @@
-- [ ] Tạo tài nguyên giao diện mới (`bg_bottom_sheet.xml`, `dialog_ai_chat.xml`, `dialog_ai_response.xml`)
-- [ ] Nâng cấp giao diện `fragment_library.xml` (Header màu sắc, icon AI mới)
-- [ ] Cập nhật `LibraryFragment.java` (Chuyển sang dùng BottomSheetDialog cho AI)
-- [ ] Kiểm tra và Build hệ thống
-- [ ] Commit & Push Git
+- [ ] Cập nhật `DiagnosisActivity.java` (Chẩn đoán thầm lặng, lọc lá khỏe)
+- [ ] Cập nhật `CommentModel.java` & `item_comment.xml` (Bình luận FB, bỏ nút Buồn)
+- [ ] Cập nhật `CommentAdapter.java` (Hiển thị bình luận lồng nhau)
+- [ ] Cung cấp `mssql_schema.sql` (Script tạo bảng cho SQL Server)
+- [ ] Cung cấp `main_v13.py` (Mã nguồn Backend FastAPI mới kết nối MSSQL)
+- [ ] Cập nhật `ApiService.java` & Logic Diễn đàn trên Android (Chuyển từ Firestore sang API)
+- [ ] Kiểm tra và Build
