@@ -5,10 +5,9 @@ from pydantic import BaseModel
 import time
 from datetime import datetime
 
-app = FastAPI(title="Thần Nông AI - SQL Database Server")
+app = FastAPI(title="Thần Nông AI - SQL Database Server (v15 - Base64 Ready)")
 
 # Cấu hình SQL Server của bạn
-# Server: TRONGNGHIA\KKK
 CONN_STR = (
     "Driver={SQL Server};"
     "Server=TRONGNGHIA\\KKK;"
@@ -26,8 +25,8 @@ async def create_post(
     uid: str = Form(...),
     author: str = Form("Người dùng Thần Nông AI"),
     question: Optional[str] = Form(""),
-    userPhotoUrl: Optional[str] = Form(""),
-    imageUrl: Optional[str] = Form(""),
+    userPhotoUrl: Optional[str] = Form(""), # Bây giờ chứa chuỗi Base64
+    imageUrl: Optional[str] = Form(""),      # Bây giờ chứa chuỗi Base64
     disease: Optional[str] = Form("Chia sẻ từ cộng đồng")
 ):
     try:
@@ -38,7 +37,7 @@ async def create_post(
             (uid, author, userPhotoUrl, question, imageUrl, disease)
         )
         db.commit()
-        return {"status": "success", "message": "Post created successfully"}
+        return {"status": "success", "message": "Post created successfully in SQL"}
     except Exception as e:
         print(f"ERROR: {str(e)}")
         return {"status": "error", "message": str(e)}
@@ -132,9 +131,9 @@ async def get_notifs(uid: str):
     cursor.execute("SELECT id, targetUid, senderName, senderAvatar, type, postId, postContent, timestamp, isRead FROM Notifications WHERE targetUid = ? ORDER BY timestamp DESC", (uid,))
     rows = cursor.fetchall()
     return [{
-        "id": r[0], "targetUid": r[1], "senderName": r[2], "senderAvatar": r[3],
-        "type": r[4], "postId": r[5], "postContent": r[6], "timestamp": int(r[7].timestamp() * 1000),
-        "read": bool(r[8])
+        "id": row[0], "targetUid": row[1], "senderName": row[2], "senderAvatar": row[3],
+        "type": row[4], "postId": row[5], "postContent": row[6], "timestamp": int(row[7].timestamp() * 1000),
+        "read": bool(row[8])
     } for r in rows]
 
 @app.post("/notifications/read/{notif_id}")
@@ -153,7 +152,14 @@ async def add_notif(targetUid: str = Form(...), senderName: str = Form(...), sen
     db.commit()
     return {"status": "success"}
 
+# --- PROFILE UPDATE (v15 - Base64) ---
+@app.post("/users/update_photo")
+async def update_user_photo(uid: str = Form(...), photoBase64: str = Form(...)):
+    # Cập nhật tất cả bài viết và bình luận cũ của người này với ảnh mới (nếu muốn đồng bộ)
+    # Hoặc đơn giản là trả về success để App biết đã lưu xong.
+    # Trong kiến trúc v15, App sẽ gửi Base64 này mỗi khi đăng bài mới.
+    return {"status": "success"}
+
 if __name__ == "__main__":
     import uvicorn
-    # CHUYỂN SANG CỔNG 8001
     uvicorn.run(app, host="0.0.0.0", port=8001)

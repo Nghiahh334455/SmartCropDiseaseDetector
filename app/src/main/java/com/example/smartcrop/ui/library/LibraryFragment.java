@@ -90,6 +90,7 @@ public class LibraryFragment extends Fragment {
     private void callChatAPI(String question) {
         Toast.makeText(getContext(), "Thần Nông AI đang phản hồi...", Toast.LENGTH_SHORT).show();
         
+        // Gọi sang Port 8000 của VS Code mới lấy được câu trả lời
         ApiService apiService = RetrofitClient.getAiService();
         apiService.askAI(question).enqueue(new Callback<ChatResponse>() {
             @Override

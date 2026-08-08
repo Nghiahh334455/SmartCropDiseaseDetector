@@ -12,6 +12,8 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.util.Base64;
+
 import com.bumptech.glide.Glide;
 import com.example.smartcrop.R;
 import com.example.smartcrop.api.ApiService;
@@ -21,6 +23,7 @@ import com.example.smartcrop.models.DiseaseModel;
 import com.example.smartcrop.ui.library.DiseaseDetailActivity;
 import com.example.smartcrop.utils.DiseaseProvider;
 import com.example.smartcrop.models.NotificationModel;
+import com.example.smartcrop.utils.ImageUtils;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -81,10 +84,10 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
         }
 
         Object lCount = post.get("likesCount");
-        int likes = (lCount instanceof Double) ? ((Double) lCount).intValue() : (int) lCount;
+        int likes = (lCount instanceof Double) ? ((Double) lCount).intValue() : (int) ((lCount instanceof Integer) ? lCount : 0);
         
         Object cCount = post.get("commentsCount");
-        int comments = (cCount instanceof Double) ? ((Double) cCount).intValue() : (int) cCount;
+        int comments = (cCount instanceof Double) ? ((Double) cCount).intValue() : (int) ((cCount instanceof Integer) ? cCount : 0);
 
         holder.binding.tvLikeCount.setText(likes + " lượt thích");
         holder.binding.tvCommentCount.setText(comments + " bình luận");
@@ -104,16 +107,13 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
 
         // Avatar logic
         String userPhotoUrl = (String) post.get("userPhotoUrl");
-        if (currentUid != null && currentUid.equals(post.get("uid"))) {
-            String localPath = context.getSharedPreferences("SmartCropPrefs", Context.MODE_PRIVATE)
-                    .getString("profile_image_" + currentUid, null);
-            if (localPath != null && new java.io.File(localPath).exists()) {
-                Glide.with(context).load(new java.io.File(localPath)).into(holder.binding.ivPostAvatar);
-            } else if (userPhotoUrl != null) {
+        if (userPhotoUrl != null && !userPhotoUrl.isEmpty()) {
+            if (userPhotoUrl.length() > 500) { // Chuỗi Base64 thường rất dài
+                byte[] imageBytes = ImageUtils.base64ToBytes(userPhotoUrl);
+                if (imageBytes != null) Glide.with(context).load(imageBytes).placeholder(android.R.drawable.ic_menu_gallery).into(holder.binding.ivPostAvatar);
+            } else {
                 Glide.with(context).load(userPhotoUrl).placeholder(android.R.drawable.ic_menu_gallery).into(holder.binding.ivPostAvatar);
             }
-        } else if (userPhotoUrl != null) {
-            Glide.with(context).load(userPhotoUrl).placeholder(android.R.drawable.ic_menu_gallery).into(holder.binding.ivPostAvatar);
         } else {
             Glide.with(context).load(android.R.drawable.ic_menu_gallery).into(holder.binding.ivPostAvatar);
         }
@@ -121,7 +121,10 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
         String imageUrl = (String) post.get("imageUrl");
         if (imageUrl != null && !imageUrl.isEmpty()) {
             holder.binding.ivPostImage.setVisibility(android.view.View.VISIBLE);
-            if (imageUrl.startsWith("http")) {
+            if (imageUrl.length() > 500) { // Base64
+                byte[] imageBytes = ImageUtils.base64ToBytes(imageUrl);
+                if (imageBytes != null) Glide.with(context).load(imageBytes).placeholder(android.R.drawable.ic_menu_gallery).into(holder.binding.ivPostImage);
+            } else if (imageUrl.startsWith("http")) {
                 Glide.with(context).load(imageUrl).placeholder(android.R.drawable.ic_menu_gallery).into(holder.binding.ivPostImage);
             } else {
                 // It's a resource name
@@ -228,24 +231,22 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
     private void toggleLike(String postId, int position) {
         if (currentUid == null) return;
         
-        // Optimistic update
+        // Sửa lỗi Parse ID từ SQL/GSON
+        int pId;
+        try {
+            double d = Double.parseDouble(postId);
+            pId = (int) d;
+        } catch (Exception e) {
+            pId = Integer.parseInt(postId);
+        }
+
+        // Optimistic update: Cập nhật UI ngay lập tức
         if (locallyLikedPosts.contains(postId)) {
             locallyLikedPosts.remove(postId);
         } else {
             locallyLikedPosts.add(postId);
         }
         notifyItemChanged(position);
-
-        int pId;
-        try {
-            pId = (int) Double.parseDouble(postId);
-        } catch (Exception e) {
-            try {
-                pId = Integer.parseInt(postId);
-            } catch (Exception ex) {
-                return;
-            }
-        }
 
         ApiService apiService = RetrofitClient.getSqlService();
         apiService.toggleLike(currentUid, pId).enqueue(new retrofit2.Callback<Map<String, String>>() {

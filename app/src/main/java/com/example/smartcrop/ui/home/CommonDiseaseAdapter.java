@@ -12,6 +12,7 @@ import com.example.smartcrop.databinding.ItemDiseaseCommonBinding;
 import com.example.smartcrop.models.DiseaseModel;
 import com.example.smartcrop.ui.library.DiseaseDetailActivity;
 import com.example.smartcrop.utils.DiseaseProvider;
+import com.example.smartcrop.utils.ImageUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -45,10 +46,15 @@ public class CommonDiseaseAdapter extends RecyclerView.Adapter<CommonDiseaseAdap
         // Priority: Load real scanned image from SQL
         String realImageUrl = (String) stat.get("imageUrl");
         if (realImageUrl != null && !realImageUrl.isEmpty()) {
-            Glide.with(holder.itemView.getContext())
-                    .load(realImageUrl)
-                    .placeholder(android.R.drawable.ic_menu_gallery)
-                    .into(holder.binding.ivCommonDisease);
+            if (realImageUrl.length() > 500) {
+                byte[] bytes = ImageUtils.base64ToBytes(realImageUrl);
+                if (bytes != null) Glide.with(holder.itemView.getContext()).load(bytes).placeholder(android.R.drawable.ic_menu_gallery).into(holder.binding.ivCommonDisease);
+            } else {
+                Glide.with(holder.itemView.getContext())
+                        .load(realImageUrl)
+                        .placeholder(android.R.drawable.ic_menu_gallery)
+                        .into(holder.binding.ivCommonDisease);
+            }
         } else {
             // Fallback: Load image from Provider (local resources)
             DiseaseModel diseaseInfo = DiseaseProvider.getDiseaseByName(name);

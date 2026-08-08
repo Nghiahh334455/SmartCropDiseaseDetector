@@ -1,58 +1,54 @@
-# Implementation Plan - Tách biệt Backend AI & SQL + Triệt tiêu lỗi Tải ảnh (v14.1)
+# Implementation Plan - Chuyển đổi lưu trữ ảnh sang SQL Server (Base64) (v15)
 
-Kế hoạch này thực hiện việc tách rời hoàn toàn hai hệ thống Backend để bạn có thể quản lý riêng biệt (AI trong VS Code, SQL trong Android Studio) và xử lý dứt điểm lỗi tải ảnh lên Cloud.
+Kế hoạch này thực hiện việc loại bỏ hoàn toàn phụ thuộc vào Firebase Storage (để tránh mất phí) và chuyển sang lưu trữ ảnh trực tiếp vào cơ sở dữ liệu SQL Server dưới dạng chuỗi Base64.
 
 ## User Review Required
 
-> [!IMPORTANT]
-> **Hệ thống 2 Server**:
-> - **Server AI (Cổng 8000)**: Bạn sẽ chạy file `main.py` trong thư mục `D:/Plant_Disease_Pipeline` bằng VS Code.
-> - **Server SQL (Cổng 8001)**: Bạn sẽ chạy file `backend_sql.py` trong Android Studio.
-> **Lưu ý về Cáp USB**: Tôi sẽ cập nhật file bat để nó tự động "thông cầu" cho cả hai cổng 8000 và 8001 cùng lúc. Bạn không cần làm gì thêm ngoài việc cắm cáp.
-
-> [!CAUTION]
-> **Sửa lỗi Tải ảnh**: Tôi sẽ áp dụng phương thức "Xác thực luồng" (`continueWithTask`) cho tất cả các Activity có tính năng upload ảnh (Avatar, Diễn đàn, Chẩn đoán). Đây là cách an toàn nhất để tránh lỗi "Object does not exist".
+> [!WARNING]
+> **Thay đổi phương thức lưu trữ**: Toàn bộ ảnh cũ trên Firebase Storage sẽ không được sử dụng. Chúng ta sẽ chuyển sang lưu ảnh dưới dạng văn bản (Base64) cực dài trong SQL Server.
+> **Hiệu năng**: Việc lưu ảnh trực tiếp vào DB có thể làm dung lượng Database tăng nhanh. Tôi sẽ áp dụng nén ảnh tối đa (80%) trước khi lưu để đảm bảo tốc độ tải nhanh nhất.
+> **Cập nhật Database**: Bạn sẽ cần chạy lại script SQL để làm sạch và chuẩn hóa các cột chứa dữ liệu ảnh.
 
 ## Proposed Changes
 
-### 1. Backend AI (VS Code - Port 8000)
-#### [MODIFY] `D:/Plant_Disease_Pipeline/main.py`
-- Xóa bỏ toàn bộ các endpoint liên quan đến SQL (posts, comments, stats...).
-- Chỉ giữ lại `/predict` (Chẩn đoán) và `/chat` (Hỏi đáp AI).
+### 1. Cơ sở dữ liệu (SQL Server)
+#### [MODIFY] [mssql_schema.sql](file:///D:/Androi_DATN/mssql_schema.sql)
+- Đảm bảo các cột `userPhotoUrl`, `imageUrl`, `authorPhotoUrl`, `lastImageUrl` đều là `NVARCHAR(MAX)` để chứa chuỗi Base64 khổng lồ.
 
-### 2. Backend SQL (Android Studio - Port 8001)
-#### [NEW/MODIFY] `D:/Androi_DATN/backend_sql.py`
-- Chỉ chứa các endpoint liên quan đến Database SQL Server.
-- Đảm bảo chạy trên cổng **8001**.
+### 2. Backend (FastAPI)
+#### [MODIFY] [backend_sql.py](file:///D:/Androi_DATN/backend_sql.py)
+- Tăng giới hạn kích thước dữ liệu nhận được (nếu cần).
+- Cập nhật các hàm `create_post`, `add_comment`, `increment_disease_stats` để nhận dữ liệu Base64 thay vì URL.
 
-### 3. Android - Cấu hình Kết nối
-#### [MODIFY] [RetrofitClient.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/api/RetrofitClient.java)
-- Cung cấp hai lối vào riêng biệt: `getAiService()` (Port 8000) và `getSqlService()` (Port 8001).
+### 3. Android - Tiện ích mã hóa (Utils)
+#### [NEW] `ImageUtils.java`
+- Thêm hàm `uriToBase64`: Chuyển ảnh từ Uri sang chuỗi Base64.
+- Thêm hàm `bitmapToBase64`: Chuyển Bitmap sang chuỗi Base64.
 
-### 4. Android - Sửa lỗi & Nối dây
-#### [MODIFY] `DiagnosisActivity.java`
-- Chẩn đoán ảnh -> Gọi Port 8000.
-- Lưu thống kê/Đăng bài -> Gọi Port 8001.
-- Fix logic upload ảnh chẩn đoán sang Diễn đàn bằng `continueWithTask`.
+### 4. Android - Cập nhật Giao diện Đẩy dữ liệu (Upload)
+#### [MODIFY] [EditProfileActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/profile/EditProfileActivity.java)
+- Gỡ bỏ `FirebaseStorage`.
+- Mã hóa ảnh đại diện sang Base64 và gửi về SQL Server thông qua một API cập nhật Profile mới (sẽ thêm vào Backend).
 
-#### [MODIFY] `CreatePostActivity.java` & `EditProfileActivity.java`
-- Áp dụng `continueWithTask` để lấy link ảnh "tuyệt đối" từ Firebase.
-- Chuyển hướng toàn bộ yêu cầu lưu dữ liệu sang Port 8001.
+#### [MODIFY] [CreatePostActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/forum/CreatePostActivity.java)
+- Gỡ bỏ `FirebaseStorage`.
+- Chuyển ảnh bài đăng sang Base64 và gọi `apiService.createPost`.
 
-#### [MODIFY] `ForumFragment.java`, `PostDetailActivity.java`, `LibraryFragment.java`, `MainActivity.java`
-- Đồng bộ hóa việc gọi API sang Port 8001 cho các tính năng cộng đồng.
+#### [MODIFY] [DiagnosisActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/DiagnosisActivity.java)
+- Gỡ bỏ logic upload lên Cloud khi chia sẻ bệnh hoặc cập nhật thống kê. Chuyển sang dùng Base64.
 
-### 5. Công cụ Khởi động
-#### [MODIFY] `khoi_dong_he_thong.bat`
-- Tự động chạy `adb reverse` cho cả hai cổng 8000 và 8001.
-- Chỉ tự động bật Server SQL (Port 8001). Server AI bạn sẽ chủ động bật bên VS Code.
+### 5. Android - Cập nhật Giao diện Hiển thị (Display)
+#### [MODIFY] `ForumAdapter.java`, `CommentAdapter.java`, `CommonDiseaseAdapter.java`, `PostDetailActivity.java`
+- Cấu hình **Glide** để nhận diện và hiển thị chuỗi Base64:
+  ```java
+  byte[] imageBytes = Base64.decode(base64String, Base64.DEFAULT);
+  Glide.with(context).load(imageBytes)...
+  ```
 
 ## Verification Plan
 
 ### Manual Verification
-1. **VS Code**: Chạy `python main.py`. Kiểm tra log xem có chẩn đoán thành công không.
-2. **Android Studio**: Chạy `python backend_sql.py` (hoặc qua file bat).
-3. **App**:
-    - Thử quét lá bệnh -> Kết quả phải hiện ra mượt mà (8000).
-    - Thử đăng bài có ảnh -> Ảnh phải hiện lên ngay lập tức (8001).
-    - Thử đổi Avatar -> Kiểm tra xem ảnh đã "lên mây" chưa.
+- **Avatar**: Đổi ảnh hồ sơ -> Kiểm tra xem trong SQL Server cột `userPhotoUrl` có chứa chuỗi ký tự dài không.
+- **Diễn đàn**: Đăng bài có ảnh -> Kiểm tra xem ảnh có hiện lên ngay lập tức cho người khác thấy không.
+- **Thư viện**: Chia sẻ bệnh -> Kiểm tra hiển thị ảnh Base64 trên bảng tin.
+- **Dung lượng**: Kiểm tra xem ảnh có bị mờ không sau khi nén 80%.

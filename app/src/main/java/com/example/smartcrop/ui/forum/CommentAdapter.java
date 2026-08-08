@@ -12,6 +12,7 @@ import com.bumptech.glide.Glide;
 import com.example.smartcrop.R;
 import com.example.smartcrop.databinding.ItemCommentBinding;
 import com.example.smartcrop.models.CommentModel;
+import com.example.smartcrop.utils.ImageUtils;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.List;
@@ -60,10 +61,16 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.ViewHold
         holder.binding.tvCommentTime.setText(DateUtils.getRelativeTimeSpanString(comment.timestamp));
         
         // Load Avatar
-        Glide.with(holder.itemView.getContext())
-                .load(comment.authorPhotoUrl)
-                .placeholder(android.R.drawable.ic_menu_gallery)
-                .into(holder.binding.ivCommentAvatar);
+        String avatarStr = comment.authorPhotoUrl;
+        if (avatarStr != null && avatarStr.length() > 500) {
+            byte[] bytes = ImageUtils.base64ToBytes(avatarStr);
+            if (bytes != null) Glide.with(holder.itemView.getContext()).load(bytes).placeholder(android.R.drawable.ic_menu_gallery).into(holder.binding.ivCommentAvatar);
+        } else {
+            Glide.with(holder.itemView.getContext())
+                    .load(avatarStr)
+                    .placeholder(android.R.drawable.ic_menu_gallery)
+                    .into(holder.binding.ivCommentAvatar);
+        }
 
         // Reactions logic
         int likeCount = comment.likedBy.size();

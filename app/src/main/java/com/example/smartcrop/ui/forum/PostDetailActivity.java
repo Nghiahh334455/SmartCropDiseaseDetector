@@ -15,6 +15,7 @@ import com.example.smartcrop.api.RetrofitClient;
 import com.example.smartcrop.databinding.ActivityPostDetailBinding;
 import com.example.smartcrop.models.CommentModel;
 import com.example.smartcrop.models.NotificationModel;
+import com.example.smartcrop.utils.ImageUtils;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -57,7 +58,14 @@ public class PostDetailActivity extends AppCompatActivity {
         if (idObj == null) idObj = getIntent().getStringExtra("postId");
         
         if (idObj != null) {
-            postId = String.valueOf(idObj);
+            String idStr = String.valueOf(idObj);
+            try {
+                // Sửa lỗi ID dạng 1.0 từ GSON/SQL
+                double d = Double.parseDouble(idStr);
+                postId = String.valueOf((int) d);
+            } catch (Exception e) {
+                postId = idStr;
+            }
         } else {
             postId = (String) post.get("originalPostId");
         }
@@ -160,14 +168,16 @@ public class PostDetailActivity extends AppCompatActivity {
             return;
         }
 
+        // Sửa lỗi ID dạng số thực khi gửi sang SQL
         int pId;
         try {
-            pId = (int) Double.parseDouble(postId);
+            double d = Double.parseDouble(postId);
+            pId = (int) d;
         } catch (Exception e) {
             pId = Integer.parseInt(postId);
         }
         
-        String authorPhotoUrl = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null;
+        String authorPhotoUrl = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : "";
         
         Integer parentId = (currentReplyParentId != null) ? Integer.parseInt(currentReplyParentId) : null;
 
@@ -243,16 +253,10 @@ public class PostDetailActivity extends AppCompatActivity {
 
         // Avatar logic
         String userPhotoUrl = (String) post.get("userPhotoUrl");
-        String uid = (String) post.get("uid");
 
-        if (currentUid != null && currentUid.equals(uid)) {
-            String localPath = getSharedPreferences("SmartCropPrefs", MODE_PRIVATE)
-                    .getString("profile_image_" + currentUid, null);
-            if (localPath != null && new File(localPath).exists()) {
-                Glide.with(this).load(new File(localPath)).into(binding.postItem.ivPostAvatar);
-            } else {
-                Glide.with(this).load(userPhotoUrl).placeholder(android.R.drawable.ic_menu_gallery).into(binding.postItem.ivPostAvatar);
-            }
+        if (userPhotoUrl != null && userPhotoUrl.length() > 500) {
+            byte[] bytes = ImageUtils.base64ToBytes(userPhotoUrl);
+            if (bytes != null) Glide.with(this).load(bytes).placeholder(android.R.drawable.ic_menu_gallery).into(binding.postItem.ivPostAvatar);
         } else {
             Glide.with(this).load(userPhotoUrl).placeholder(android.R.drawable.ic_menu_gallery).into(binding.postItem.ivPostAvatar);
         }
@@ -260,7 +264,10 @@ public class PostDetailActivity extends AppCompatActivity {
         String imageUrl = (String) post.get("imageUrl");
         if (imageUrl != null && !imageUrl.isEmpty()) {
             binding.postItem.ivPostImage.setVisibility(View.VISIBLE);
-            if (imageUrl.startsWith("http")) {
+            if (imageUrl.length() > 500) {
+                byte[] bytes = ImageUtils.base64ToBytes(imageUrl);
+                if (bytes != null) Glide.with(this).load(bytes).into(binding.postItem.ivPostImage);
+            } else if (imageUrl.startsWith("http")) {
                 Glide.with(this).load(imageUrl).into(binding.postItem.ivPostImage);
             } else {
                 int resId = getResources().getIdentifier(imageUrl, "drawable", getPackageName());

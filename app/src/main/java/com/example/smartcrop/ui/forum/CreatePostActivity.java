@@ -16,11 +16,9 @@ import com.bumptech.glide.Glide;
 import com.example.smartcrop.api.ApiService;
 import com.example.smartcrop.api.RetrofitClient;
 import com.example.smartcrop.databinding.ActivityCreatePostBinding;
+import com.example.smartcrop.utils.ImageUtils;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -101,35 +99,18 @@ public class CreatePostActivity extends AppCompatActivity {
         String userPhotoUrl = (user.getPhotoUrl() != null) ? user.getPhotoUrl().toString() : "";
 
         if (selectedImageUri != null) {
-            String fileName = "forum_" + System.currentTimeMillis() + ".jpg";
-            StorageReference storageRef = FirebaseStorage.getInstance().getReference().child("forum_images/" + fileName);
-
             try {
-                java.io.InputStream is = getContentResolver().openInputStream(selectedImageUri);
-                Bitmap bitmap = BitmapFactory.decodeStream(is);
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
-                byte[] data = baos.toByteArray();
-
-                storageRef.putBytes(data)
-                        .continueWithTask(task -> {
-                            if (!task.isSuccessful()) throw task.getException();
-                            return storageRef.getDownloadUrl();
-                        })
-                        .addOnCompleteListener(task -> {
-                            if (task.isSuccessful()) {
-                                saveToSQL(uid, userName, userPhotoUrl, content, task.getResult().toString());
-                            } else {
-                                binding.btnPost.setVisibility(View.VISIBLE);
-                                binding.pbPosting.setVisibility(View.GONE);
-                                String error = task.getException() != null ? task.getException().getMessage() : "Unknown error";
-                                Toast.makeText(this, "Lỗi tải ảnh: " + error, Toast.LENGTH_SHORT).show();
-                            }
-                        });
+                // Chuyển ảnh sang Base64 để lưu trực tiếp vào SQL Server
+                String base64Image = ImageUtils.uriToBase64(this, selectedImageUri);
+                if (!base64Image.isEmpty()) {
+                    saveToSQL(uid, userName, userPhotoUrl, content, base64Image);
+                } else {
+                    throw new Exception("Không thể mã hóa ảnh");
+                }
             } catch (Exception e) {
                 binding.btnPost.setVisibility(View.VISIBLE);
                 binding.pbPosting.setVisibility(View.GONE);
-                Toast.makeText(this, "Lỗi xử lý file: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Lỗi xử lý ảnh: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         } else {
             saveToSQL(uid, userName, userPhotoUrl, content, "");

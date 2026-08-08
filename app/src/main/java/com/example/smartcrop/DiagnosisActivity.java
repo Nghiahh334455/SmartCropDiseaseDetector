@@ -36,6 +36,7 @@ import com.example.smartcrop.database.HistoryEntity;
 import com.example.smartcrop.databinding.ActivityMainBinding;
 import com.example.smartcrop.models.PredictResponse;
 import com.example.smartcrop.utils.DiseaseProvider;
+import com.example.smartcrop.utils.ImageUtils;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -171,10 +172,13 @@ public class DiagnosisActivity extends AppCompatActivity {
         ApiService apiService = RetrofitClient.getAiService();
 
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        String userEmail = (user != null && user.getEmail() != null) ? user.getEmail() : "unknown@example.com";
+        // Lấy đúng Email của tài khoản đang đăng nhập
+        String userEmail = (user != null && user.getEmail() != null) ? user.getEmail() : "khach_hang@than-nong-ai.vn";
 
         RequestBody requestFile = RequestBody.create(imageFile, MediaType.parse("image/jpeg"));
         MultipartBody.Part body = MultipartBody.Part.createFormData("file", imageFile.getName(), requestFile);
+        
+        // Truyền email động vào Form để Backend biết đường gửi về đúng người
         RequestBody emailPart = RequestBody.create(userEmail, MediaType.parse("text/plain"));
 
         apiService.predictDisease(body).enqueue(new retrofit2.Callback<PredictResponse>() {
@@ -236,29 +240,14 @@ public class DiagnosisActivity extends AppCompatActivity {
             drawBoundingBoxOnImage(bbox.get("x1"), bbox.get("y1"), bbox.get("x2"), bbox.get("y2"));
         }
 
-        // Stats & History - Upload image for stats
-        boolean isHealthy = name.toLowerCase().contains("khỏe mạnh") || name.toLowerCase().contains("healthy");
+        // Stats & History - Fix BUG #2 using Base64
+        boolean isHealthy = name.toLowerCase().contains("khỏe mạnh") || name.toLowerCase().contains("healthy") || name.toLowerCase().contains("an toàn");
         if (!isHealthy && originalBitmap != null) {
-            uploadDiagnosisImageForStats(name);
+            String base64Image = ImageUtils.bitmapToBase64(originalBitmap);
+            incrementDiseaseCount(name, base64Image);
         }
         
-        saveToHistory(name, confidence, "Chẩn đoán bởi AI");
-    }
-
-    private void uploadDiagnosisImageForStats(String diseaseName) {
-        String fileName = "stats_" + System.currentTimeMillis() + ".jpg";
-        StorageReference ref = FirebaseStorage.getInstance().getReference().child("diagnosis_images/" + fileName);
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        originalBitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
-        byte[] data = baos.toByteArray();
-
-        ref.putBytes(data).continueWithTask(task -> {
-            if (!task.isSuccessful()) throw task.getException();
-            return ref.getDownloadUrl();
-        }).addOnSuccessListener(uri -> {
-            incrementDiseaseCount(diseaseName, uri.toString());
-        });
+        saveToHistory(name, confidence, "Chẩn đoán bởi Thần Nông AI");
     }
 
     private void incrementDiseaseCount(String diseaseName, String imageUrl) {
@@ -390,49 +379,34 @@ public class DiagnosisActivity extends AppCompatActivity {
         String userName = (user.getDisplayName() != null && !user.getDisplayName().isEmpty()) ? user.getDisplayName() : "Người dùng Thần Nông AI";
         String userPhotoUrl = (user.getPhotoUrl() != null) ? user.getPhotoUrl().toString() : "";
 
-        // 1. Upload ảnh lên Firebase Storage
-        String fileName = "forum_" + System.currentTimeMillis() + ".jpg";
-        StorageReference storageRef = FirebaseStorage.getInstance().getReference().child("forum_images/" + fileName);
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        originalBitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
-        byte[] data = baos.toByteArray();
-
-                storageRef.putBytes(data)
-                    .continueWithTask(task -> {
-                        if (!task.isSuccessful()) {
-                            throw task.getException();
-                        }
-                        return storageRef.getDownloadUrl();
-                    })
-                    .addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            Uri downloadUri = task.getResult();
-                            // 2. Lưu thông tin vào SQL Server qua Port 8001
-                            ApiService apiService = RetrofitClient.getSqlService();
-                            apiService.createPost(uid, userName, question, userPhotoUrl, downloadUri.toString(), currentDiseaseName)
-                                    .enqueue(new retrofit2.Callback<Map<String, String>>() {
-                                        @Override
-                                        public void onResponse(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull retrofit2.Response<Map<String, String>> response) {
-                                            showLoading(false);
-                                            if (response.isSuccessful()) {
-                                                Toast.makeText(DiagnosisActivity.this, "Đã đăng bài thành công lên diễn đàn!", Toast.LENGTH_SHORT).show();
-                                            } else {
-                                                Toast.makeText(DiagnosisActivity.this, "Lỗi server SQL: " + response.code(), Toast.LENGTH_SHORT).show();
-                                            }
-                                        }
-
-                                        @Override
-                                        public void onFailure(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull Throwable t) {
-                                            showLoading(false);
-                                            Toast.makeText(DiagnosisActivity.this, "Lỗi kết nối SQL Server", Toast.LENGTH_SHORT).show();
-                                        }
-                                    });
-                        } else {
+        try {
+            // Chuyển ảnh sang Base64
+            String base64Image = ImageUtils.bitmapToBase64(originalBitmap);
+            
+            // Lưu trực tiếp vào SQL Server qua Port 8001
+            ApiService apiService = RetrofitClient.getSqlService();
+            apiService.createPost(uid, userName, question, userPhotoUrl, base64Image, currentDiseaseName)
+                    .enqueue(new retrofit2.Callback<Map<String, String>>() {
+                        @Override
+                        public void onResponse(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull retrofit2.Response<Map<String, String>> response) {
                             showLoading(false);
-                            Toast.makeText(this, "Lỗi tải ảnh: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                            if (response.isSuccessful()) {
+                                Toast.makeText(DiagnosisActivity.this, "Đã đăng bài thành công lên diễn đàn!", Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(DiagnosisActivity.this, "Lỗi server SQL: " + response.code(), Toast.LENGTH_SHORT).show();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull Throwable t) {
+                            showLoading(false);
+                            Toast.makeText(DiagnosisActivity.this, "Lỗi kết nối SQL Server", Toast.LENGTH_SHORT).show();
                         }
                     });
+        } catch (Exception e) {
+            showLoading(false);
+            Toast.makeText(this, "Lỗi xử lý ảnh: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void saveToHistory(String disease, double confidence, String treatment) {

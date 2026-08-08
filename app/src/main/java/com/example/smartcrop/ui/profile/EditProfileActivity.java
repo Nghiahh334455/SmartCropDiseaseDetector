@@ -14,11 +14,10 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
 import com.example.smartcrop.databinding.ActivityEditProfileBinding;
+import com.example.smartcrop.utils.ImageUtils;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -87,30 +86,15 @@ public class EditProfileActivity extends AppCompatActivity {
         showLoading(true);
 
         if (selectedImageUri != null) {
-            StorageReference storageRef = FirebaseStorage.getInstance().getReference()
-                    .child("user_avatars/" + currentUser.getUid() + ".jpg");
-
             try {
-                java.io.InputStream is = getContentResolver().openInputStream(selectedImageUri);
-                Bitmap bitmap = BitmapFactory.decodeStream(is);
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
-                byte[] data = baos.toByteArray();
-
-                storageRef.putBytes(data)
-                        .continueWithTask(task -> {
-                            if (!task.isSuccessful()) throw task.getException();
-                            return storageRef.getDownloadUrl();
-                        })
-                        .addOnCompleteListener(task -> {
-                            if (task.isSuccessful()) {
-                                updateFirebaseProfile(newName, task.getResult());
-                            } else {
-                                showLoading(false);
-                                String error = task.getException() != null ? task.getException().getMessage() : "Unknown error";
-                                Toast.makeText(this, "Lỗi tải Avatar: " + error, Toast.LENGTH_SHORT).show();
-                            }
-                        });
+                // Mã hóa ảnh sang Base64 để lưu vào SQL Server
+                String base64Image = ImageUtils.uriToBase64(this, selectedImageUri);
+                if (!base64Image.isEmpty()) {
+                    // Cập nhật Firebase Profile (Lưu Base64 vào Uri nếu cần, hoặc dùng SQL)
+                    updateFirebaseProfile(newName, Uri.parse(base64Image));
+                } else {
+                    throw new Exception("Mã hóa ảnh thất bại");
+                }
             } catch (Exception e) {
                 showLoading(false);
                 Toast.makeText(this, "Lỗi xử lý ảnh: " + e.getMessage(), Toast.LENGTH_SHORT).show();

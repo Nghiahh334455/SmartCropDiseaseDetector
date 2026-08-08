@@ -98,4 +98,8 @@ public interface ApiService {
         @Field("postId") int postId,
         @Field("postContent") String postContent
     );
+
+    @FormUrlEncoded
+    @POST("/users/update_photo")
+    Call<Map<String, String>> updateProfilePhoto(@Field("uid") String uid, @Field("photoBase64") String photoBase64);
 }
