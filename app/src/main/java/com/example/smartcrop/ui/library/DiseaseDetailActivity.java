@@ -124,7 +124,7 @@ public class DiseaseDetailActivity extends AppCompatActivity {
         String displayStatus = (status != null && !status.isEmpty()) ? status : "";
         String userPhotoUrl = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null;
 
-        ApiService apiService = RetrofitClient.getApiService();
+        ApiService apiService = RetrofitClient.getSqlService();
         apiService.createPost(user.getUid(), user.getDisplayName(), displayStatus, userPhotoUrl, imageName, name)
                 .enqueue(new retrofit2.Callback<Map<String, String>>() {
                     @Override

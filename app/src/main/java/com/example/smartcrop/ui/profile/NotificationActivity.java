@@ -50,7 +50,7 @@ public class NotificationActivity extends AppCompatActivity {
         String uid = FirebaseAuth.getInstance().getUid();
         if (uid == null) return;
 
-        ApiService apiService = RetrofitClient.getApiService();
+        ApiService apiService = RetrofitClient.getSqlService();
         apiService.getNotifications(uid).enqueue(new retrofit2.Callback<List<NotificationModel>>() {
             @Override
             public void onResponse(retrofit2.Call<List<NotificationModel>> call, retrofit2.Response<List<NotificationModel>> response) {
@@ -75,7 +75,7 @@ public class NotificationActivity extends AppCompatActivity {
     private void onNotificationClick(NotificationModel notification) {
         // Mark as read in SQL Server
         int notifId = Integer.parseInt(notification.getId());
-        ApiService apiService = RetrofitClient.getApiService();
+        ApiService apiService = RetrofitClient.getSqlService();
         apiService.markNotifAsRead(notifId).enqueue(new retrofit2.Callback<Map<String, String>>() {
             @Override
             public void onResponse(retrofit2.Call<Map<String, String>> call, retrofit2.Response<Map<String, String>> response) {

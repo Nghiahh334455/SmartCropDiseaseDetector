@@ -1,6 +1,9 @@
-- [ ] Cập nhật `backend_v13.py` (Linh hoạt hóa tham số đầu vào, fix 422)
-- [ ] Cập nhật `CreatePostActivity.java` (Fix upload ảnh & logic gửi dữ liệu an toàn)
-- [ ] Cập nhật `EditProfileActivity.java` (Đảm bảo đồng bộ Avatar thành công 100%)
-- [ ] Nâng cấp giao diện chia sẻ trong `DiseaseDetailActivity.java` & `DiagnosisActivity.java`
+- [ ] Cập nhật `mssql_schema.sql` (Thêm cột `lastImageUrl`)
+- [ ] Cập nhật `backend_sql.py` (Xử lý ảnh thực tế cho bệnh thường gặp, log fix 422)
+- [ ] Khắc phục BUG #1: `CreatePostActivity.java`, `EditProfileActivity.java`, `DiagnosisActivity.java` (Tải ảnh an toàn)
+- [ ] Khắc phục BUG #2: `CommonDiseaseAdapter.java` (Hiển thị ảnh thực tế từ SQL)
+- [ ] Khắc phục BUG #3: `ForumAdapter.java` (Đồng bộ trạng thái Like tức thì)
+- [ ] Khắc phục BUG #4: `PostDetailActivity.java` (Sửa lỗi Crash khi vào bình luận)
+- [ ] Khắc phục BUG #5: `DiagnosisActivity.java` (Gửi email đúng tài khoản người dùng)
 - [ ] Kiểm tra và Build toàn bộ hệ thống
-- [ ] Commit & Push Git
+- [ ] Commit & Push Git (v13.3)

@@ -52,5 +52,6 @@ CREATE TABLE Notifications (
 -- 5. Bảng thống kê bệnh (Disease Stats)
 CREATE TABLE DiseaseStats (
     diseaseName NVARCHAR(255) PRIMARY KEY,
-    count INT DEFAULT 1
+    count INT DEFAULT 1,
+    lastImageUrl NVARCHAR(MAX) -- Link ảnh thực tế gần nhất
 );

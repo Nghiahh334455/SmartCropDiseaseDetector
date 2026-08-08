@@ -92,41 +92,52 @@ public class CreatePostActivity extends AppCompatActivity {
 
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) {
-            Toast.makeText(this, "Vui lòng đăng nhập để thực hiện", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
             return;
         }
 
         String uid = user.getUid();
-        String userName = (user.getDisplayName() != null && !user.getDisplayName().isEmpty()) ? user.getDisplayName() : "Người dùng Thần Nông AI";
+        String userName = (user.getDisplayName() != null) ? user.getDisplayName() : "Người dùng Thần Nông AI";
         String userPhotoUrl = (user.getPhotoUrl() != null) ? user.getPhotoUrl().toString() : "";
 
         if (selectedImageUri != null) {
             String fileName = "forum_" + System.currentTimeMillis() + ".jpg";
             StorageReference storageRef = FirebaseStorage.getInstance().getReference().child("forum_images/" + fileName);
 
-            storageRef.putFile(selectedImageUri)
-                    .addOnSuccessListener(taskSnapshot -> {
-                        // Lấy Download URL an toàn nhất
-                        storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                            saveToSQL(uid, userName, userPhotoUrl, content, uri.toString());
-                        }).addOnFailureListener(e -> {
-                            binding.btnPost.setVisibility(View.VISIBLE);
-                            binding.pbPosting.setVisibility(View.GONE);
-                            Toast.makeText(this, "Lỗi lấy link ảnh: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            try {
+                java.io.InputStream is = getContentResolver().openInputStream(selectedImageUri);
+                Bitmap bitmap = BitmapFactory.decodeStream(is);
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
+                byte[] data = baos.toByteArray();
+
+                storageRef.putBytes(data)
+                        .continueWithTask(task -> {
+                            if (!task.isSuccessful()) throw task.getException();
+                            return storageRef.getDownloadUrl();
+                        })
+                        .addOnCompleteListener(task -> {
+                            if (task.isSuccessful()) {
+                                saveToSQL(uid, userName, userPhotoUrl, content, task.getResult().toString());
+                            } else {
+                                binding.btnPost.setVisibility(View.VISIBLE);
+                                binding.pbPosting.setVisibility(View.GONE);
+                                String error = task.getException() != null ? task.getException().getMessage() : "Unknown error";
+                                Toast.makeText(this, "Lỗi tải ảnh: " + error, Toast.LENGTH_SHORT).show();
+                            }
                         });
-                    })
-                    .addOnFailureListener(e -> {
-                        binding.btnPost.setVisibility(View.VISIBLE);
-                        binding.pbPosting.setVisibility(View.GONE);
-                        Toast.makeText(this, "Lỗi tải ảnh lên Cloud: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    });
+            } catch (Exception e) {
+                binding.btnPost.setVisibility(View.VISIBLE);
+                binding.pbPosting.setVisibility(View.GONE);
+                Toast.makeText(this, "Lỗi xử lý file: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
         } else {
             saveToSQL(uid, userName, userPhotoUrl, content, "");
         }
     }
 
     private void saveToSQL(String uid, String userName, String userPhotoUrl, String content, String imageUrl) {
-        ApiService apiService = RetrofitClient.getApiService();
+        ApiService apiService = RetrofitClient.getSqlService();
         apiService.createPost(uid, userName, content, userPhotoUrl, imageUrl, "Chia sẻ từ cộng đồng")
                 .enqueue(new retrofit2.Callback<Map<String, String>>() {
                     @Override

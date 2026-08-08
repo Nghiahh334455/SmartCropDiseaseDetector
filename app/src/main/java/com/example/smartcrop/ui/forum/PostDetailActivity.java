@@ -46,15 +46,20 @@ public class PostDetailActivity extends AppCompatActivity {
         binding.toolbarPostDetail.setNavigationOnClickListener(v -> finish());
 
         // Get data from intent
-        Map<String, Object> post = (Map<String, Object>) getIntent().getSerializableExtra("post");
-        if (post == null) {
+        Object postObj = getIntent().getSerializableExtra("post");
+        if (!(postObj instanceof Map)) {
             finish();
             return;
         }
+        Map<String, Object> post = (Map<String, Object>) postObj;
 
-        postId = (String) post.get("originalPostId");
-        if (postId == null) {
-            postId = getIntent().getStringExtra("postId");
+        Object idObj = post.get("id");
+        if (idObj == null) idObj = getIntent().getStringExtra("postId");
+        
+        if (idObj != null) {
+            postId = String.valueOf(idObj);
+        } else {
+            postId = (String) post.get("originalPostId");
         }
 
         displayPost(post);
@@ -122,7 +127,7 @@ public class PostDetailActivity extends AppCompatActivity {
             pId = Integer.parseInt(postId);
         }
         
-        ApiService apiService = RetrofitClient.getApiService();
+        ApiService apiService = RetrofitClient.getSqlService();
         apiService.getComments(pId).enqueue(new retrofit2.Callback<List<CommentModel>>() {
             @Override
             public void onResponse(retrofit2.Call<List<CommentModel>> call, retrofit2.Response<List<CommentModel>> response) {
@@ -166,7 +171,7 @@ public class PostDetailActivity extends AppCompatActivity {
         
         Integer parentId = (currentReplyParentId != null) ? Integer.parseInt(currentReplyParentId) : null;
 
-        ApiService apiService = RetrofitClient.getApiService();
+        ApiService apiService = RetrofitClient.getSqlService();
         apiService.addComment(pId, user.getDisplayName(), user.getUid(), content, authorPhotoUrl, String.valueOf(parentId))
                 .enqueue(new retrofit2.Callback<Map<String, String>>() {
                     @Override

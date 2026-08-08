@@ -86,7 +86,7 @@ public interface ApiService {
 
     @FormUrlEncoded
     @POST("/disease_stats/increment")
-    Call<Map<String, String>> incrementDiseaseCount(@Field("name") String name);
+    Call<Map<String, String>> incrementDiseaseCount(@Field("name") String name, @Field("imageUrl") String imageUrl);
 
     @FormUrlEncoded
     @POST("/notifications")

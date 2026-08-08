@@ -1,6 +1,8 @@
 package com.example.smartcrop.ui.profile;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
@@ -85,26 +87,35 @@ public class EditProfileActivity extends AppCompatActivity {
         showLoading(true);
 
         if (selectedImageUri != null) {
-            // 1. Upload ảnh lên Firebase Storage
             StorageReference storageRef = FirebaseStorage.getInstance().getReference()
                     .child("user_avatars/" + currentUser.getUid() + ".jpg");
 
-            storageRef.putFile(selectedImageUri)
-                    .addOnSuccessListener(taskSnapshot -> {
-                        // Lấy URL an toàn nhất
-                        storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                            updateFirebaseProfile(newName, uri);
-                        }).addOnFailureListener(e -> {
-                            showLoading(false);
-                            Toast.makeText(this, "Lỗi lấy link ảnh: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            try {
+                java.io.InputStream is = getContentResolver().openInputStream(selectedImageUri);
+                Bitmap bitmap = BitmapFactory.decodeStream(is);
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
+                byte[] data = baos.toByteArray();
+
+                storageRef.putBytes(data)
+                        .continueWithTask(task -> {
+                            if (!task.isSuccessful()) throw task.getException();
+                            return storageRef.getDownloadUrl();
+                        })
+                        .addOnCompleteListener(task -> {
+                            if (task.isSuccessful()) {
+                                updateFirebaseProfile(newName, task.getResult());
+                            } else {
+                                showLoading(false);
+                                String error = task.getException() != null ? task.getException().getMessage() : "Unknown error";
+                                Toast.makeText(this, "Lỗi tải Avatar: " + error, Toast.LENGTH_SHORT).show();
+                            }
                         });
-                    })
-                    .addOnFailureListener(e -> {
-                        showLoading(false);
-                        Toast.makeText(this, "Lỗi tải ảnh lên Cloud: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    });
+            } catch (Exception e) {
+                showLoading(false);
+                Toast.makeText(this, "Lỗi xử lý ảnh: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
         } else {
-            // Chỉ cập nhật tên
             updateFirebaseProfile(newName, currentUser.getPhotoUrl());
         }
     }

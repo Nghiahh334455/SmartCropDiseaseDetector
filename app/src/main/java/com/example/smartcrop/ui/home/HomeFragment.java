@@ -182,7 +182,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void loadCommonDiseases() {
-        ApiService apiService = RetrofitClient.getApiService();
+        ApiService apiService = RetrofitClient.getSqlService();
         apiService.getTopDiseases().enqueue(new retrofit2.Callback<List<Map<String, Object>>>() {
             @Override
             public void onResponse(retrofit2.Call<List<Map<String, Object>>> call, retrofit2.Response<List<Map<String, Object>>> response) {

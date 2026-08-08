@@ -90,7 +90,7 @@ public class LibraryFragment extends Fragment {
     private void callChatAPI(String question) {
         Toast.makeText(getContext(), "Thần Nông AI đang phản hồi...", Toast.LENGTH_SHORT).show();
         
-        ApiService apiService = RetrofitClient.getApiService();
+        ApiService apiService = RetrofitClient.getAiService();
         apiService.askAI(question).enqueue(new Callback<ChatResponse>() {
             @Override
             public void onResponse(Call<ChatResponse> call, Response<ChatResponse> response) {

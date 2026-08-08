@@ -3,6 +3,7 @@ package com.example.smartcrop.ui.auth;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -45,14 +46,25 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
+        // Hien thi trang thai dang tai
+        binding.btnLogin.setVisibility(View.GONE);
+        binding.pbLogin.setVisibility(View.VISIBLE);
+        Toast.makeText(this, "Đang xác thực tài khoản...", Toast.LENGTH_SHORT).show();
+
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
+                        Toast.makeText(LoginActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
                         startActivity(new Intent(LoginActivity.this, MainActivity.class));
                         finish();
                     } else {
-                        Toast.makeText(LoginActivity.this, "Đăng nhập thất bại: " + task.getException().getMessage(),
-                                Toast.LENGTH_SHORT).show();
+                        // An thanh tai va hien lai nut bam khi loi
+                        binding.btnLogin.setVisibility(View.VISIBLE);
+                        binding.pbLogin.setVisibility(View.GONE);
+                        
+                        String errorMsg = task.getException() != null ? task.getException().getMessage() : "Lỗi không xác định";
+                        Toast.makeText(LoginActivity.this, "Đăng nhập thất bại: " + errorMsg,
+                                Toast.LENGTH_LONG).show();
                     }
                 });
     }

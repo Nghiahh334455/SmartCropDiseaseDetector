@@ -1,7 +1,7 @@
 package com.example.smartcrop;
 
 import android.os.Bundle;
-
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
@@ -39,10 +39,10 @@ public class MainActivity extends AppCompatActivity {
         String uid = FirebaseAuth.getInstance().getUid();
         if (uid == null) return;
 
-        ApiService apiService = RetrofitClient.getApiService();
+        ApiService apiService = RetrofitClient.getSqlService();
         apiService.getNotifications(uid).enqueue(new retrofit2.Callback<List<com.example.smartcrop.models.NotificationModel>>() {
             @Override
-            public void onResponse(retrofit2.Call<List<com.example.smartcrop.models.NotificationModel>> call, retrofit2.Response<List<com.example.smartcrop.models.NotificationModel>> response) {
+            public void onResponse(@NonNull retrofit2.Call<List<com.example.smartcrop.models.NotificationModel>> call, @NonNull retrofit2.Response<List<com.example.smartcrop.models.NotificationModel>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     int unreadCount = 0;
                     for (com.example.smartcrop.models.NotificationModel n : response.body()) {
@@ -60,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(retrofit2.Call<List<com.example.smartcrop.models.NotificationModel>> call, Throwable t) {}
+            public void onFailure(@NonNull retrofit2.Call<List<com.example.smartcrop.models.NotificationModel>> call, @NonNull Throwable t) {}
         });
     }
 }

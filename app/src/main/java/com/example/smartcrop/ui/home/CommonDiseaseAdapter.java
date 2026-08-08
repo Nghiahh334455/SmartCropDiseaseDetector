@@ -42,10 +42,17 @@ public class CommonDiseaseAdapter extends RecyclerView.Adapter<CommonDiseaseAdap
         holder.binding.tvCommonDiseaseName.setText(name);
         holder.binding.tvCommonDiseaseCount.setText(count + " lượt chẩn đoán");
         
-        // Load image from Provider
-        DiseaseModel diseaseInfo = DiseaseProvider.getDiseaseByName(name);
-        if (diseaseInfo != null) {
-            if (diseaseInfo.imageResources != null && !diseaseInfo.imageResources.isEmpty()) {
+        // Priority: Load real scanned image from SQL
+        String realImageUrl = (String) stat.get("imageUrl");
+        if (realImageUrl != null && !realImageUrl.isEmpty()) {
+            Glide.with(holder.itemView.getContext())
+                    .load(realImageUrl)
+                    .placeholder(android.R.drawable.ic_menu_gallery)
+                    .into(holder.binding.ivCommonDisease);
+        } else {
+            // Fallback: Load image from Provider (local resources)
+            DiseaseModel diseaseInfo = DiseaseProvider.getDiseaseByName(name);
+            if (diseaseInfo != null && diseaseInfo.imageResources != null && !diseaseInfo.imageResources.isEmpty()) {
                 String thumbnailName = diseaseInfo.imageResources.get(0);
                 int resId = holder.itemView.getContext().getResources().getIdentifier(thumbnailName, "drawable", holder.itemView.getContext().getPackageName());
                 if (resId != 0) {
@@ -54,13 +61,13 @@ public class CommonDiseaseAdapter extends RecyclerView.Adapter<CommonDiseaseAdap
                     Glide.with(holder.itemView.getContext()).load(android.R.drawable.ic_menu_gallery).into(holder.binding.ivCommonDisease);
                 }
             }
-            
-            holder.itemView.setOnClickListener(v -> {
-                Intent intent = new Intent(v.getContext(), DiseaseDetailActivity.class);
-                intent.putExtra("name", diseaseInfo.name);
-                v.getContext().startActivity(intent);
-            });
         }
+        
+        holder.itemView.setOnClickListener(v -> {
+            Intent intent = new Intent(v.getContext(), DiseaseDetailActivity.class);
+            intent.putExtra("name", name);
+            v.getContext().startActivity(intent);
+        });
     }
 
     @Override

@@ -1,28 +1,29 @@
-# Walkthrough - Giao diện Thư viện AI Siêu cấp (v11.1)
+# Walkthrough - Khắc phục lỗi 422, Tải ảnh & Giao diện Chia sẻ Siêu cấp (v13.2)
 
-Tôi đã hoàn thành việc nâng cấp giao diện Thư viện và tích hợp Chuyên gia AI theo phong cách hiện đại, màu sắc và thân thiện hơn.
+Tôi đã giải quyết dứt điểm các lỗi nghiêm trọng về truyền tải dữ liệu và mang đến một diện mạo hoàn toàn mới cho tính năng chia sẻ cộng đồng.
 
 ## Các thay đổi chính
 
-### 1. Header Thư viện Hiện đại
-- **Màu sắc**: Chuyển từ header xanh đặc sang phong cách nền trắng tinh khôi kết hợp với thanh tìm kiếm màu xám nhạt bo tròn cực mạnh (**24dp**).
-- **Icon AI**: Biểu tượng dấu hỏi cũ đã được thay thế bằng một nút bấm có độ phản hồi cao, tạo cảm giác công nghệ.
+### 1. Xử lý triệt để lỗi 422 & Truyền dữ liệu
+- **Dữ liệu an toàn**: Đã cập nhật cả Android và Backend để đảm bảo không bao giờ gửi giá trị "rỗng" (null) gây lỗi. Hệ thống hiện tại sẽ tự động điền các thông tin mặc định nếu bạn chưa cập nhật hồ sơ.
+- **Linh hoạt nội dung**: Bạn có thể đăng bài **chỉ có ảnh** mà không cần nhập nội dung văn bản, hoặc ngược lại, hệ thống vẫn xử lý mượt mà.
 
-### 2. Trải nghiệm Hỏi đáp AI "Chat-style"
-- **Bảng điều khiển (Bottom Sheet)**: Khi nhấn vào icon AI, một bảng điều khiển từ dưới trượt lên thay vì một hộp thoại thô cứng.
-- **Thiết kế Chuyên gia**: Có Avatar Thần Nông AI và nhãn trạng thái "● Đang trực tuyến", tạo cảm giác bạn đang thực sự trò chuyện với một chuyên gia nông nghiệp.
-- **Bong bóng chat**: Câu trả lời từ AI được hiển thị trong bong bóng xanh nhạt (Chat bubble), giúp bạn dễ dàng đọc và nắm bắt các lời khuyên kỹ thuật.
+### 2. Sửa lỗi Tải ảnh (Avatar & Diễn đàn)
+- **Xác nhận 100%**: Thay đổi quy trình upload ảnh. Ứng dụng sẽ đợi Cloud xác nhận file đã tồn tại thực sự rồi mới lưu đường dẫn vào SQL Server.
+- **Đồng bộ Avatar**: Đảm bảo việc thay đổi ảnh hồ sơ sẽ được cập nhật tức thì cho toàn bộ bài viết/bình luận của bạn trên diễn đàn để mọi người cùng thấy.
 
-### 3. Tinh chỉnh Thẩm mỹ
-- **Bo góc mềm mại**: Toàn bộ các thành phần nhập liệu và hiển thị đều được bo góc theo tiêu chuẩn Material 3.
-- **Hiệu ứng trượt**: Chuyển cảnh giữa việc đặt câu hỏi và nhận câu trả lời diễn ra mượt mà nhờ hệ thống Bottom Sheet.
+### 3. Giao diện Chia sẻ "Facebook Style"
+- **Bottom Sheet Chuyên nghiệp**: Khi bạn chia sẻ từ Thư viện hoặc sau khi Chẩn đoán, một bảng điều khiển sang trọng sẽ trượt lên.
+- **Xem trước Thông minh**: Hiển thị ảnh lá bệnh, tên bệnh rõ ràng và ô nhập cảm nghĩ rộng rãi, hiện đại.
 
 ---
 
-## Kết quả kiểm tra
+## Kết quả kiểm tra & Git
 - **Build**: Thành công (Build Successful).
-- **Giao diện**: Các bảng trượt (Bottom Sheets) hiện đúng thiết kế bo tròn.
-- **Tương tác**: Nút Gửi câu hỏi và nút Cảm ơn hoạt động tốt.
+- **Git**: Đã đẩy toàn bộ bản vá lỗi v13.2 lên GitHub thành công.
+- **Backend**: Đã tối ưu hóa log để bạn dễ dàng theo dõi trạng thái bài đăng.
 
 > [!TIP]
-> **Thử ngay**: Vào mục **Thư viện**, nhấn vào biểu tượng dấu hỏi ở cuối thanh tìm kiếm. Bạn sẽ thấy một bảng chat cực đẹp hiện lên để bạn đặt câu hỏi cho AI!
+> **Thử ngay**:
+> 1. Vào mục **Cá nhân > Chỉnh sửa thông tin**, thử đổi Avatar mới xem nó có hiện lên diễn đàn không nhé.
+> 2. Vào **Thư viện**, nhấn **Chia sẻ** một bệnh bất kỳ để trải nghiệm giao diện chia sẻ cực đẹp mới!

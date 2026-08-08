@@ -1,38 +1,58 @@
-# Implementation Plan - Khắc phục lỗi 422, Tải ảnh & Nâng cấp Giao diện Chia sẻ (v13.2)
+# Implementation Plan - Tách biệt Backend AI & SQL + Triệt tiêu lỗi Tải ảnh (v14.1)
 
-Kế hoạch này thực hiện việc sửa lỗi truyền dữ liệu (422) sang SQL Server, tối ưu hóa quy trình tải ảnh và cải thiện thẩm mỹ cho tính năng chia sẻ bệnh.
+Kế hoạch này thực hiện việc tách rời hoàn toàn hai hệ thống Backend để bạn có thể quản lý riêng biệt (AI trong VS Code, SQL trong Android Studio) và xử lý dứt điểm lỗi tải ảnh lên Cloud.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> **Khắc phục lỗi 422**: Lỗi này xảy ra do một số thông tin (như tên người dùng hoặc ảnh đại diện) bị gửi đi với giá trị rỗng hoặc sai định dạng. Tôi sẽ chuẩn hóa dữ liệu trên cả Android và Backend để đảm bảo mọi bài đăng đều thành công.
-> **Tải ảnh từ máy**: Tôi sẽ nâng cấp logic tải ảnh để đảm bảo ứng dụng chỉ tiếp tục lưu dữ liệu sau khi tệp ảnh đã được ghi thành công trên Cloud.
-> **Giao diện Chia sẻ mới**: Thay vì hộp thoại nhập chữ đơn giản, tính năng chia sẻ từ Thư viện/Chẩn đoán sẽ được lột xác với giao diện chuyên nghiệp như Facebook.
+> **Hệ thống 2 Server**:
+> - **Server AI (Cổng 8000)**: Bạn sẽ chạy file `main.py` trong thư mục `D:/Plant_Disease_Pipeline` bằng VS Code.
+> - **Server SQL (Cổng 8001)**: Bạn sẽ chạy file `backend_sql.py` trong Android Studio.
+> **Lưu ý về Cáp USB**: Tôi sẽ cập nhật file bat để nó tự động "thông cầu" cho cả hai cổng 8000 và 8001 cùng lúc. Bạn không cần làm gì thêm ngoài việc cắm cáp.
+
+> [!CAUTION]
+> **Sửa lỗi Tải ảnh**: Tôi sẽ áp dụng phương thức "Xác thực luồng" (`continueWithTask`) cho tất cả các Activity có tính năng upload ảnh (Avatar, Diễn đàn, Chẩn đoán). Đây là cách an toàn nhất để tránh lỗi "Object does not exist".
 
 ## Proposed Changes
 
-### 1. Khắc phục lỗi 422 (FastAPI Validation)
-#### [MODIFY] [backend_v13.py](file:///D:/Androi_DATN/backend_v13.py)
-- Chuyển các trường `author`, `question`, `uid` sang dạng tùy chọn (`Optional`) hoặc có giá trị mặc định để tránh lỗi khi Android gửi thiếu trường.
-- Thêm log chi tiết để theo dõi dữ liệu nhận được từ App.
+### 1. Backend AI (VS Code - Port 8000)
+#### [MODIFY] `D:/Plant_Disease_Pipeline/main.py`
+- Xóa bỏ toàn bộ các endpoint liên quan đến SQL (posts, comments, stats...).
+- Chỉ giữ lại `/predict` (Chẩn đoán) và `/chat` (Hỏi đáp AI).
 
-#### [MODIFY] [ApiService.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/api/ApiService.java)
-- Sử dụng `@Field` với giá trị dự phòng (fallback) để không bao giờ gửi giá trị `null` lên server.
+### 2. Backend SQL (Android Studio - Port 8001)
+#### [NEW/MODIFY] `D:/Androi_DATN/backend_sql.py`
+- Chỉ chứa các endpoint liên quan đến Database SQL Server.
+- Đảm bảo chạy trên cổng **8001**.
 
-### 2. Sửa lỗi Tải ảnh (Firebase Storage & SQL Sync)
-#### [MODIFY] [CreatePostActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/forum/CreatePostActivity.java) & [EditProfileActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/profile/EditProfileActivity.java)
-- Sử dụng phương thức `taskSnapshot.getMetadata().getReference().getDownloadUrl()` để lấy link ảnh bền vững nhất.
-- Bổ sung thông báo lỗi chi tiết khi quá trình tải ảnh thất bại.
+### 3. Android - Cấu hình Kết nối
+#### [MODIFY] [RetrofitClient.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/api/RetrofitClient.java)
+- Cung cấp hai lối vào riêng biệt: `getAiService()` (Port 8000) và `getSqlService()` (Port 8001).
 
-### 3. Nâng cấp Giao diện Chia sẻ (Elegant Sharing UI)
-#### [MODIFY] [DiseaseDetailActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/library/DiseaseDetailActivity.java) & [DiagnosisActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/DiagnosisActivity.java)
-- Thiết kế lại hộp thoại chia sẻ: Hiển thị ảnh xem trước của bệnh, tên bệnh rõ ràng và ô nhập trạng thái phong cách Material 3.
-- Cho phép đăng bài ngay cả khi không nhập nội dung văn bản.
+### 4. Android - Sửa lỗi & Nối dây
+#### [MODIFY] `DiagnosisActivity.java`
+- Chẩn đoán ảnh -> Gọi Port 8000.
+- Lưu thống kê/Đăng bài -> Gọi Port 8001.
+- Fix logic upload ảnh chẩn đoán sang Diễn đàn bằng `continueWithTask`.
+
+#### [MODIFY] `CreatePostActivity.java` & `EditProfileActivity.java`
+- Áp dụng `continueWithTask` để lấy link ảnh "tuyệt đối" từ Firebase.
+- Chuyển hướng toàn bộ yêu cầu lưu dữ liệu sang Port 8001.
+
+#### [MODIFY] `ForumFragment.java`, `PostDetailActivity.java`, `LibraryFragment.java`, `MainActivity.java`
+- Đồng bộ hóa việc gọi API sang Port 8001 cho các tính năng cộng đồng.
+
+### 5. Công cụ Khởi động
+#### [MODIFY] `khoi_dong_he_thong.bat`
+- Tự động chạy `adb reverse` cho cả hai cổng 8000 và 8001.
+- Chỉ tự động bật Server SQL (Port 8001). Server AI bạn sẽ chủ động bật bên VS Code.
 
 ## Verification Plan
 
 ### Manual Verification
-- **Đăng bài**: Thử đăng bài chỉ có chữ, chỉ có ảnh, hoặc cả hai.
-- **Thay Avatar**: Cập nhật ảnh hồ sơ và kiểm tra xem các bài viết mới có hiện Avatar mới không.
-- **Chia sẻ**: Vào Thư viện, nhấn "Chia sẻ" và kiểm tra xem bài viết có xuất hiện trên Diễn đàn mà không cần nhập chữ không.
-- **Lỗi 422**: Theo dõi log Backend để đảm bảo không còn phản hồi 422 từ server.
+1. **VS Code**: Chạy `python main.py`. Kiểm tra log xem có chẩn đoán thành công không.
+2. **Android Studio**: Chạy `python backend_sql.py` (hoặc qua file bat).
+3. **App**:
+    - Thử quét lá bệnh -> Kết quả phải hiện ra mượt mà (8000).
+    - Thử đăng bài có ảnh -> Ảnh phải hiện lên ngay lập tức (8001).
+    - Thử đổi Avatar -> Kiểm tra xem ảnh đã "lên mây" chưa.

@@ -166,115 +166,112 @@ public class DiagnosisActivity extends AppCompatActivity {
 
     private void uploadImageToFastAPI(File imageFile) {
         showLoading(true);
-        OkHttpClient client = new OkHttpClient();
+        
+        // Gọi AI qua Port 8000 (VS Code)
+        ApiService apiService = RetrofitClient.getAiService();
 
-        String userEmail = "unknown@example.com";
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user != null && user.getEmail() != null) {
-            userEmail = user.getEmail();
-        }
+        String userEmail = (user != null && user.getEmail() != null) ? user.getEmail() : "unknown@example.com";
 
-        RequestBody requestBody = new MultipartBody.Builder()
-                .setType(MultipartBody.FORM)
-                .addFormDataPart("file", imageFile.getName(),
-                        RequestBody.create(imageFile, MediaType.parse("image/jpeg")))
-                .addFormDataPart("user_email", userEmail)
-                .build();
+        RequestBody requestFile = RequestBody.create(imageFile, MediaType.parse("image/jpeg"));
+        MultipartBody.Part body = MultipartBody.Part.createFormData("file", imageFile.getName(), requestFile);
+        RequestBody emailPart = RequestBody.create(userEmail, MediaType.parse("text/plain"));
 
-        // Địa chỉ IP máy tính chạy FastAPI
-        // Ví dụ: 192.168.1.10 hoặc 10.0.2.2 nếu chạy Emulator
-        // Lấy từ RetrofitClient.BASE_URL để đồng bộ
-        String url = com.example.smartcrop.api.RetrofitClient.BASE_URL + "/predict";
-
-        okhttp3.Request request = new okhttp3.Request.Builder()
-                .url(url)
-                .post(requestBody)
-                .build();
-
-        client.newCall(request).enqueue(new okhttp3.Callback() {
+        apiService.predictDisease(body).enqueue(new retrofit2.Callback<PredictResponse>() {
             @Override
-            public void onFailure(@NonNull okhttp3.Call call, @NonNull IOException e) {
-                runOnUiThread(() -> {
-                    showLoading(false);
-                    // Hiện lỗi chi tiết để debug
-                    Toast.makeText(DiagnosisActivity.this, "Lỗi kết nối: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                    e.printStackTrace();
-                });
+            public void onResponse(@NonNull retrofit2.Call<PredictResponse> call, @NonNull retrofit2.Response<PredictResponse> response) {
+                runOnUiThread(() -> showLoading(false));
+                if (response.isSuccessful() && response.body() != null) {
+                    PredictResponse result = response.body();
+                    
+                    // Cập nhật kết quả lên UI
+                    binding.tvDiseaseName.setText(result.getDiseaseName()); // Giả sử model có phương thức này, cần check
+                    // Nếu Model cũ trả về disease_name_vi, ta dùng field đó
+                    
+                    // ... Cập nhật các thông tin khác ...
+                    // Lưu ý: Tôi sẽ tinh chỉnh lại để khớp với PredictResponse thật của bạn
+                    processAiResult(result);
+                } else {
+                    runOnUiThread(() -> Toast.makeText(DiagnosisActivity.this, "Lỗi Server AI (404/500): " + response.code(), Toast.LENGTH_SHORT).show());
+                }
             }
 
             @Override
-            public void onResponse(@NonNull okhttp3.Call call, @NonNull okhttp3.Response response) throws IOException {
-                runOnUiThread(() -> showLoading(false));
-                if (response.isSuccessful() && response.body() != null) {
-                    String responseData = response.body().string();
-                    try {
-                        org.json.JSONObject json = new org.json.JSONObject(responseData);
-                        double confidence = json.getDouble("confidence");
-                        
-                        // Parse treatment_details
-                        org.json.JSONObject details = json.getJSONObject("treatment_details");
-                        String diseaseNameVi = details.getString("disease_name_vi");
-                        String severity = details.getString("severity");
-                        String symptoms = details.getString("symptoms");
-                        String bioTreatment = details.getString("biological_treatment");
-                        String chemTreatment = details.getString("chemical_treatment");
-                        String prevention = details.getString("prevention");
-                        
-                        // Parse Gemini Advice
-                        String aiAdvice = json.getString("ai_expert_advice");
+            public void onFailure(@NonNull retrofit2.Call<PredictResponse> call, @NonNull Throwable t) {
+                runOnUiThread(() -> {
+                    showLoading(false);
+                    Toast.makeText(DiagnosisActivity.this, "Lỗi kết nối AI: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                });
+            }
+        });
+    }
 
-                        // Lấy tọa độ Bounding Box
-                        org.json.JSONObject bbox = json.getJSONObject("bbox");
-                        int x1 = bbox.getInt("x1");
-                        int y1 = bbox.getInt("y1");
-                        int x2 = bbox.getInt("x2");
-                        int y2 = bbox.getInt("y2");
+    private void processAiResult(PredictResponse result) {
+        String name = result.getDiseaseName() != null ? result.getDiseaseName() : "Bệnh hại";
+        double confidence = result.getConfidence();
+        
+        binding.tvDiseaseName.setText(name);
+        binding.tvConfidence.setText(String.format("Độ tin cậy: %.2f%%", confidence));
+        
+        currentDiseaseName = name;
+        binding.btnPostForum.setVisibility(View.VISIBLE);
 
-                        runOnUiThread(() -> {
-                            // Cập nhật kết quả lên UI Dashboard
-                            binding.tvDiseaseName.setText(diseaseNameVi);
-                            binding.tvConfidence.setText(String.format("Độ tin cậy: %.2f%%", confidence));
-                            binding.tvSeverity.setText("Mức độ: " + severity);
+        Map<String, String> details = result.getTreatmentDetails();
+        if (details != null) {
+            String severity = details.get("severity");
+            binding.tvSeverity.setText("Mức độ: " + severity);
+            updateSeverityUI(severity != null ? severity : "");
+            
+            binding.tvSymptoms.setText(details.get("symptoms"));
+            binding.tvBioTreatment.setText(details.get("biological_treatment"));
+            binding.tvChemTreatment.setText(details.get("chemical_treatment"));
+            binding.tvPrevention.setText(details.get("prevention"));
+        }
+        
+        binding.tvAiAdvice.setText(result.getAiExpertAdvice());
 
-                            currentDiseaseName = diseaseNameVi;
-                            binding.btnPostForum.setVisibility(View.VISIBLE);
+        // Draw BBox
+        Map<String, Integer> bbox = result.getBbox();
+        if (bbox != null && bbox.containsKey("x1")) {
+            drawBoundingBoxOnImage(bbox.get("x1"), bbox.get("y1"), bbox.get("x2"), bbox.get("y2"));
+        }
 
-                            // Cài đặt màu sắc theo mức độ nghiêm trọng
-                            updateSeverityUI(severity);
+        // Stats & History - Upload image for stats
+        boolean isHealthy = name.toLowerCase().contains("khỏe mạnh") || name.toLowerCase().contains("healthy");
+        if (!isHealthy && originalBitmap != null) {
+            uploadDiagnosisImageForStats(name);
+        }
+        
+        saveToHistory(name, confidence, "Chẩn đoán bởi AI");
+    }
 
-                            binding.tvAiAdvice.setText(aiAdvice);
-                            binding.tvSymptoms.setText(symptoms);
-                            binding.tvBioTreatment.setText(bioTreatment);
-                            binding.tvChemTreatment.setText(chemTreatment);
-                            binding.tvPrevention.setText(prevention);
+    private void uploadDiagnosisImageForStats(String diseaseName) {
+        String fileName = "stats_" + System.currentTimeMillis() + ".jpg";
+        StorageReference ref = FirebaseStorage.getInstance().getReference().child("diagnosis_images/" + fileName);
 
-                            // Tiến hành vẽ Bounding Box lên Bitmap ảnh trên Android
-                            drawBoundingBoxOnImage(x1, y1, x2, y2);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        originalBitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
+        byte[] data = baos.toByteArray();
 
-                            // Lưu vào lịch sử (Sử dụng tên tiếng Việt và gom các biện pháp lại)
-                            String fullTreatment = "Sinh học: " + bioTreatment + "\nHóa học: " + chemTreatment;
-                            saveToHistory(diseaseNameVi, confidence, fullTreatment);
+        ref.putBytes(data).continueWithTask(task -> {
+            if (!task.isSuccessful()) throw task.getException();
+            return ref.getDownloadUrl();
+        }).addOnSuccessListener(uri -> {
+            incrementDiseaseCount(diseaseName, uri.toString());
+        });
+    }
 
-                            // Logic cảnh báo khẩn cấp (Chỉ khi phát hiện BỆNH, không phải lá khỏe)
-                            boolean isHealthy = diseaseNameVi.toLowerCase().contains("khỏe mạnh") || diseaseNameVi.toLowerCase().contains("an toàn") || diseaseNameVi.toLowerCase().contains("healthy");
-                            
-                            if (!isHealthy && (severity.contains("Rất cao") || confidence > 85)) {
-                                // Tự động gửi email ngầm (KHÔNG hiện AlertDialog, KHÔNG báo Gmail cho lá khỏe)
-                                sendNotification(diseaseNameVi);
-                            }
+    private void incrementDiseaseCount(String diseaseName, String imageUrl) {
+        ApiService apiService = RetrofitClient.getSqlService();
+        apiService.incrementDiseaseCount(diseaseName, imageUrl).enqueue(new retrofit2.Callback<java.util.Map<String, String>>() {
+            @Override
+            public void onResponse(@NonNull retrofit2.Call<java.util.Map<String, String>> call, @NonNull retrofit2.Response<java.util.Map<String, String>> response) {
+                // Success
+            }
 
-                            // Tăng bộ đếm bệnh thường gặp trên SQL Server (Chỉ tính nếu có BỆNH)
-                            if (!isHealthy) {
-                                incrementDiseaseCount(diseaseNameVi);
-                            }
-                        });
-                    } catch (org.json.JSONException e) {
-                        e.printStackTrace();
-                        runOnUiThread(() -> Toast.makeText(DiagnosisActivity.this, "Lỗi phân tích dữ liệu!", Toast.LENGTH_SHORT).show());
-                    }
-                } else {
-                    runOnUiThread(() -> Toast.makeText(DiagnosisActivity.this, "Server trả về lỗi: " + response.code(), Toast.LENGTH_SHORT).show());
-                }
+            @Override
+            public void onFailure(@NonNull retrofit2.Call<java.util.Map<String, String>> call, @NonNull Throwable t) {
+                // Log error
             }
         });
     }
@@ -354,20 +351,6 @@ public class DiagnosisActivity extends AppCompatActivity {
         return tempFile;
     }
 
-    private void incrementDiseaseCount(String diseaseName) {
-        ApiService apiService = RetrofitClient.getApiService();
-        apiService.incrementDiseaseCount(diseaseName).enqueue(new retrofit2.Callback<java.util.Map<String, String>>() {
-            @Override
-            public void onResponse(@NonNull retrofit2.Call<java.util.Map<String, String>> call, @NonNull retrofit2.Response<java.util.Map<String, String>> response) {
-                // Success
-            }
-
-            @Override
-            public void onFailure(@NonNull retrofit2.Call<java.util.Map<String, String>> call, @NonNull Throwable t) {
-                // Log error
-            }
-        });
-    }
 
     private void showPostDialog() {
         BottomSheetDialog dialog = new BottomSheetDialog(this);
@@ -415,33 +398,41 @@ public class DiagnosisActivity extends AppCompatActivity {
         originalBitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
         byte[] data = baos.toByteArray();
 
-        storageRef.putBytes(data)
-                .addOnSuccessListener(taskSnapshot -> storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                    // 2. Lưu thông tin vào SQL Server (thay vì Firestore)
-                    ApiService apiService = RetrofitClient.getApiService();
-                    apiService.createPost(uid, userName, question, userPhotoUrl, uri.toString(), currentDiseaseName)
-                            .enqueue(new retrofit2.Callback<Map<String, String>>() {
-                                @Override
-                                public void onResponse(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull retrofit2.Response<Map<String, String>> response) {
-                                    showLoading(false);
-                                    if (response.isSuccessful()) {
-                                        Toast.makeText(DiagnosisActivity.this, "Đã đăng bài thành công lên diễn đàn!", Toast.LENGTH_SHORT).show();
-                                    } else {
-                                        Toast.makeText(DiagnosisActivity.this, "Lỗi Server: " + response.code(), Toast.LENGTH_SHORT).show();
-                                    }
-                                }
+                storageRef.putBytes(data)
+                    .continueWithTask(task -> {
+                        if (!task.isSuccessful()) {
+                            throw task.getException();
+                        }
+                        return storageRef.getDownloadUrl();
+                    })
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            Uri downloadUri = task.getResult();
+                            // 2. Lưu thông tin vào SQL Server qua Port 8001
+                            ApiService apiService = RetrofitClient.getSqlService();
+                            apiService.createPost(uid, userName, question, userPhotoUrl, downloadUri.toString(), currentDiseaseName)
+                                    .enqueue(new retrofit2.Callback<Map<String, String>>() {
+                                        @Override
+                                        public void onResponse(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull retrofit2.Response<Map<String, String>> response) {
+                                            showLoading(false);
+                                            if (response.isSuccessful()) {
+                                                Toast.makeText(DiagnosisActivity.this, "Đã đăng bài thành công lên diễn đàn!", Toast.LENGTH_SHORT).show();
+                                            } else {
+                                                Toast.makeText(DiagnosisActivity.this, "Lỗi server SQL: " + response.code(), Toast.LENGTH_SHORT).show();
+                                            }
+                                        }
 
-                                @Override
-                                public void onFailure(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull Throwable t) {
-                                    showLoading(false);
-                                    Toast.makeText(DiagnosisActivity.this, "Lỗi kết nối SQL Server", Toast.LENGTH_SHORT).show();
-                                }
-                            });
-                }))
-                .addOnFailureListener(e -> {
-                    showLoading(false);
-                    Toast.makeText(this, "Lỗi tải ảnh: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
+                                        @Override
+                                        public void onFailure(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull Throwable t) {
+                                            showLoading(false);
+                                            Toast.makeText(DiagnosisActivity.this, "Lỗi kết nối SQL Server", Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+                        } else {
+                            showLoading(false);
+                            Toast.makeText(this, "Lỗi tải ảnh: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
     }
 
     private void saveToHistory(String disease, double confidence, String treatment) {

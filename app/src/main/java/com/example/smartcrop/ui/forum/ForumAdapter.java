@@ -37,6 +37,7 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
     private final List<String> postIds;
     private final Context context;
     private final String currentUid;
+    private final java.util.Set<String> locallyLikedPosts = new java.util.HashSet<>();
 
     public ForumAdapter(Context context, List<Map<String, Object>> postList, List<String> postIds) {
         this.context = context;
@@ -88,7 +89,18 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
         holder.binding.tvLikeCount.setText(likes + " lượt thích");
         holder.binding.tvCommentCount.setText(comments + " bình luận");
 
-        holder.binding.btnLike.setOnClickListener(v -> toggleLike(postId, false));
+        // Optimistic UI for Like
+        if (locallyLikedPosts.contains(postId)) {
+            holder.binding.btnLike.setIconResource(android.R.drawable.btn_star_big_on);
+            holder.binding.btnLike.setText("Đã thích");
+            holder.binding.btnLike.setTextColor(context.getResources().getColor(R.color.primary));
+        } else {
+            holder.binding.btnLike.setIconResource(android.R.drawable.btn_star_big_off);
+            holder.binding.btnLike.setText("Thích");
+            holder.binding.btnLike.setTextColor(Color.GRAY);
+        }
+
+        holder.binding.btnLike.setOnClickListener(v -> toggleLike(postId, position));
 
         // Avatar logic
         String userPhotoUrl = (String) post.get("userPhotoUrl");
@@ -125,7 +137,6 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
         }
 
         // Click listeners
-        holder.binding.btnLike.setOnClickListener(v -> toggleLike(postId, false));
         holder.binding.btnShare.setOnClickListener(v -> sharePost(post, postId));
         
         holder.binding.ivPostMenu.setOnClickListener(v -> showMenu(v, post, postId, position));
@@ -214,10 +225,17 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
                 .addOnSuccessListener(doc -> Toast.makeText(context, "Đã lưu bài viết!", Toast.LENGTH_SHORT).show());
     }
 
-    private void toggleLike(String postId, boolean isLiked) {
+    private void toggleLike(String postId, int position) {
         if (currentUid == null) return;
         
-        // Sửa lỗi Parse ID bài viết từ SQL (GSON có thể trả về 1.0 thay vì 1)
+        // Optimistic update
+        if (locallyLikedPosts.contains(postId)) {
+            locallyLikedPosts.remove(postId);
+        } else {
+            locallyLikedPosts.add(postId);
+        }
+        notifyItemChanged(position);
+
         int pId;
         try {
             pId = (int) Double.parseDouble(postId);
@@ -225,23 +243,24 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
             try {
                 pId = Integer.parseInt(postId);
             } catch (Exception ex) {
-                Toast.makeText(context, "ID bài viết không hợp lệ", Toast.LENGTH_SHORT).show();
                 return;
             }
         }
 
-        ApiService apiService = RetrofitClient.getApiService();
+        ApiService apiService = RetrofitClient.getSqlService();
         apiService.toggleLike(currentUid, pId).enqueue(new retrofit2.Callback<Map<String, String>>() {
             @Override
             public void onResponse(retrofit2.Call<Map<String, String>> call, retrofit2.Response<Map<String, String>> response) {
-                if (response.isSuccessful()) {
-                    notifyDataSetChanged(); // In real app, we should only update one item
-                }
+                // Sync complete
             }
 
             @Override
             public void onFailure(retrofit2.Call<Map<String, String>> call, Throwable t) {
-                Toast.makeText(context, "Lỗi like", Toast.LENGTH_SHORT).show();
+                // Rollback on failure
+                if (locallyLikedPosts.contains(postId)) locallyLikedPosts.remove(postId);
+                else locallyLikedPosts.add(postId);
+                notifyItemChanged(position);
+                Toast.makeText(context, "Lỗi đồng bộ lượt thích", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -285,7 +304,7 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
         String senderName = user.getDisplayName() != null ? user.getDisplayName() : "Một người dùng";
         String senderAvatar = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : "";
 
-        ApiService apiService = RetrofitClient.getApiService();
+        ApiService apiService = RetrofitClient.getSqlService();
         apiService.sendNotification(targetUid, senderName, senderAvatar, type, postId, postContent)
                 .enqueue(new retrofit2.Callback<Map<String, String>>() {
                     @Override

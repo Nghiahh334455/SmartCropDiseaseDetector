@@ -59,7 +59,7 @@ public class ForumFragment extends Fragment {
     private void listenForPosts() {
         binding.swipeRefresh.setRefreshing(true);
         
-        ApiService apiService = RetrofitClient.getApiService();
+        ApiService apiService = RetrofitClient.getSqlService();
         apiService.getPosts().enqueue(new Callback<List<Map<String, Object>>>() {
             @Override
             public void onResponse(Call<List<Map<String, Object>>> call, Response<List<Map<String, Object>>> response) {
