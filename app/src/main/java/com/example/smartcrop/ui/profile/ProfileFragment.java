@@ -16,6 +16,7 @@ import com.bumptech.glide.Glide;
 import com.example.smartcrop.databinding.FragmentProfileBinding;
 import com.example.smartcrop.ui.auth.LoginActivity;
 import com.example.smartcrop.ui.history.HistoryActivity;
+import com.example.smartcrop.utils.ImageUtils;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -60,11 +61,13 @@ public class ProfileFragment extends Fragment {
             String localPath = getContext().getSharedPreferences("SmartCropPrefs", android.content.Context.MODE_PRIVATE)
                     .getString("profile_image_" + currentUser.getUid(), null);
 
-            if (localPath != null && new File(localPath).exists()) {
-                Glide.with(this)
-                        .load(new File(localPath))
-                        .placeholder(android.R.drawable.ic_menu_gallery)
-                        .into(binding.ivProfile);
+            if (localPath != null) {
+                if (localPath.startsWith("BASE64:")) {
+                    byte[] bytes = ImageUtils.base64ToBytes(localPath);
+                    if (bytes != null) Glide.with(this).load(bytes).placeholder(android.R.drawable.ic_menu_gallery).into(binding.ivProfile);
+                } else if (new File(localPath).exists()) {
+                    Glide.with(this).load(new File(localPath)).placeholder(android.R.drawable.ic_menu_gallery).into(binding.ivProfile);
+                }
             } else if (currentUser.getPhotoUrl() != null) {
                 // 2. Nếu không có ảnh cục bộ, thử load từ Firebase (nếu có)
                 Glide.with(this)

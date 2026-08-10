@@ -126,13 +126,18 @@ public class PostDetailActivity extends AppCompatActivity {
     }
 
     private void listenForComments() {
-        if (postId == null) return;
+        if (postId == null || postId.isEmpty() || postId.equals("null")) return;
         
         int pId;
         try {
-            pId = (int) Double.parseDouble(postId);
+            double d = Double.parseDouble(postId);
+            pId = (int) d;
         } catch (Exception e) {
-            pId = Integer.parseInt(postId);
+            try {
+                pId = Integer.parseInt(postId);
+            } catch (Exception ex) {
+                return;
+            }
         }
         
         ApiService apiService = RetrofitClient.getSqlService();
@@ -213,19 +218,36 @@ public class PostDetailActivity extends AppCompatActivity {
         String senderName = user.getDisplayName() != null ? user.getDisplayName() : "Một người dùng";
         String senderAvatar = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : "";
 
-        NotificationModel notification = new NotificationModel(
-                "", type, senderName, senderAvatar, user.getUid(), postId, postContent, System.currentTimeMillis(), false
-        );
+        int pId;
+        try {
+            double d = Double.parseDouble(postId);
+            pId = (int) d;
+        } catch (Exception e) {
+            try {
+                pId = Integer.parseInt(postId);
+            } catch (Exception ex) {
+                return;
+            }
+        }
 
-        FirebaseFirestore.getInstance().collection("users")
-                .document(targetUid)
-                .collection("notifications")
-                .add(notification);
+        ApiService apiService = RetrofitClient.getSqlService();
+        apiService.sendNotification(targetUid, senderName, senderAvatar, user.getUid(), type, pId, postContent)
+                .enqueue(new retrofit2.Callback<Map<String, String>>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<Map<String, String>> call, retrofit2.Response<Map<String, String>> response) {
+                        // Success
+                    }
+
+                    @Override
+                    public void onFailure(retrofit2.Call<Map<String, String>> call, Throwable t) {
+                        // Log
+                    }
+                });
     }
 
     private void displayPost(Map<String, Object> post) {
-        binding.postItem.tvPostAuthor.setText((String) post.get("author"));
-        binding.postItem.tvPostQuestion.setText((String) post.get("question"));
+        binding.postItem.tvPostAuthor.setText(String.valueOf(post.get("author")));
+        binding.postItem.tvPostQuestion.setText(String.valueOf(post.get("question")));
         
         String diseaseName = (String) post.get("disease");
         if (diseaseName == null || diseaseName.isEmpty() || diseaseName.equals("Chia sẻ từ cộng đồng")) {
@@ -235,20 +257,45 @@ public class PostDetailActivity extends AppCompatActivity {
             binding.postItem.chipDisease.setText(diseaseName);
         }
         
-        long timestamp = (long) post.get("timestamp");
+        long timestamp = 0;
+        try {
+            Object ts = post.get("timestamp");
+            if (ts instanceof Double) timestamp = ((Double) ts).longValue();
+            else if (ts instanceof Long) timestamp = (Long) ts;
+        } catch (Exception ignored) {}
+        
         binding.postItem.tvPostTime.setText(DateUtils.getRelativeTimeSpanString(timestamp));
 
-        List<String> likedBy = (List<String>) post.get("likedBy");
-        if (likedBy == null) likedBy = new ArrayList<>();
+        int likes = 0;
+        try {
+            Object lCount = post.get("likesCount");
+            likes = (lCount instanceof Double) ? ((Double) lCount).intValue() : (int) lCount;
+        } catch (Exception ignored) {}
         
-        binding.postItem.tvLikeCount.setText(likedBy.size() + " lượt thích");
-        binding.postItem.tvCommentCount.setText(post.get("commentsCount") + " bình luận");
+        int comments = 0;
+        try {
+            Object cCount = post.get("commentsCount");
+            comments = (cCount instanceof Double) ? ((Double) cCount).intValue() : (int) cCount;
+        } catch (Exception ignored) {}
+        
+        binding.postItem.tvLikeCount.setText(likes + " lượt thích");
+        binding.postItem.tvCommentCount.setText(comments + " bình luận");
 
         String currentUid = FirebaseAuth.getInstance().getUid();
-        boolean isLiked = likedBy.contains(currentUid);
-        if (isLiked) {
+        boolean isLikedByMe = false;
+        try {
+            List<String> likedBy = (List<String>) post.get("likedBy");
+            if (likedBy != null) isLikedByMe = likedBy.contains(currentUid);
+        } catch (Exception ignored) {}
+
+        if (isLikedByMe) {
             binding.postItem.btnLike.setIconResource(android.R.drawable.btn_star_big_on);
             binding.postItem.btnLike.setText("Đã thích");
+            binding.postItem.btnLike.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.primary));
+        } else {
+            binding.postItem.btnLike.setIconResource(android.R.drawable.btn_star_big_off);
+            binding.postItem.btnLike.setText("Thích");
+            binding.postItem.btnLike.setTextColor(android.graphics.Color.GRAY);
         }
 
         // Avatar logic

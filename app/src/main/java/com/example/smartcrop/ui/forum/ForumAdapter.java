@@ -92,14 +92,22 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
         holder.binding.tvLikeCount.setText(likes + " lượt thích");
         holder.binding.tvCommentCount.setText(comments + " bình luận");
 
-        // Optimistic UI for Like
-        if (locallyLikedPosts.contains(postId)) {
+        // Like logic: Kết hợp dữ liệu từ Server và trạng thái Click tạm thời
+        List<String> likedBy = (List<String>) post.get("likedBy");
+        boolean isLikedByMe = (likedBy != null && likedBy.contains(currentUid)) || locallyLikedPosts.contains(postId);
+        
+        if (isLikedByMe) {
             holder.binding.btnLike.setIconResource(android.R.drawable.btn_star_big_on);
             holder.binding.btnLike.setText("Đã thích");
-            holder.binding.btnLike.setTextColor(context.getResources().getColor(R.color.primary));
+            int primaryColor = androidx.core.content.ContextCompat.getColor(this.context, R.color.primary);
+            android.content.res.ColorStateList colorStateList = android.content.res.ColorStateList.valueOf(primaryColor);
+            holder.binding.btnLike.setIconTint(colorStateList);
+            holder.binding.btnLike.setTextColor(primaryColor);
+            holder.binding.btnLike.setRippleColor(colorStateList);
         } else {
             holder.binding.btnLike.setIconResource(android.R.drawable.btn_star_big_off);
             holder.binding.btnLike.setText("Thích");
+            holder.binding.btnLike.setIconTint(android.content.res.ColorStateList.valueOf(Color.GRAY));
             holder.binding.btnLike.setTextColor(Color.GRAY);
         }
 
@@ -306,7 +314,7 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
         String senderAvatar = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : "";
 
         ApiService apiService = RetrofitClient.getSqlService();
-        apiService.sendNotification(targetUid, senderName, senderAvatar, type, postId, postContent)
+        apiService.sendNotification(targetUid, senderName, senderAvatar, user.getUid(), type, postId, postContent)
                 .enqueue(new retrofit2.Callback<Map<String, String>>() {
                     @Override
                     public void onResponse(retrofit2.Call<Map<String, String>> call, retrofit2.Response<Map<String, String>> response) {

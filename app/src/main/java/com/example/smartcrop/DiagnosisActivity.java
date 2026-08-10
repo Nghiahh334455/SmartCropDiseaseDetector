@@ -42,8 +42,6 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
 
 import java.io.ByteArrayOutputStream;
 
@@ -172,8 +170,13 @@ public class DiagnosisActivity extends AppCompatActivity {
         ApiService apiService = RetrofitClient.getAiService();
 
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) {
+            Toast.makeText(this, "⚠️ Bạn đang dùng tài khoản khách. Hãy đăng nhập để nhận cảnh báo qua Email!", Toast.LENGTH_LONG).show();
+        }
+        
         // Lấy đúng Email của tài khoản đang đăng nhập
         String userEmail = (user != null && user.getEmail() != null) ? user.getEmail() : "khach_hang@than-nong-ai.vn";
+        android.util.Log.d("DiagnosisActivity", "Gửi chẩn đoán với email: " + userEmail);
 
         RequestBody requestFile = RequestBody.create(imageFile, MediaType.parse("image/jpeg"));
         MultipartBody.Part body = MultipartBody.Part.createFormData("file", imageFile.getName(), requestFile);
@@ -181,7 +184,7 @@ public class DiagnosisActivity extends AppCompatActivity {
         // Truyền email động vào Form để Backend biết đường gửi về đúng người
         RequestBody emailPart = RequestBody.create(userEmail, MediaType.parse("text/plain"));
 
-        apiService.predictDisease(body).enqueue(new retrofit2.Callback<PredictResponse>() {
+        apiService.predictDisease(body, emailPart).enqueue(new retrofit2.Callback<PredictResponse>() {
             @Override
             public void onResponse(@NonNull retrofit2.Call<PredictResponse> call, @NonNull retrofit2.Response<PredictResponse> response) {
                 runOnUiThread(() -> showLoading(false));
@@ -193,8 +196,14 @@ public class DiagnosisActivity extends AppCompatActivity {
                     // Nếu Model cũ trả về disease_name_vi, ta dùng field đó
                     
                     // ... Cập nhật các thông tin khác ...
-                    // Lưu ý: Tôi sẽ tinh chỉnh lại để khớp với PredictResponse thật của bạn
                     processAiResult(result);
+
+                    // Thông báo trạng thái gửi Email
+                    if (result.isEmailSent()) {
+                        Toast.makeText(DiagnosisActivity.this, "✅ Đã gửi email cảnh báo tới: " + result.getTargetEmail(), Toast.LENGTH_LONG).show();
+                    } else if (user != null) {
+                        Toast.makeText(DiagnosisActivity.this, "❌ Lỗi gửi email. Vui lòng kiểm tra lại cấu hình SMTP hoặc mục Spam.", Toast.LENGTH_SHORT).show();
+                    }
                 } else {
                     runOnUiThread(() -> Toast.makeText(DiagnosisActivity.this, "Lỗi Server AI (404/500): " + response.code(), Toast.LENGTH_SHORT).show());
                 }
@@ -211,43 +220,59 @@ public class DiagnosisActivity extends AppCompatActivity {
     }
 
     private void processAiResult(PredictResponse result) {
-        String name = result.getDiseaseName() != null ? result.getDiseaseName() : "Bệnh hại";
-        double confidence = result.getConfidence();
-        
-        binding.tvDiseaseName.setText(name);
-        binding.tvConfidence.setText(String.format("Độ tin cậy: %.2f%%", confidence));
-        
-        currentDiseaseName = name;
-        binding.btnPostForum.setVisibility(View.VISIBLE);
-
-        Map<String, String> details = result.getTreatmentDetails();
-        if (details != null) {
-            String severity = details.get("severity");
-            binding.tvSeverity.setText("Mức độ: " + severity);
-            updateSeverityUI(severity != null ? severity : "");
+        try {
+            String name = result.getDiseaseName() != null ? result.getDiseaseName() : "Bệnh hại";
+            double confidence = result.getConfidence();
             
-            binding.tvSymptoms.setText(details.get("symptoms"));
-            binding.tvBioTreatment.setText(details.get("biological_treatment"));
-            binding.tvChemTreatment.setText(details.get("chemical_treatment"));
-            binding.tvPrevention.setText(details.get("prevention"));
-        }
-        
-        binding.tvAiAdvice.setText(result.getAiExpertAdvice());
+            // Hien thi Dashboard ket qua voi hieu ung Fade-in
+            binding.layoutResult.setVisibility(View.VISIBLE);
+            binding.layoutResult.setAlpha(0f);
+            binding.layoutResult.animate().alpha(1f).setDuration(500).start();
 
-        // Draw BBox
-        Map<String, Integer> bbox = result.getBbox();
-        if (bbox != null && bbox.containsKey("x1")) {
-            drawBoundingBoxOnImage(bbox.get("x1"), bbox.get("y1"), bbox.get("x2"), bbox.get("y2"));
-        }
+            binding.tvDiseaseName.setText(name);
+            binding.tvConfidence.setText(String.format("%.1f%%", confidence));
+            binding.progressConfidence.setProgress((int) confidence);
+            
+            currentDiseaseName = name;
+            binding.btnPostForum.setVisibility(View.VISIBLE);
 
-        // Stats & History - Fix BUG #2 using Base64
-        boolean isHealthy = name.toLowerCase().contains("khỏe mạnh") || name.toLowerCase().contains("healthy") || name.toLowerCase().contains("an toàn");
-        if (!isHealthy && originalBitmap != null) {
-            String base64Image = ImageUtils.bitmapToBase64(originalBitmap);
-            incrementDiseaseCount(name, base64Image);
+            Map<String, String> details = result.getTreatmentDetails();
+            if (details != null) {
+                String severity = details.get("severity");
+                binding.tvSeverity.setText("Mức độ: " + severity);
+                updateSeverityUI(severity != null ? severity : "");
+                
+                binding.tvSymptoms.setText(details.get("symptoms"));
+                binding.tvBioTreatment.setText(details.get("biological_treatment"));
+                binding.tvChemTreatment.setText(details.get("chemical_treatment"));
+                binding.tvPrevention.setText(details.get("prevention"));
+            }
+            
+            binding.tvAiAdvice.setText(result.getAiExpertAdvice());
+
+            // Draw BBox
+            Map<String, Integer> bbox = result.getBbox();
+            if (bbox != null && bbox.containsKey("x1")) {
+                drawBoundingBoxOnImage(bbox.get("x1"), bbox.get("y1"), bbox.get("x2"), bbox.get("y2"));
+            }
+
+            // Stats & History - Fix BUG #2 using Base64
+            boolean isHealthy = name.toLowerCase().contains("khỏe mạnh") || name.toLowerCase().contains("healthy") || name.toLowerCase().contains("an toàn");
+            
+            String base64Image = "";
+            if (originalBitmap != null) {
+                base64Image = ImageUtils.bitmapToBase64(originalBitmap);
+            }
+
+            if (!isHealthy && !base64Image.isEmpty()) {
+                incrementDiseaseCount(name, base64Image);
+            }
+            
+            saveToHistory(name, confidence, "Chẩn đoán bởi Thần Nông AI", base64Image);
+        } catch (Exception e) {
+            e.printStackTrace();
+            runOnUiThread(() -> Toast.makeText(this, "Lỗi xử lý kết quả AI: " + e.getMessage(), Toast.LENGTH_SHORT).show());
         }
-        
-        saveToHistory(name, confidence, "Chẩn đoán bởi Thần Nông AI");
     }
 
     private void incrementDiseaseCount(String diseaseName, String imageUrl) {
@@ -315,6 +340,30 @@ public class DiagnosisActivity extends AppCompatActivity {
         binding.progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
         binding.btnCamera.setEnabled(!isLoading);
         binding.btnGallery.setEnabled(!isLoading);
+        
+        if (isLoading) {
+            startScanningAnimation();
+        } else {
+            stopScanningAnimation();
+        }
+    }
+
+    private void startScanningAnimation() {
+        binding.viewScanningLine.setVisibility(View.VISIBLE);
+        android.view.animation.Animation animation = new android.view.animation.TranslateAnimation(
+                android.view.animation.Animation.RELATIVE_TO_PARENT, 0f,
+                android.view.animation.Animation.RELATIVE_TO_PARENT, 0f,
+                android.view.animation.Animation.RELATIVE_TO_PARENT, 0f,
+                android.view.animation.Animation.RELATIVE_TO_PARENT, 1f);
+        animation.setDuration(1500);
+        animation.setRepeatCount(android.view.animation.Animation.INFINITE);
+        animation.setInterpolator(new android.view.animation.LinearInterpolator());
+        binding.viewScanningLine.startAnimation(animation);
+    }
+
+    private void stopScanningAnimation() {
+        binding.viewScanningLine.clearAnimation();
+        binding.viewScanningLine.setVisibility(View.GONE);
     }
 
     private void createNotificationChannel() {
@@ -409,13 +458,13 @@ public class DiagnosisActivity extends AppCompatActivity {
         }
     }
 
-    private void saveToHistory(String disease, double confidence, String treatment) {
+    private void saveToHistory(String disease, double confidence, String treatment, String base64) {
         Executors.newSingleThreadExecutor().execute(() -> {
             HistoryEntity history = new HistoryEntity(
                     disease,
                     confidence,
                     treatment,
-                    imageUri != null ? imageUri.toString() : "",
+                    base64,
                     System.currentTimeMillis()
             );
             AppDatabase.getInstance(this).historyDao().insert(history);

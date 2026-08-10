@@ -60,8 +60,9 @@ public class CreatePostActivity extends AppCompatActivity {
 
         binding.btnPost.setOnClickListener(v -> {
             String content = binding.etPostContent.getText().toString().trim();
-            if (content.isEmpty()) {
-                Toast.makeText(this, "Vui lòng nhập nội dung bài viết", Toast.LENGTH_SHORT).show();
+            // Sửa logic: Chỉ cần có nội dung HOẶC có ảnh là được phép đăng
+            if (content.isEmpty() && selectedImageUri == null) {
+                Toast.makeText(this, "Vui lòng nhập nội dung hoặc chọn một tấm ảnh", Toast.LENGTH_SHORT).show();
             } else {
                 uploadPost(content);
             }

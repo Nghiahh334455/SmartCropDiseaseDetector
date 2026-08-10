@@ -62,6 +62,7 @@ BEGIN
         targetUid NVARCHAR(128) NOT NULL,
         senderName NVARCHAR(255),
         senderAvatar NVARCHAR(MAX),
+        senderUid NVARCHAR(128), -- Firebase UID của người gửi
         type NVARCHAR(50),
         postId INT,
         postContent NVARCHAR(MAX),

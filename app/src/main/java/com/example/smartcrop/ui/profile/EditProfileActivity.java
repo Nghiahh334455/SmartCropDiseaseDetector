@@ -1,8 +1,6 @@
 package com.example.smartcrop.ui.profile;
 
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
@@ -13,17 +11,19 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
+import com.example.smartcrop.api.ApiService;
+import com.example.smartcrop.api.RetrofitClient;
 import com.example.smartcrop.databinding.ActivityEditProfileBinding;
 import com.example.smartcrop.utils.ImageUtils;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.util.Map;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class EditProfileActivity extends AppCompatActivity {
 
@@ -56,18 +56,15 @@ public class EditProfileActivity extends AppCompatActivity {
             return;
         }
 
-        // Load current data
         binding.etEditName.setText(currentUser.getDisplayName());
         
-        // 1. Kiểm tra ảnh cục bộ
-        String localPath = getSharedPreferences("SmartCropPrefs", MODE_PRIVATE)
-                .getString("profile_image_" + currentUser.getUid(), null);
-        
-        if (localPath != null && new File(localPath).exists()) {
-            Glide.with(this).load(new File(localPath)).into(binding.ivEditProfile);
-        } else if (currentUser.getPhotoUrl() != null) {
-            // 2. Load từ Firebase nếu có
-            Glide.with(this).load(currentUser.getPhotoUrl()).into(binding.ivEditProfile);
+        // Load current Avatar
+        String userPhotoUrl = currentUser.getPhotoUrl() != null ? currentUser.getPhotoUrl().toString() : "";
+        if (userPhotoUrl.length() > 500) {
+            byte[] bytes = ImageUtils.base64ToBytes(userPhotoUrl);
+            if (bytes != null) Glide.with(this).load(bytes).placeholder(android.R.drawable.ic_menu_gallery).into(binding.ivEditProfile);
+        } else {
+            Glide.with(this).load(userPhotoUrl).placeholder(android.R.drawable.ic_menu_gallery).into(binding.ivEditProfile);
         }
 
         binding.toolbarEditProfile.setNavigationOnClickListener(v -> finish());
@@ -77,7 +74,6 @@ public class EditProfileActivity extends AppCompatActivity {
 
     private void saveProfile() {
         String newName = binding.etEditName.getText().toString().trim();
-
         if (newName.isEmpty()) {
             Toast.makeText(this, "Vui lòng nhập tên", Toast.LENGTH_SHORT).show();
             return;
@@ -86,40 +82,53 @@ public class EditProfileActivity extends AppCompatActivity {
         showLoading(true);
 
         if (selectedImageUri != null) {
-            try {
-                // Mã hóa ảnh sang Base64 để lưu vào SQL Server
-                String base64Image = ImageUtils.uriToBase64(this, selectedImageUri);
-                if (!base64Image.isEmpty()) {
-                    // Cập nhật Firebase Profile (Lưu Base64 vào Uri nếu cần, hoặc dùng SQL)
-                    updateFirebaseProfile(newName, Uri.parse(base64Image));
-                } else {
-                    throw new Exception("Mã hóa ảnh thất bại");
-                }
-            } catch (Exception e) {
-                showLoading(false);
-                Toast.makeText(this, "Lỗi xử lý ảnh: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            String base64Image = ImageUtils.uriToBase64(this, selectedImageUri);
+            if (!base64Image.isEmpty()) {
+                // Lưu vào SQL Server
+                ApiService apiService = RetrofitClient.getSqlService();
+                apiService.updateProfilePhoto(currentUser.getUid(), base64Image).enqueue(new Callback<Map<String, String>>() {
+                    @Override
+                    public void onResponse(Call<Map<String, String>> call, Response<Map<String, String>> response) {
+                        // Sau đó cập nhật Firebase
+                        updateFirebaseProfile(newName, base64Image);
+                    }
+
+                    @Override
+                    public void onFailure(Call<Map<String, String>> call, Throwable t) {
+                        showLoading(false);
+                        Toast.makeText(EditProfileActivity.this, "Lỗi SQL: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         } else {
-            updateFirebaseProfile(newName, currentUser.getPhotoUrl());
+            updateFirebaseProfile(newName, null);
         }
     }
 
-    private void updateFirebaseProfile(String name, Uri photoUri) {
-        String uriStr = (photoUri != null) ? photoUri.toString() : "";
-        
+    private void updateFirebaseProfile(String name, String photoBase64) {
+        // CHỈ cập nhật Tên lên Firebase (Base64 quá dài gây lỗi Cập nhật thất bại)
         UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
                 .setDisplayName(name)
-                .setPhotoUri(Uri.parse(uriStr))
                 .build();
 
         currentUser.updateProfile(profileUpdates)
                 .addOnCompleteListener(task -> {
-                    showLoading(false);
                     if (task.isSuccessful()) {
+                        // Lưu Base64 vào SharedPreferences để đồng bộ UI trên App
+                        if (photoBase64 != null) {
+                            getSharedPreferences("SmartCropPrefs", MODE_PRIVATE)
+                                    .edit()
+                                    .putString("profile_image_" + currentUser.getUid(), "BASE64:" + photoBase64)
+                                    .apply();
+                        }
+                        
+                        showLoading(false);
                         Toast.makeText(EditProfileActivity.this, "Cập nhật hồ sơ thành công!", Toast.LENGTH_SHORT).show();
                         finish();
                     } else {
-                        Toast.makeText(EditProfileActivity.this, "Cập nhật thất bại", Toast.LENGTH_SHORT).show();
+                        showLoading(false);
+                        String error = task.getException() != null ? task.getException().getMessage() : "Lỗi đồng bộ";
+                        Toast.makeText(EditProfileActivity.this, "Lỗi: " + error, Toast.LENGTH_SHORT).show();
                     }
                 });
     }

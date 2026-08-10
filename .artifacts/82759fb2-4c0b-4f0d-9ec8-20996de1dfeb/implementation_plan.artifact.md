@@ -1,54 +1,40 @@
-# Implementation Plan - Chuyển đổi lưu trữ ảnh sang SQL Server (Base64) (v15)
+# Kế hoạch khắc phục lỗi gửi Email Cảnh báo theo tài khoản Firebase (v17)
 
-Kế hoạch này thực hiện việc loại bỏ hoàn toàn phụ thuộc vào Firebase Storage (để tránh mất phí) và chuyển sang lưu trữ ảnh trực tiếp vào cơ sở dữ liệu SQL Server dưới dạng chuỗi Base64.
+Người dùng báo cáo không nhận được email. Chúng ta sẽ đảm bảo hệ thống lấy chính xác Email từ Firebase Auth và gửi cảnh báo về đúng địa chỉ đó khi phát hiện bệnh.
 
 ## User Review Required
 
-> [!WARNING]
-> **Thay đổi phương thức lưu trữ**: Toàn bộ ảnh cũ trên Firebase Storage sẽ không được sử dụng. Chúng ta sẽ chuyển sang lưu ảnh dưới dạng văn bản (Base64) cực dài trong SQL Server.
-> **Hiệu năng**: Việc lưu ảnh trực tiếp vào DB có thể làm dung lượng Database tăng nhanh. Tôi sẽ áp dụng nén ảnh tối đa (80%) trước khi lưu để đảm bảo tốc độ tải nhanh nhất.
-> **Cập nhật Database**: Bạn sẽ cần chạy lại script SQL để làm sạch và chuẩn hóa các cột chứa dữ liệu ảnh.
+> [!IMPORTANT]
+> **Ràng buộc Đăng nhập**: Nếu người dùng chưa đăng nhập, hệ thống sẽ hiển thị thông báo nhắc nhở: "Bạn đang dùng tài khoản khách, vui lòng đăng nhập để nhận cảnh báo qua Email".
+> **Kiểm tra Log Backend**: Tôi sẽ thêm log vào Backend AI để bạn có thể nhìn thấy địa chỉ email mà App gửi lên trong cửa sổ Terminal.
+
+## Open Questions
+
+- Bạn đã thử đăng xuất và đăng nhập lại trên App chưa?
+- Khi chẩn đoán, bạn có thấy dòng "DEBUG: Nhan yeu cau chan doan tu: [email của bạn]" hiện lên ở terminal chạy `main.py` không?
 
 ## Proposed Changes
 
-### 1. Cơ sở dữ liệu (SQL Server)
-#### [MODIFY] [mssql_schema.sql](file:///D:/Androi_DATN/mssql_schema.sql)
-- Đảm bảo các cột `userPhotoUrl`, `imageUrl`, `authorPhotoUrl`, `lastImageUrl` đều là `NVARCHAR(MAX)` để chứa chuỗi Base64 khổng lồ.
-
-### 2. Backend (FastAPI)
-#### [MODIFY] [backend_sql.py](file:///D:/Androi_DATN/backend_sql.py)
-- Tăng giới hạn kích thước dữ liệu nhận được (nếu cần).
-- Cập nhật các hàm `create_post`, `add_comment`, `increment_disease_stats` để nhận dữ liệu Base64 thay vì URL.
-
-### 3. Android - Tiện ích mã hóa (Utils)
-#### [NEW] `ImageUtils.java`
-- Thêm hàm `uriToBase64`: Chuyển ảnh từ Uri sang chuỗi Base64.
-- Thêm hàm `bitmapToBase64`: Chuyển Bitmap sang chuỗi Base64.
-
-### 4. Android - Cập nhật Giao diện Đẩy dữ liệu (Upload)
-#### [MODIFY] [EditProfileActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/profile/EditProfileActivity.java)
-- Gỡ bỏ `FirebaseStorage`.
-- Mã hóa ảnh đại diện sang Base64 và gửi về SQL Server thông qua một API cập nhật Profile mới (sẽ thêm vào Backend).
-
-#### [MODIFY] [CreatePostActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/forum/CreatePostActivity.java)
-- Gỡ bỏ `FirebaseStorage`.
-- Chuyển ảnh bài đăng sang Base64 và gọi `apiService.createPost`.
-
+### 1. Cải tiến Android App (DiagnosisActivity)
 #### [MODIFY] [DiagnosisActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/DiagnosisActivity.java)
-- Gỡ bỏ logic upload lên Cloud khi chia sẻ bệnh hoặc cập nhật thống kê. Chuyển sang dùng Base64.
+- **Kiểm tra trạng thái đăng nhập**: Nếu `user == null`, hiển thị một thông báo nhẹ (Snackbar hoặc Toast) để người dùng biết email sẽ không được gửi.
+- **Log dữ liệu**: Thêm log để kiểm tra chuỗi `userEmail` trước khi gọi API.
 
-### 5. Android - Cập nhật Giao diện Hiển thị (Display)
-#### [MODIFY] `ForumAdapter.java`, `CommentAdapter.java`, `CommonDiseaseAdapter.java`, `PostDetailActivity.java`
-- Cấu hình **Glide** để nhận diện và hiển thị chuỗi Base64:
-  ```java
-  byte[] imageBytes = Base64.decode(base64String, Base64.DEFAULT);
-  Glide.with(context).load(imageBytes)...
-  ```
+### 2. Nâng cấp Backend AI (D:/Plant_Disease_Pipeline/)
+#### [MODIFY] [main.py](file:///D:/Plant_Disease_Pipeline/main.py)
+- **Phản hồi trạng thái email**: Trả về `email_sent` và `target_email` trong JSON để App hiển thị thông báo: "Đã gửi email tới [địa chỉ email]".
+- **Xử lý lỗi**: Bọc hàm gửi email trong khối `try-except` chặt chẽ hơn để không làm treo quá trình trả về kết quả chẩn đoán nếu gửi mail lỗi.
+
+#### [MODIFY] [alert.py](file:///D:/Plant_Disease_Pipeline/alert.py)
+- **Tối ưu kết nối**: Thử nghiệm chuyển đổi giữa Port 465 (SSL) và 587 (TLS) để đảm bảo tính ổn định.
+
+### 3. Cập nhật Model Response
+#### [MODIFY] [PredictResponse.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/models/PredictResponse.java)
+- Thêm các trường: `email_sent` (boolean) và `receiver_email` (String).
 
 ## Verification Plan
 
 ### Manual Verification
-- **Avatar**: Đổi ảnh hồ sơ -> Kiểm tra xem trong SQL Server cột `userPhotoUrl` có chứa chuỗi ký tự dài không.
-- **Diễn đàn**: Đăng bài có ảnh -> Kiểm tra xem ảnh có hiện lên ngay lập tức cho người khác thấy không.
-- **Thư viện**: Chia sẻ bệnh -> Kiểm tra hiển thị ảnh Base64 trên bảng tin.
-- **Dung lượng**: Kiểm tra xem ảnh có bị mờ không sau khi nén 80%.
+1. **Trường hợp Khách**: Không đăng nhập -> Chẩn đoán -> App báo "Vui lòng đăng nhập để nhận email".
+2. **Trường hợp Đăng nhập**: Dùng email thật -> Chẩn đoán -> Kiểm tra log Backend thấy đúng email -> Kiểm tra hộp thư đến.
+3. **Kiểm tra Spam**: Hướng dẫn người dùng kiểm tra mục Thư rác nếu vẫn không thấy.

@@ -1,9 +1,11 @@
-- [ ] Cập nhật `mssql_schema.sql` (Chuẩn hóa cột ảnh `NVARCHAR(MAX)`)
-- [ ] Tạo `ImageUtils.java` (Công cụ mã hóa Base64 cho Android)
-- [ ] Cập nhật `backend_sql.py` (Tiếp nhận dữ liệu Base64 kích thước lớn)
-- [ ] Sửa lỗi Đăng bài (`CreatePostActivity.java` - Chuyển sang Base64)
-- [ ] Sửa lỗi Đổi Avatar (`EditProfileActivity.java` - Chuyển sang Base64)
-- [ ] Sửa lỗi Chẩn đoán & Chia sẻ (`DiagnosisActivity.java` - Chuyển sang Base64)
-- [ ] Cập nhật hiển thị ảnh (`ForumAdapter.java`, `CommentAdapter.java`, `CommonDiseaseAdapter.java`)
-- [ ] Kiểm tra và Build toàn bộ hệ thống
-- [ ] Commit & Push Git (v15)
+- [x] **1. Cập nhật Backend AI (Python)**
+    - [x] Cập nhật `main.py`: Thêm log `user_email`, trả về `email_sent` và `target_email`.
+    - [x] Cập nhật `alert.py`: Tối ưu logic gửi mail và logging.
+- [x] **2. Cập nhật Android App**
+    - [x] Cập nhật `PredictResponse.java`: Thêm các trường dữ liệu mới từ Backend.
+    - [x] Cập nhật `DiagnosisActivity.java`:
+        - [x] Thêm cảnh báo nếu chưa đăng nhập.
+        - [x] Xử lý hiển thị trạng thái gửi email từ kết quả trả về.
+- [ ] **3. Kiểm tra và Xác minh**
+    - [ ] Kiểm tra log Backend khi App gọi API.
+    - [ ] Xác nhận nhận được email thực tế.

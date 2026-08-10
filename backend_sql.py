@@ -5,7 +5,7 @@ from pydantic import BaseModel
 import time
 from datetime import datetime
 
-app = FastAPI(title="Thần Nông AI - SQL Database Server (v15 - Base64 Ready)")
+app = FastAPI(title="Thần Nông AI - SQL Database Server (Cổng 8001)")
 
 # Cấu hình SQL Server của bạn
 CONN_STR = (
@@ -25,8 +25,8 @@ async def create_post(
     uid: str = Form(...),
     author: str = Form("Người dùng Thần Nông AI"),
     question: Optional[str] = Form(""),
-    userPhotoUrl: Optional[str] = Form(""), # Bây giờ chứa chuỗi Base64
-    imageUrl: Optional[str] = Form(""),      # Bây giờ chứa chuỗi Base64
+    userPhotoUrl: Optional[str] = Form(""),
+    imageUrl: Optional[str] = Form(""),
     disease: Optional[str] = Form("Chia sẻ từ cộng đồng")
 ):
     try:
@@ -37,9 +37,9 @@ async def create_post(
             (uid, author, userPhotoUrl, question, imageUrl, disease)
         )
         db.commit()
-        return {"status": "success", "message": "Post created successfully in SQL"}
+        return {"status": "success", "message": "Post created"}
     except Exception as e:
-        print(f"ERROR: {str(e)}")
+        print(f"ERROR Post: {str(e)}")
         return {"status": "error", "message": str(e)}
 
 @app.get("/posts")
@@ -48,12 +48,20 @@ async def get_posts():
     cursor = db.cursor()
     cursor.execute("SELECT id, uid, author, userPhotoUrl, question, imageUrl, disease, timestamp, likesCount, commentsCount FROM Posts ORDER BY timestamp DESC")
     rows = cursor.fetchall()
+
     posts = []
     for row in rows:
+        p_id = row[0]
+        # Fetch liked UIDs for this post
+        cursor.execute("SELECT uid FROM Likes WHERE postId = ?", (p_id,))
+        liked_uids = [r[0] for r in cursor.fetchall()]
+
         posts.append({
-            "id": row[0], "uid": row[1], "author": row[2], "userPhotoUrl": row[3],
+            "id": p_id, "uid": row[1], "author": row[2], "userPhotoUrl": row[3],
             "question": row[4], "imageUrl": row[5], "disease": row[6],
-            "timestamp": int(row[7].timestamp() * 1000), "likesCount": row[8], "commentsCount": row[9]
+            "timestamp": int(row[7].timestamp() * 1000),
+            "likesCount": row[8], "commentsCount": row[9],
+            "likedBy": liked_uids
         })
     return posts
 
@@ -61,7 +69,7 @@ async def get_posts():
 @app.post("/comments")
 async def add_comment(
     postId: int = Form(...),
-    authorName: str = Form("Nông dân"),
+    authorName: str = Form("Thần nông"),
     authorUid: str = Form(...),
     content: str = Form(...),
     authorPhotoUrl: Optional[str] = Form(""),
@@ -99,6 +107,7 @@ async def toggle_like(uid: str = Form(...), postId: int = Form(...)):
         cursor.execute("DELETE FROM Likes WHERE uid = ? AND postId = ?", (uid, postId))
     else:
         cursor.execute("INSERT INTO Likes (uid, postId) VALUES (?, ?)", (uid, postId))
+    # Sync count
     cursor.execute("UPDATE Posts SET likesCount = (SELECT COUNT(*) FROM Likes WHERE postId = ?) WHERE id = ?", (postId, postId))
     db.commit()
     return {"status": "success"}
@@ -131,9 +140,9 @@ async def get_notifs(uid: str):
     cursor.execute("SELECT id, targetUid, senderName, senderAvatar, type, postId, postContent, timestamp, isRead FROM Notifications WHERE targetUid = ? ORDER BY timestamp DESC", (uid,))
     rows = cursor.fetchall()
     return [{
-        "id": row[0], "targetUid": row[1], "senderName": row[2], "senderAvatar": row[3],
-        "type": row[4], "postId": row[5], "postContent": row[6], "timestamp": int(row[7].timestamp() * 1000),
-        "read": bool(row[8])
+        "id": r[0], "targetUid": r[1], "senderName": r[2], "senderAvatar": r[3],
+        "type": r[4], "postId": r[5], "postContent": r[6], "timestamp": int(r[7].timestamp() * 1000),
+        "read": bool(r[8])
     } for r in rows]
 
 @app.post("/notifications/read/{notif_id}")
@@ -145,19 +154,34 @@ async def mark_read(notif_id: int):
     return {"status": "success"}
 
 @app.post("/notifications")
-async def add_notif(targetUid: str = Form(...), senderName: str = Form(...), senderAvatar: str = Form(...), type: str = Form(...), postId: int = Form(...), postContent: str = Form(...)):
+async def add_notif(
+    targetUid: str = Form(...),
+    senderName: str = Form(...),
+    senderAvatar: str = Form(...),
+    senderUid: str = Form(...),
+    type: str = Form(...),
+    postId: int = Form(...),
+    postContent: str = Form(...)
+):
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("INSERT INTO Notifications (targetUid, senderName, senderAvatar, type, postId, postContent) VALUES (?, ?, ?, ?, ?, ?)", (targetUid, senderName, senderAvatar, type, postId, postContent))
+    cursor.execute(
+        "INSERT INTO Notifications (targetUid, senderName, senderAvatar, senderUid, type, postId, postContent) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (targetUid, senderName, senderAvatar, senderUid, type, postId, postContent)
+    )
     db.commit()
     return {"status": "success"}
 
-# --- PROFILE UPDATE (v15 - Base64) ---
+# --- PROFILE PHOTO SYNC ---
 @app.post("/users/update_photo")
-async def update_user_photo(uid: str = Form(...), photoBase64: str = Form(...)):
-    # Cập nhật tất cả bài viết và bình luận cũ của người này với ảnh mới (nếu muốn đồng bộ)
-    # Hoặc đơn giản là trả về success để App biết đã lưu xong.
-    # Trong kiến trúc v15, App sẽ gửi Base64 này mỗi khi đăng bài mới.
+async def update_profile_photo(uid: str = Form(...), photoBase64: str = Form(...)):
+    # Cập nhật ảnh đại diện của người dùng này trên toàn bộ các bài viết và bình luận cũ trong SQL
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("UPDATE Posts SET userPhotoUrl = ? WHERE uid = ?", (photoBase64, uid))
+    cursor.execute("UPDATE Comments SET authorPhotoUrl = ? WHERE authorUid = ?", (photoBase64, uid))
+    cursor.execute("UPDATE Notifications SET senderAvatar = ? WHERE senderUid = ?", (photoBase64, uid))
+    db.commit()
     return {"status": "success"}
 
 if __name__ == "__main__":

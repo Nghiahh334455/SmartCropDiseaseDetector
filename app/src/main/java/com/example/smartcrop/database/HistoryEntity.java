@@ -11,14 +11,14 @@ public class HistoryEntity {
     public String diseaseName;
     public double confidence;
     public String treatment;
-    public String imagePath; // Path to local image
+    public String imageBase64; // Lưu trực tiếp chuỗi ảnh Base64
     public long timestamp;
 
-    public HistoryEntity(String diseaseName, double confidence, String treatment, String imagePath, long timestamp) {
+    public HistoryEntity(String diseaseName, double confidence, String treatment, String imageBase64, long timestamp) {
         this.diseaseName = diseaseName;
         this.confidence = confidence;
         this.treatment = treatment;
-        this.imagePath = imagePath;
+        this.imageBase64 = imageBase64;
         this.timestamp = timestamp;
     }
 }

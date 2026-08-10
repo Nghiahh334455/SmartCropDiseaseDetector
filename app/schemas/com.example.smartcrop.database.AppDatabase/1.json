@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "f5a64ef964d14446715fecbdb832dfd4",
+    "identityHash": "26b66feb02b57fa65b80bf98759b1317",
     "entities": [
       {
         "tableName": "diagnosis_history",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `diseaseName` TEXT, `confidence` REAL NOT NULL, `treatment` TEXT, `imagePath` TEXT, `timestamp` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `diseaseName` TEXT, `confidence` REAL NOT NULL, `treatment` TEXT, `imageBase64` TEXT, `timestamp` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -33,8 +33,8 @@
             "notNull": false
           },
           {
-            "fieldPath": "imagePath",
-            "columnName": "imagePath",
+            "fieldPath": "imageBase64",
+            "columnName": "imageBase64",
             "affinity": "TEXT",
             "notNull": false
           },
@@ -58,7 +58,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f5a64ef964d14446715fecbdb832dfd4')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '26b66feb02b57fa65b80bf98759b1317')"
     ]
   }
 }

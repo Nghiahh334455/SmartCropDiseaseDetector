@@ -1,16 +1,6 @@
 package com.example.smartcrop.api;
 
 import com.example.smartcrop.models.ChatResponse;
-import com.example.smartcrop.models.PredictResponse;
-
-import okhttp3.MultipartBody;
-import retrofit2.Call;
-import retrofit2.http.Multipart;
-import retrofit2.http.POST;
-import retrofit2.http.Part;
-import retrofit2.http.Query;
-
-import com.example.smartcrop.models.ChatResponse;
 import com.example.smartcrop.models.CommentModel;
 import com.example.smartcrop.models.NotificationModel;
 import com.example.smartcrop.models.PredictResponse;
@@ -19,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.http.Field;
 import retrofit2.http.FormUrlEncoded;
@@ -32,10 +23,14 @@ import retrofit2.http.Query;
 public interface ApiService {
     @Multipart
     @POST("/predict")
-    Call<PredictResponse> predictDisease(@Part MultipartBody.Part image);
+    Call<PredictResponse> predictDisease(
+        @Part MultipartBody.Part image,
+        @Part("user_email") RequestBody email
+    );
 
+    @FormUrlEncoded
     @POST("/chat")
-    Call<ChatResponse> askAI(@Query("question") String question);
+    Call<ChatResponse> askAI(@Field("question") String question);
 
     // --- FORUM ---
     @GET("/posts")
@@ -94,6 +89,7 @@ public interface ApiService {
         @Field("targetUid") String targetUid,
         @Field("senderName") String senderName,
         @Field("senderAvatar") String senderAvatar,
+        @Field("senderUid") String senderUid,
         @Field("type") String type,
         @Field("postId") int postId,
         @Field("postContent") String postContent

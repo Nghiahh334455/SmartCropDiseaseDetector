@@ -22,6 +22,12 @@ public class PredictResponse {
     @SerializedName("bbox")
     private Map<String, Integer> bbox;
 
+    @SerializedName("email_sent")
+    private boolean emailSent;
+
+    @SerializedName("target_email")
+    private String targetEmail;
+
     // Getters
     public String getStatus() { return status; }
     public String getDiseaseName() { return diseaseName; }
@@ -29,4 +35,6 @@ public class PredictResponse {
     public String getAiExpertAdvice() { return aiExpertAdvice; }
     public Map<String, String> getTreatmentDetails() { return treatmentDetails; }
     public Map<String, Integer> getBbox() { return bbox; }
+    public boolean isEmailSent() { return emailSent; }
+    public String getTargetEmail() { return targetEmail; }
 }

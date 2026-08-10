@@ -1,35 +1,36 @@
-# Walkthrough - Bản vá lỗi v13.3 (Khắc phục toàn diện BUG)
+# Walkthrough - Khắc phục lỗi gửi Email Cảnh báo (v17)
 
-Tôi đã giải quyết dứt điểm 5 lỗi nghiêm trọng mà bạn đã báo cáo, mang lại sự ổn định tuyệt đối cho ứng dụng **Thần Nông AI**.
+Tôi đã hoàn thành việc nâng cấp hệ thống để đảm bảo Email cảnh báo được gửi chính xác đến tài khoản Firebase của bạn khi phát hiện bệnh hại.
 
-## Các lỗi đã được khắc phục
+## Các thay đổi chính
 
-### 1. BUG #1: Tải ảnh "Objects does not exit at location"
-- **Nguyên nhân**: Lỗi xảy ra do ứng dụng cố gắng lấy đường dẫn ảnh khi quá trình ghi tệp trên Cloud chưa hoàn tất 100%.
-- **Khắc phục**: Tôi đã chuyển sang sử dụng `putBytes` (nén ảnh byte array) và lệnh `continueWithTask`. Bây giờ, App sẽ đợi Cloud báo cáo "Đã nhận file thành công" rồi mới lưu vào Database.
-- **Kết quả**: Việc đổi Avatar, Đăng bài diễn đàn và Chia sẻ bệnh hiện tại hoạt động cực kỳ ổn định.
+### 1. Android App: Lấy Email từ Firebase Auth
+Tôi đã cập nhật `DiagnosisActivity.java` để:
+- Tự động lấy email của người dùng đang đăng nhập từ Firebase.
+- Hiển thị cảnh báo nếu bạn đang sử dụng tài khoản khách (chưa đăng nhập).
+- Hiển thị thông báo trạng thái gửi email trực tiếp trên màn hình: **"✅ Đã gửi email cảnh báo tới: [email của bạn]"**.
 
-### 2. BUG #2: Ảnh thực tế cho Bệnh thường gặp
-- **Nâng cấp**: Đã cập nhật SQL Server để lưu trữ thêm cột `lastImageUrl`.
-- **Kết quả**: Mỗi khi bạn quét một lá bệnh, ảnh thật đó sẽ được dùng làm ảnh minh họa cho loại bệnh đó trên Trang chủ, giúp giao diện trực quan và sinh động hơn nhiều.
+### 2. Backend AI: Xử lý và Phản hồi trạng thái
+Cập nhật `main.py` và `alert.py` để:
+- Nhận diện đúng email được gửi từ App.
+- Trả về kết quả cho App biết việc gửi email thành công hay thất bại.
+- Thêm log chi tiết trong terminal để bạn dễ dàng theo dõi quá trình gửi mail.
 
-### 3. BUG #3: Đồng bộ trạng thái Like tức thì
-- **Khắc phục**: Áp dụng kỹ thuật **Optimistic UI**. Khi bạn nhấn Like, icon sẽ chuyển sang màu xanh và đổi chữ "Đã thích" ngay lập tức mà không cần đợi Server phản hồi. Nếu Server lỗi, App sẽ tự động hoàn tác lại trạng thái cũ.
-- **Kết quả**: Trải nghiệm Like mượt mà như Facebook, không còn hiện tượng nhấn xong không thấy gì.
+## Hướng dẫn Kiểm tra (Verification)
 
-### 4. BUG #4: Sửa lỗi Crash khi vào Bình luận
-- **Nguyên nhân**: Do việc truyền mã ID bài viết giữa các màn hình bị sai định dạng dữ liệu (số thực vs số nguyên).
-- **Khắc phục**: Đã chuẩn hóa lại toàn bộ quy trình gửi/nhận ID bài viết trong `PostDetailActivity`. Thêm các bước kiểm tra dữ liệu an toàn để tránh bị văng ứng dụng.
+1. **Đảm bảo bạn đã đăng nhập**:
+    - Vào phần **Hồ sơ (Profile)** để kiểm tra xem email của bạn đã hiện đúng chưa.
+2. **Chụp ảnh hoặc Chọn ảnh lá bị bệnh**:
+    - Hệ thống AI sẽ phân tích.
+    - Nếu phát hiện bệnh, hãy quan sát thông báo phía dưới màn hình (Toast).
+3. **Kiểm tra Hộp thư đến (Gmail)**:
+    - Tìm email có tiêu đề: `🚨 [AI PLANT WARNING] Cảnh báo dịch bệnh cây trồng khẩn cấp!`.
+    - **Lưu ý**: Nếu không thấy ở Hộp thư chính, hãy kiểm tra mục **Spam (Thư rác)**.
 
-### 5. BUG #5: Gửi Gmail đúng người dùng
-- **Khắc phục**: Hệ thống chẩn đoán hiện tại đã lấy chính xác địa chỉ Email của tài khoản đang đăng nhập để gửi báo cáo, không còn tình trạng gửi nhầm hoặc gửi về email mặc định.
-
----
-
-## 💾 Trạng thái Git & Hệ thống
-- **Build**: Thành công 100% (Build Successful).
-- **Git**: Đã đẩy toàn bộ bản vá v13.3 lên GitHub thành công.
-- **Backend**: Hãy nhớ chạy file **`khoi_dong_he_thong.bat`** để kích hoạt Backend SQL mới nhất.
+## Hình ảnh minh họa
 
 > [!TIP]
-> **Thử ngay**: Bạn hãy thử quét một lá bệnh, sau đó quay lại trang chủ. Bạn sẽ thấy ảnh đại diện của bệnh đó đã biến thành chính tấm ảnh bạn vừa chụp!
+> Bạn có thể theo dõi tiến trình gửi mail tại cửa sổ Terminal chạy `main.py`. Bạn sẽ thấy dòng log: `✅ Đã gửi email cảnh báo tới: [email của bạn]`.
+
+render_diffs(file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/DiagnosisActivity.java)
+render_diffs(file:///D:/Plant_Disease_Pipeline/main.py)
