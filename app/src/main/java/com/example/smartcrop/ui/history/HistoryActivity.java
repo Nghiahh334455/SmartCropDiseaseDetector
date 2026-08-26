@@ -33,8 +33,11 @@ public class HistoryActivity extends AppCompatActivity {
     }
 
     private void loadHistory() {
+        String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+        if (uid == null) return;
+        
         Executors.newSingleThreadExecutor().execute(() -> {
-            List<HistoryEntity> historyList = AppDatabase.getInstance(this).historyDao().getAllHistory();
+            List<HistoryEntity> historyList = AppDatabase.getInstance(this).historyDao().getHistoryByUid(uid);
             runOnUiThread(() -> {
                 HistoryAdapter adapter = new HistoryAdapter(historyList);
                 binding.rvHistory.setAdapter(adapter);

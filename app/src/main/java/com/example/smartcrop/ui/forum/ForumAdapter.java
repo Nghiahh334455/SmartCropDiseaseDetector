@@ -113,17 +113,38 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
 
         holder.binding.btnLike.setOnClickListener(v -> toggleLike(postId, position));
 
-        // Avatar logic
+        // Avatar logic: Ưu tiên lấy ảnh đại diện mới nhất nếu là bài viết của chính mình
+        String ownerUid = (String) post.get("uid");
         String userPhotoUrl = (String) post.get("userPhotoUrl");
+        
+        if (currentUid != null && currentUid.equals(ownerUid)) {
+            // Kiểm tra SharedPreferences xem có ảnh Base64 mới nhất không
+            String localPhoto = context.getSharedPreferences("SmartCropPrefs", Context.MODE_PRIVATE)
+                    .getString("profile_image_" + currentUid, null);
+            if (localPhoto != null && localPhoto.startsWith("BASE64:")) {
+                userPhotoUrl = localPhoto;
+            }
+        }
+
         if (userPhotoUrl != null && !userPhotoUrl.isEmpty()) {
-            if (userPhotoUrl.length() > 500) { // Chuỗi Base64 thường rất dài
+            if (userPhotoUrl.startsWith("BASE64:") || userPhotoUrl.length() > 500) {
                 byte[] imageBytes = ImageUtils.base64ToBytes(userPhotoUrl);
-                if (imageBytes != null) Glide.with(context).load(imageBytes).placeholder(android.R.drawable.ic_menu_gallery).into(holder.binding.ivPostAvatar);
+                if (imageBytes != null) {
+                    Glide.with(context).load(imageBytes)
+                            .placeholder(android.R.drawable.ic_menu_gallery)
+                            .circleCrop()
+                            .into(holder.binding.ivPostAvatar);
+                }
             } else {
-                Glide.with(context).load(userPhotoUrl).placeholder(android.R.drawable.ic_menu_gallery).into(holder.binding.ivPostAvatar);
+                Glide.with(context).load(userPhotoUrl)
+                        .placeholder(android.R.drawable.ic_menu_gallery)
+                        .circleCrop()
+                        .into(holder.binding.ivPostAvatar);
             }
         } else {
-            Glide.with(context).load(android.R.drawable.ic_menu_gallery).into(holder.binding.ivPostAvatar);
+            Glide.with(context).load(android.R.drawable.ic_menu_gallery)
+                    .circleCrop()
+                    .into(holder.binding.ivPostAvatar);
         }
 
         String imageUrl = (String) post.get("imageUrl");
@@ -239,14 +260,17 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
     private void toggleLike(String postId, int position) {
         if (currentUid == null) return;
         
+        Map<String, Object> post = postList.get(position);
+        
         // Sửa lỗi Parse ID từ SQL/GSON
-        int pId;
+        int tempId;
         try {
             double d = Double.parseDouble(postId);
-            pId = (int) d;
+            tempId = (int) d;
         } catch (Exception e) {
-            pId = Integer.parseInt(postId);
+            tempId = Integer.parseInt(postId);
         }
+        final int pId = tempId;
 
         // Optimistic update: Cập nhật UI ngay lập tức
         if (locallyLikedPosts.contains(postId)) {
@@ -260,7 +284,16 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
         apiService.toggleLike(currentUid, pId).enqueue(new retrofit2.Callback<Map<String, String>>() {
             @Override
             public void onResponse(retrofit2.Call<Map<String, String>> call, retrofit2.Response<Map<String, String>> response) {
-                // Sync complete
+                if (response.isSuccessful() && response.body() != null) {
+                    String action = response.body().get("action");
+                    if ("liked".equals(action)) {
+                        String ownerUid = (String) post.get("uid");
+                        String question = (String) post.get("question");
+                        if (ownerUid != null && !ownerUid.equals(currentUid)) {
+                            sendNotification(ownerUid, "LIKE", pId, question != null ? question : "bài viết");
+                        }
+                    }
+                }
             }
 
             @Override
@@ -311,7 +344,13 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
         if (user == null) return;
 
         String senderName = user.getDisplayName() != null ? user.getDisplayName() : "Một người dùng";
-        String senderAvatar = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : "";
+        
+        // Fix: Lấy ảnh Base64 từ SharedPreferences để đồng bộ đúng avatar trong thông báo
+        String senderAvatar = context.getSharedPreferences("SmartCropPrefs", Context.MODE_PRIVATE)
+                .getString("profile_image_" + user.getUid(), "");
+        if (senderAvatar.isEmpty() && user.getPhotoUrl() != null) {
+            senderAvatar = user.getPhotoUrl().toString();
+        }
 
         ApiService apiService = RetrofitClient.getSqlService();
         apiService.sendNotification(targetUid, senderName, senderAvatar, user.getUid(), type, postId, postContent)

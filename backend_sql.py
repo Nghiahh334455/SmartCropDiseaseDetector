@@ -1,5 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, Form, Query
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Dict
 import pyodbc
 from pydantic import BaseModel
 import time
@@ -7,7 +7,7 @@ from datetime import datetime
 
 app = FastAPI(title="Thần Nông AI - SQL Database Server (Cổng 8001)")
 
-# Cấu hình SQL Server của bạn
+# Cấu hình SQL Server
 CONN_STR = (
     "Driver={SQL Server};"
     "Server=TRONGNGHIA\\KKK;"
@@ -18,6 +18,46 @@ CONN_STR = (
 
 def get_db():
     return pyodbc.connect(CONN_STR)
+
+# --- QUẢN LÝ NGƯỜI DÙNG (USERS) ---
+@app.post("/users")
+async def sync_user(
+    uid: str = Form(...),
+    displayName: Optional[str] = Form("Người dùng"),
+    email: Optional[str] = Form(""),
+    photoBase64: Optional[str] = Form("")
+):
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("SELECT 1 FROM Users WHERE uid = ?", (uid,))
+        if cursor.fetchone():
+            cursor.execute(
+                "UPDATE Users SET displayName = ?, email = ?, photoBase64 = ? WHERE uid = ?",
+                (displayName, email, photoBase64, uid)
+            )
+        else:
+            cursor.execute(
+                "INSERT INTO Users (uid, displayName, email, photoBase64) VALUES (?, ?, ?, ?)",
+                (uid, displayName, email, photoBase64)
+            )
+        db.commit()
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/users/{uid}")
+async def get_user(uid: str):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT uid, displayName, email, photoBase64, isAdmin FROM Users WHERE uid = ?", (uid,))
+    row = cursor.fetchone()
+    if row:
+        return {
+            "uid": row[0], "displayName": row[1], "email": row[2],
+            "photoBase64": row[3], "isAdmin": bool(row[4])
+        }
+    return {"status": "error", "message": "User not found"}
 
 # --- DIỄN ĐÀN (FORUM) ---
 @app.post("/posts")
@@ -52,7 +92,6 @@ async def get_posts():
     posts = []
     for row in rows:
         p_id = row[0]
-        # Fetch liked UIDs for this post
         cursor.execute("SELECT uid FROM Likes WHERE postId = ?", (p_id,))
         liked_uids = [r[0] for r in cursor.fetchall()]
 
@@ -75,7 +114,7 @@ async def add_comment(
     authorPhotoUrl: Optional[str] = Form(""),
     parentCommentId: Optional[str] = Form(None)
 ):
-    p_id = int(parentCommentId) if (parentCommentId and parentCommentId != "null") else None
+    p_id = int(parentCommentId) if (parentCommentId and parentCommentId != "null" and parentCommentId != "None") else None
     db = get_db()
     cursor = db.cursor()
     cursor.execute(
@@ -105,34 +144,37 @@ async def toggle_like(uid: str = Form(...), postId: int = Form(...)):
     cursor.execute("SELECT 1 FROM Likes WHERE uid = ? AND postId = ?", (uid, postId))
     if cursor.fetchone():
         cursor.execute("DELETE FROM Likes WHERE uid = ? AND postId = ?", (uid, postId))
+        action = "unliked"
     else:
         cursor.execute("INSERT INTO Likes (uid, postId) VALUES (?, ?)", (uid, postId))
-    # Sync count
+        action = "liked"
     cursor.execute("UPDATE Posts SET likesCount = (SELECT COUNT(*) FROM Likes WHERE postId = ?) WHERE id = ?", (postId, postId))
     db.commit()
-    return {"status": "success"}
-
-# --- THỐNG KÊ (STATS) ---
-@app.post("/disease_stats/increment")
-async def inc_stats(name: str = Form(...), imageUrl: Optional[str] = Form("")):
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute("SELECT 1 FROM DiseaseStats WHERE diseaseName = ?", (name,))
-    if cursor.fetchone():
-        cursor.execute("UPDATE DiseaseStats SET count = count + 1, lastImageUrl = ? WHERE diseaseName = ?", (imageUrl, name))
-    else:
-        cursor.execute("INSERT INTO DiseaseStats (diseaseName, count, lastImageUrl) VALUES (?, 1, ?)", (name, imageUrl))
-    db.commit()
-    return {"status": "success"}
-
-@app.get("/disease_stats/top")
-async def get_top():
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute("SELECT TOP 5 diseaseName, count, lastImageUrl FROM DiseaseStats ORDER BY count DESC")
-    return [{"name": r[0], "count": r[1], "imageUrl": r[2]} for r in cursor.fetchall()]
+    return {"status": "success", "action": action}
 
 # --- THÔNG BÁO (NOTIFICATIONS) ---
+@app.post("/notifications")
+async def add_notif(
+    targetUid: str = Form(...),
+    senderName: str = Form(...),
+    senderAvatar: str = Form(...),
+    senderUid: str = Form(...),
+    type: str = Form(...),
+    postId: int = Form(...),
+    postContent: str = Form(...)
+):
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO Notifications (targetUid, senderName, senderAvatar, senderUid, type, postId, postContent) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (targetUid, senderName, senderAvatar, senderUid, type, postId, postContent)
+        )
+        db.commit()
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @app.get("/notifications/{uid}")
 async def get_notifs(uid: str):
     db = get_db()
@@ -153,36 +195,116 @@ async def mark_read(notif_id: int):
     db.commit()
     return {"status": "success"}
 
-@app.post("/notifications")
-async def add_notif(
-    targetUid: str = Form(...),
-    senderName: str = Form(...),
-    senderAvatar: str = Form(...),
-    senderUid: str = Form(...),
-    type: str = Form(...),
-    postId: int = Form(...),
-    postContent: str = Form(...)
-):
+# --- THƯ VIỆN & MẸO (DYNAMIC CONTENT) ---
+@app.get("/diseases")
+async def get_all_diseases():
     db = get_db()
     cursor = db.cursor()
-    cursor.execute(
-        "INSERT INTO Notifications (targetUid, senderName, senderAvatar, senderUid, type, postId, postContent) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (targetUid, senderName, senderAvatar, senderUid, type, postId, postContent)
-    )
+    cursor.execute("SELECT name, description, treatment, imageResource FROM Diseases")
+    return [{"name": r[0], "description": r[1], "treatment": r[2], "imageResource": r[3]} for r in cursor.fetchall()]
+
+@app.post("/diseases")
+async def add_disease(name: str = Form(...), description: str = Form(...), treatment: str = Form(...), imageResource: str = Form("")):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("IF EXISTS (SELECT 1 FROM Diseases WHERE name = ?) UPDATE Diseases SET description=?, treatment=?, imageResource=? WHERE name=? ELSE INSERT INTO Diseases (name, description, treatment, imageResource) VALUES (?,?,?,?)",
+                   (name, description, treatment, imageResource, name, name, description, treatment, imageResource))
     db.commit()
     return {"status": "success"}
 
-# --- PROFILE PHOTO SYNC ---
-@app.post("/users/update_photo")
-async def update_profile_photo(uid: str = Form(...), photoBase64: str = Form(...)):
-    # Cập nhật ảnh đại diện của người dùng này trên toàn bộ các bài viết và bình luận cũ trong SQL
+@app.get("/tips")
+async def get_all_tips():
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("UPDATE Posts SET userPhotoUrl = ? WHERE uid = ?", (photoBase64, uid))
-    cursor.execute("UPDATE Comments SET authorPhotoUrl = ? WHERE authorUid = ?", (photoBase64, uid))
-    cursor.execute("UPDATE Notifications SET senderAvatar = ? WHERE senderUid = ?", (photoBase64, uid))
+    cursor.execute("SELECT id, title, content, imageResource FROM Tips")
+    return [{"id": r[0], "title": r[1], "content": r[2], "imageResource": r[3]} for r in cursor.fetchall()]
+
+@app.post("/tips")
+async def add_tip(title: str = Form(...), content: str = Form(...), imageResource: str = Form("")):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("INSERT INTO Tips (title, content, imageResource) VALUES (?, ?, ?)", (title, content, imageResource))
     db.commit()
     return {"status": "success"}
+
+# --- ADMIN APIs ---
+@app.get("/admin/stats")
+async def get_admin_stats():
+    db = get_db()
+    cursor = db.cursor()
+    # Thống kê bệnh
+    cursor.execute("SELECT diseaseName, count FROM DiseaseStats ORDER BY count DESC")
+    stats = [{"name": r[0], "count": r[1]} for r in cursor.fetchall()]
+
+    # Tổng hợp
+    cursor.execute("SELECT COUNT(*) FROM Users")
+    user_count = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM Posts")
+    post_count = cursor.fetchone()[0]
+
+    return {"diseaseStats": stats, "totalUsers": user_count, "totalPosts": post_count}
+
+@app.get("/admin/users")
+async def get_admin_users():
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT uid, displayName, email, isAdmin FROM Users")
+    return [{"uid": r[0], "displayName": r[1], "email": r[2], "isAdmin": bool(r[3])} for r in cursor.fetchall()]
+
+@app.delete("/admin/users/{uid}")
+async def delete_user(uid: str):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("DELETE FROM Users WHERE uid = ?", (uid,))
+    db.commit()
+    return {"status": "success"}
+
+# --- COMMON UTILS ---
+@app.get("/posts/{post_id}")
+async def get_post_by_id(post_id: int):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT id, uid, author, userPhotoUrl, question, imageUrl, disease, timestamp, likesCount, commentsCount FROM Posts WHERE id = ?", (post_id,))
+    row = cursor.fetchone()
+    if not row: return {"status": "error", "message": "Post not found"}
+    cursor.execute("SELECT uid FROM Likes WHERE postId = ?", (post_id,))
+    liked_uids = [r[0] for r in cursor.fetchall()]
+    return {
+        "id": row[0], "uid": row[1], "author": row[2], "userPhotoUrl": row[3],
+        "question": row[4], "imageUrl": row[5], "disease": row[6],
+        "timestamp": int(row[7].timestamp() * 1000),
+        "likesCount": row[8], "commentsCount": row[9], "likedBy": liked_uids
+    }
+
+@app.post("/history")
+async def add_history(uid: str = Form(...), diseaseName: str = Form(...), confidence: float = Form(...), treatment: str = Form(...), imageBase64: str = Form(...)):
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("INSERT INTO History (uid, diseaseName, confidence, treatment, imageBase64) VALUES (?, ?, ?, ?, ?)", (uid, diseaseName, confidence, treatment, imageBase64))
+        db.commit()
+        return {"status": "success"}
+    except Exception as e: return {"status": "error", "message": str(e)}
+
+@app.get("/history/{uid}")
+async def get_history(uid: str):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT id, diseaseName, confidence, treatment, imageBase64, timestamp FROM History WHERE uid = ? ORDER BY timestamp DESC", (uid,))
+    return [{"id": r[0], "diseaseName": r[1], "confidence": r[2], "treatment": r[3], "imageBase64": r[4], "timestamp": int(r[5].timestamp() * 1000)} for r in cursor.fetchall()]
+
+@app.post("/users/update_photo")
+async def update_profile_photo(uid: str = Form(...), photoBase64: str = Form(...)):
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("UPDATE Users SET photoBase64 = ? WHERE uid = ?", (photoBase64, uid))
+        cursor.execute("UPDATE Posts SET userPhotoUrl = ? WHERE uid = ?", (photoBase64, uid))
+        cursor.execute("UPDATE Comments SET authorPhotoUrl = ? WHERE authorUid = ?", (photoBase64, uid))
+        cursor.execute("UPDATE Notifications SET senderAvatar = ? WHERE senderUid = ?", (photoBase64, uid))
+        db.commit()
+        return {"status": "success"}
+    except Exception as e: return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":
     import uvicorn

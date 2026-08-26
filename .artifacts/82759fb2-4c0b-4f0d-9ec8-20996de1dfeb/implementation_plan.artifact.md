@@ -1,40 +1,52 @@
-# Kế hoạch khắc phục lỗi gửi Email Cảnh báo theo tài khoản Firebase (v17)
+# Kế hoạch Sửa lỗi Đồng bộ, Thông báo và Tối ưu Trải nghiệm (v23)
 
-Người dùng báo cáo không nhận được email. Chúng ta sẽ đảm bảo hệ thống lấy chính xác Email từ Firebase Auth và gửi cảnh báo về đúng địa chỉ đó khi phát hiện bệnh.
+Kế hoạch này giải quyết dứt điểm lỗi thông báo không hiển thị, sự cố không đồng bộ ảnh đại diện giữa các tài khoản, và hoàn thiện thiết kế lịch sử chẩn đoán.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> **Ràng buộc Đăng nhập**: Nếu người dùng chưa đăng nhập, hệ thống sẽ hiển thị thông báo nhắc nhở: "Bạn đang dùng tài khoản khách, vui lòng đăng nhập để nhận cảnh báo qua Email".
-> **Kiểm tra Log Backend**: Tôi sẽ thêm log vào Backend AI để bạn có thể nhìn thấy địa chỉ email mà App gửi lên trong cửa sổ Terminal.
-
-## Open Questions
-
-- Bạn đã thử đăng xuất và đăng nhập lại trên App chưa?
-- Khi chẩn đoán, bạn có thấy dòng "DEBUG: Nhan yeu cau chan doan tu: [email của bạn]" hiện lên ở terminal chạy `main.py` không?
+> **Đồng bộ Ảnh đại diện**: Tôi sẽ thay đổi cách lưu trữ để đảm bảo khi Nick A đổi ảnh, Nick B vào diễn đàn sẽ thấy ngay ảnh mới. Lỗi hiện tại là do ảnh chỉ lưu ở bộ nhớ máy Nick A.
+> **Kích hoạt Thông báo**: Kiểm tra lại toàn bộ luồng từ Backend đến App để đảm bảo thông báo hiện lên ngay khi có tương tác.
+> **Thiết kế Lịch sử**: Thêm dòng thời gian (giờ/ngày) vào các thẻ lịch sử ở Trang chủ để không bị "khuyết" thông tin.
 
 ## Proposed Changes
 
-### 1. Cải tiến Android App (DiagnosisActivity)
-#### [MODIFY] [DiagnosisActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/DiagnosisActivity.java)
-- **Kiểm tra trạng thái đăng nhập**: Nếu `user == null`, hiển thị một thông báo nhẹ (Snackbar hoặc Toast) để người dùng biết email sẽ không được gửi.
-- **Log dữ liệu**: Thêm log để kiểm tra chuỗi `userEmail` trước khi gọi API.
-
-### 2. Nâng cấp Backend AI (D:/Plant_Disease_Pipeline/)
+### 1. Tối ưu Tốc độ Chẩn đoán (AI Speedup)
 #### [MODIFY] [main.py](file:///D:/Plant_Disease_Pipeline/main.py)
-- **Phản hồi trạng thái email**: Trả về `email_sent` và `target_email` trong JSON để App hiển thị thông báo: "Đã gửi email tới [địa chỉ email]".
-- **Xử lý lỗi**: Bọc hàm gửi email trong khối `try-except` chặt chẽ hơn để không làm treo quá trình trả về kết quả chẩn đoán nếu gửi mail lỗi.
+- Tách phần gọi Gemini AI (phần lấy lời khuyên - rất chậm) ra khỏi API chẩn đoán chính.
+- API `/predict` sẽ trả về tên bệnh ngay lập tức (< 1s).
+- Thêm API `/expert-advice` để App gọi lấy lời khuyên sau (load từ từ).
 
-#### [MODIFY] [alert.py](file:///D:/Plant_Disease_Pipeline/alert.py)
-- **Tối ưu kết nối**: Thử nghiệm chuyển đổi giữa Port 465 (SSL) và 587 (TLS) để đảm bảo tính ổn định.
+### 2. Sửa lỗi Ảnh đại diện & Thông báo
+#### [MODIFY] [backend_sql.py](file:///D:/Androi_DATN/backend_sql.py)
+- Tối ưu API `update_photo`: Đảm bảo cập nhật đồng bộ ảnh vào bảng `Posts` để mọi người dùng khác đều thấy ảnh mới trên diễn đàn.
+- Thêm Log cho API `notifications` để debug lý do thông báo không hiện.
 
-### 3. Cập nhật Model Response
-#### [MODIFY] [PredictResponse.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/models/PredictResponse.java)
-- Thêm các trường: `email_sent` (boolean) và `receiver_email` (String).
+#### [MODIFY] [EditProfileActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/profile/EditProfileActivity.java)
+- Đảm bảo đẩy ảnh Base64 lên SQL Server thành công trước khi báo hoàn tất.
+
+### 3. Hoàn thiện Giao diện Lịch sử & UX
+#### [MODIFY] [item_disease_common.xml](file:///D:/Androi_DATN/app/src/main/res/layout/item_disease_common.xml)
+- Bổ sung `TextView` hiển thị thời gian chẩn đoán (ví dụ: "10:30 - 20/07").
+
+#### [MODIFY] [PersonalHistoryAdapter.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/home/PersonalHistoryAdapter.java)
+- Đổ dữ liệu thời gian vào giao diện mới.
+
+#### [MODIFY] [HomeFragment.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/home/HomeFragment.java)
+- Kích hoạt nút **"Quét ngay"** trên Banner để mở Camera.
+
+### 4. Tương tác Bàn phím & Nút bấm
+#### [MODIFY] [LibraryFragment.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/library/LibraryFragment.java)
+- Ẩn bàn phím ngay khi nhấn gửi.
+- Chuyển trạng thái nút thành **"Đang soạn câu trả lời..."**.
+
+#### [MODIFY] [PostDetailActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/ui/forum/PostDetailActivity.java)
+- Ẩn bàn phím sau khi gửi bình luận.
 
 ## Verification Plan
 
 ### Manual Verification
-1. **Trường hợp Khách**: Không đăng nhập -> Chẩn đoán -> App báo "Vui lòng đăng nhập để nhận email".
-2. **Trường hợp Đăng nhập**: Dùng email thật -> Chẩn đoán -> Kiểm tra log Backend thấy đúng email -> Kiểm tra hộp thư đến.
-3. **Kiểm tra Spam**: Hướng dẫn người dùng kiểm tra mục Thư rác nếu vẫn không thấy.
+1. **Ảnh đại diện**: Nick A đổi ảnh -> Nick B vào xem bài viết của A trên diễn đàn -> Phải thấy ảnh mới.
+2. **Thông báo**: Thực hiện Like/Comment -> Kiểm tra mục Thông báo có dữ liệu mới không.
+3. **Thiết kế**: Xem mục "Lịch sử của bạn" ở Trang chủ -> Kiểm tra xem đã có ngày giờ chưa.
+4. **Tốc độ**: Chụp ảnh chẩn đoán -> Tên bệnh phải hiện ra gần như tức thì.

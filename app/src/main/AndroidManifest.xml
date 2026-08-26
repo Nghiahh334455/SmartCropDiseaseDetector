@@ -45,6 +45,26 @@
             android:name=".ui.profile.EditProfileActivity"
             android:exported="false"
             android:label="Chỉnh sửa hồ sơ" />
+        <activity
+            android:name=".ui.admin.AdminDashboardActivity"
+            android:exported="false"
+            android:label="Quản trị hệ thống" />
+        <activity
+            android:name=".ui.admin.ManageLibraryActivity"
+            android:exported="false"
+            android:label="Quản lý Thư viện" />
+        <activity
+            android:name=".ui.admin.ManageTipsActivity"
+            android:exported="false"
+            android:label="Quản lý Mẹo" />
+        <activity
+            android:name=".ui.admin.ManageUsersActivity"
+            android:exported="false"
+            android:label="Quản lý Người dùng" />
+        <activity
+            android:name=".ui.admin.ManagePostsActivity"
+            android:exported="false"
+            android:label="Quản lý Bài viết" />
 
         <activity
             android:name=".ui.library.DiseaseDetailActivity"

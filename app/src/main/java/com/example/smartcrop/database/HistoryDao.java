@@ -13,4 +13,10 @@ public interface HistoryDao {
 
     @Query("SELECT * FROM diagnosis_history ORDER BY timestamp DESC")
     List<HistoryEntity> getAllHistory();
+
+    @Query("SELECT * FROM diagnosis_history WHERE uid = :uid ORDER BY timestamp DESC")
+    List<HistoryEntity> getHistoryByUid(String uid);
+
+    @Query("SELECT * FROM diagnosis_history WHERE uid = :uid ORDER BY timestamp DESC LIMIT :limit")
+    List<HistoryEntity> getRecentByUid(String uid, int limit);
 }

@@ -36,7 +36,19 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         HistoryEntity history = historyList.get(position);
         holder.binding.tvHistoryDisease.setText(history.diseaseName);
-        holder.binding.tvHistoryConfidence.setText(String.format(Locale.getDefault(), "Độ chính xác: %.1f%%", history.confidence));
+        holder.binding.tvHistoryConfidence.setText(String.format(Locale.getDefault(), "%.1f%%", history.confidence));
+
+        // Đổ màu Status Badge theo tên bệnh
+        int statusColor;
+        String name = history.diseaseName.toLowerCase();
+        if (name.contains("khỏe mạnh") || name.contains("healthy") || name.contains("an toàn")) {
+            statusColor = holder.itemView.getContext().getResources().getColor(com.example.smartcrop.R.color.status_safe);
+        } else if (history.confidence < 60) {
+            statusColor = holder.itemView.getContext().getResources().getColor(com.example.smartcrop.R.color.status_warning);
+        } else {
+            statusColor = holder.itemView.getContext().getResources().getColor(com.example.smartcrop.R.color.status_danger);
+        }
+        holder.binding.viewStatusBadge.setBackgroundTintList(android.content.res.ColorStateList.valueOf(statusColor));
 
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
         holder.binding.tvHistoryDate.setText(sdf.format(new Date(history.timestamp)));

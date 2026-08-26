@@ -26,6 +26,14 @@ public class LibraryAdapter extends RecyclerView.Adapter<LibraryAdapter.ViewHold
         this.diseaseListFull = new ArrayList<>(diseaseList);
     }
 
+    public void updateList(List<DiseaseModel> newList) {
+        this.diseaseList.clear();
+        this.diseaseList.addAll(newList);
+        this.diseaseListFull.clear();
+        this.diseaseListFull.addAll(newList);
+        notifyDataSetChanged();
+    }
+
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {

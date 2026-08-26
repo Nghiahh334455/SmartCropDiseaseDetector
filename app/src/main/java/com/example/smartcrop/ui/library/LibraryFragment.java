@@ -23,6 +23,7 @@ import com.example.smartcrop.utils.DiseaseProvider;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -48,10 +49,10 @@ public class LibraryFragment extends Fragment {
 
         binding.rvLibrary.setLayoutManager(new LinearLayoutManager(getContext()));
         
-        List<DiseaseModel> diseases = DiseaseProvider.getAllDiseases();
-        
-        adapter = new LibraryAdapter(diseases);
+        adapter = new LibraryAdapter(new ArrayList<>());
         binding.rvLibrary.setAdapter(adapter);
+
+        loadDiseasesFromDb();
 
         // Setup Search
         binding.searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
@@ -70,17 +71,96 @@ public class LibraryFragment extends Fragment {
         binding.btnAskAI.setOnClickListener(v -> showAISearchDialog());
     }
 
+    private void loadDiseasesFromDb() {
+        ApiService apiService = RetrofitClient.getSqlService();
+        apiService.getDiseasesFromDb().enqueue(new Callback<List<Map<String, Object>>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<Map<String, Object>>> call, @NonNull Response<List<Map<String, Object>>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<DiseaseModel> list = new ArrayList<>();
+                    for (Map<String, Object> map : response.body()) {
+                        list.add(new DiseaseModel(
+                                (String) map.get("name"),
+                                (String) map.get("description"),
+                                new ArrayList<>(),
+                                (String) map.get("treatment")
+                        ));
+                    }
+                    if (list.isEmpty()) {
+                        list.addAll(DiseaseProvider.getAllDiseases());
+                    }
+                    adapter.updateList(list);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Map<String, Object>>> call, Throwable t) {
+                adapter.updateList(DiseaseProvider.getAllDiseases());
+            }
+        });
+    }
+
     private void showAISearchDialog() {
         BottomSheetDialog dialog = new BottomSheetDialog(getContext());
         View view = getLayoutInflater().inflate(R.layout.dialog_ai_chat, null);
         dialog.setContentView(view);
 
         android.widget.EditText etInput = view.findViewById(R.id.etAIQuestion);
+        android.widget.ProgressBar progressBar = view.findViewById(R.id.pbChatLoading);
+        android.widget.TextView tvTitle = view.findViewById(R.id.tvChatTitle);
+        android.widget.LinearLayout layoutInput = view.findViewById(R.id.layoutInputArea);
+        android.widget.TextView tvResponse = view.findViewById(R.id.tvAIQuickResponse);
+
         view.findViewById(R.id.btnAskAI).setOnClickListener(v -> {
             String question = etInput.getText().toString().trim();
             if (!question.isEmpty()) {
-                dialog.dismiss();
-                callChatAPI(question);
+                // Hiển thị trạng thái đang tải ngay trong Dialog
+                layoutInput.setVisibility(View.GONE);
+                progressBar.setVisibility(View.VISIBLE);
+                tvTitle.setText("Chuyên gia đang suy nghĩ...");
+                
+                com.google.android.material.button.MaterialButton btn = view.findViewById(R.id.btnAskAI);
+                btn.setEnabled(false);
+                btn.setText("Đang soạn câu trả lời...");
+
+                // Ẩn bàn phím
+                android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) getContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+                if (imm != null) imm.hideSoftInputFromWindow(etInput.getWindowToken(), 0);
+
+                ApiService apiService = RetrofitClient.getAiService();
+                apiService.askAI(question).enqueue(new Callback<ChatResponse>() {
+                    @Override
+                    public void onResponse(Call<ChatResponse> call, Response<ChatResponse> response) {
+                        if (isAdded() && dialog.isShowing()) {
+                            progressBar.setVisibility(View.GONE);
+                            if (response.isSuccessful() && response.body() != null) {
+                                // Hiển thị câu trả lời ngay tại Dialog này
+                                tvTitle.setText("Lời khuyên từ Chuyên gia");
+                                tvResponse.setVisibility(View.VISIBLE);
+                                tvResponse.setText(response.body().getResponse());
+                                
+                                // Đổi nút Gửi thành nút Đóng/Cảm ơn
+                                com.google.android.material.button.MaterialButton btn = view.findViewById(R.id.btnAskAI);
+                                btn.setText("Đã hiểu, cảm ơn!");
+                                btn.setOnClickListener(v1 -> dialog.dismiss());
+                            } else {
+                                layoutInput.setVisibility(View.VISIBLE);
+                                tvTitle.setText("Lỗi kết nối AI");
+                                Toast.makeText(getContext(), "Không nhận được phản hồi từ AI", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<ChatResponse> call, Throwable t) {
+                        if (isAdded() && dialog.isShowing()) {
+                            progressBar.setVisibility(View.GONE);
+                            layoutInput.setVisibility(View.VISIBLE);
+                            tvTitle.setText("Lỗi kết nối");
+                            Toast.makeText(getContext(), "Lỗi: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
             }
         });
 
@@ -88,25 +168,7 @@ public class LibraryFragment extends Fragment {
     }
 
     private void callChatAPI(String question) {
-        Toast.makeText(getContext(), "Thần Nông AI đang phản hồi...", Toast.LENGTH_SHORT).show();
-        
-        // Gọi sang Port 8000 của VS Code mới lấy được câu trả lời
-        ApiService apiService = RetrofitClient.getAiService();
-        apiService.askAI(question).enqueue(new Callback<ChatResponse>() {
-            @Override
-            public void onResponse(Call<ChatResponse> call, Response<ChatResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    showAIResponse(response.body().getResponse());
-                } else {
-                    Toast.makeText(getContext(), "Chuyên gia bận, vui lòng thử lại!", Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onFailure(Call<ChatResponse> call, Throwable t) {
-                Toast.makeText(getContext(), "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+        // Đã gộp vào showAISearchDialog để tránh đóng Dialog
     }
 
     private void showAIResponse(String answer) {

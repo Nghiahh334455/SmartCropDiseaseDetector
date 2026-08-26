@@ -44,14 +44,36 @@ public class SharedPostAdapter extends RecyclerView.Adapter<SharedPostAdapter.Vi
         Map<String, Object> post = sharedPosts.get(position);
 
         String originalAuthor = (String) post.get("author");
-        holder.binding.tvPostAuthor.setText("Bạn đã chia sẻ từ " + originalAuthor);
+        String disease = (String) post.get("disease");
+        
+        holder.binding.tvPostAuthor.setText(originalAuthor != null ? originalAuthor : "Người dùng");
         holder.binding.tvPostQuestion.setText((String) post.get("question"));
-        holder.binding.chipDisease.setText((String) post.get("disease"));
+        
+        if (disease == null || disease.isEmpty() || disease.equals("Chia sẻ từ cộng đồng")) {
+            holder.binding.chipDisease.setVisibility(android.view.View.GONE);
+        } else {
+            holder.binding.chipDisease.setVisibility(android.view.View.VISIBLE);
+            holder.binding.chipDisease.setText(disease);
+        }
+
+        // Avatar logic
+        String userPhotoUrl = (String) post.get("userPhotoUrl");
+        if (userPhotoUrl != null && !userPhotoUrl.isEmpty()) {
+            if (userPhotoUrl.startsWith("BASE64:") || userPhotoUrl.length() > 500) {
+                byte[] bytes = com.example.smartcrop.utils.ImageUtils.base64ToBytes(userPhotoUrl);
+                if (bytes != null) Glide.with(holder.itemView.getContext()).load(bytes).circleCrop().into(holder.binding.ivPostAvatar);
+            } else {
+                Glide.with(holder.itemView.getContext()).load(userPhotoUrl).circleCrop().into(holder.binding.ivPostAvatar);
+            }
+        }
 
         String imageUrl = (String) post.get("imageUrl");
         if (imageUrl != null && !imageUrl.isEmpty()) {
             holder.binding.ivPostImage.setVisibility(android.view.View.VISIBLE);
-            if (imageUrl.startsWith("http")) {
+            if (imageUrl.startsWith("BASE64:") || imageUrl.length() > 500) {
+                byte[] bytes = com.example.smartcrop.utils.ImageUtils.base64ToBytes(imageUrl);
+                if (bytes != null) Glide.with(holder.itemView.getContext()).load(bytes).into(holder.binding.ivPostImage);
+            } else if (imageUrl.startsWith("http")) {
                 Glide.with(holder.itemView.getContext()).load(imageUrl).into(holder.binding.ivPostImage);
             } else {
                 int resId = holder.itemView.getContext().getResources().getIdentifier(imageUrl, "drawable", holder.itemView.getContext().getPackageName());

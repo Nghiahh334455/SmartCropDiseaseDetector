@@ -74,13 +74,18 @@ public class CreatePostActivity extends AppCompatActivity {
         if (user != null) {
             binding.tvUserName.setText(user.getDisplayName() != null ? user.getDisplayName() : "Người dùng");
             
-            String localPath = getSharedPreferences("SmartCropPrefs", MODE_PRIVATE)
+            String localPhoto = getSharedPreferences("SmartCropPrefs", MODE_PRIVATE)
                     .getString("profile_image_" + user.getUid(), null);
 
-            if (localPath != null && new File(localPath).exists()) {
-                Glide.with(this).load(new File(localPath)).into(binding.ivUserAvatar);
+            if (localPhoto != null) {
+                if (localPhoto.startsWith("BASE64:")) {
+                    byte[] bytes = ImageUtils.base64ToBytes(localPhoto);
+                    if (bytes != null) Glide.with(this).load(bytes).circleCrop().into(binding.ivUserAvatar);
+                } else if (new File(localPhoto).exists()) {
+                    Glide.with(this).load(new File(localPhoto)).circleCrop().into(binding.ivUserAvatar);
+                }
             } else if (user.getPhotoUrl() != null) {
-                Glide.with(this).load(user.getPhotoUrl()).into(binding.ivUserAvatar);
+                Glide.with(this).load(user.getPhotoUrl()).circleCrop().into(binding.ivUserAvatar);
             }
         }
     }
@@ -97,7 +102,13 @@ public class CreatePostActivity extends AppCompatActivity {
 
         String uid = user.getUid();
         String userName = (user.getDisplayName() != null) ? user.getDisplayName() : "Người dùng Thần Nông AI";
-        String userPhotoUrl = (user.getPhotoUrl() != null) ? user.getPhotoUrl().toString() : "";
+        
+        // Fix: Lấy ảnh Base64 từ SharedPreferences để đồng bộ đúng avatar
+        String userPhotoUrl = getSharedPreferences("SmartCropPrefs", MODE_PRIVATE)
+                .getString("profile_image_" + uid, null);
+        if (userPhotoUrl == null && user.getPhotoUrl() != null) {
+            userPhotoUrl = user.getPhotoUrl().toString();
+        }
 
         if (selectedImageUri != null) {
             try {

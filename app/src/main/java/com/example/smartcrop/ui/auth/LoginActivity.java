@@ -46,6 +46,23 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
+        // KIỂM TRA TÀI KHOẢN ADMIN CỨNG
+        if (email.equalsIgnoreCase("12345N") && password.equals("12345")) {
+            getSharedPreferences("SmartCropPrefs", MODE_PRIVATE).edit()
+                    .putBoolean("is_admin", true)
+                    .putString("admin_uid", "12345N")
+                    .apply();
+            Toast.makeText(this, "Chào mừng Quản trị viên!", Toast.LENGTH_SHORT).show();
+            // Chuyển hướng đến Admin Dashboard (Sẽ tạo sau)
+            // startActivity(new Intent(this, AdminDashboardActivity.class));
+            startActivity(new Intent(this, com.example.smartcrop.MainActivity.class));
+            finish();
+            return;
+        }
+
+        // Reset Admin flag if normal user logs in
+        getSharedPreferences("SmartCropPrefs", MODE_PRIVATE).edit().putBoolean("is_admin", false).apply();
+
         // Hien thi trang thai dang tai
         binding.btnLogin.setVisibility(View.GONE);
         binding.pbLogin.setVisibility(View.VISIBLE);

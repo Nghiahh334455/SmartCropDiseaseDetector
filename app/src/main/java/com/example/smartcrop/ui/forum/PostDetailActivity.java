@@ -37,6 +37,7 @@ public class PostDetailActivity extends AppCompatActivity {
     private CommentAdapter adapter;
     private String postId;
     private String currentReplyParentId = null;
+    private Map<String, Object> postData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,9 +53,9 @@ public class PostDetailActivity extends AppCompatActivity {
             finish();
             return;
         }
-        Map<String, Object> post = (Map<String, Object>) postObj;
+        postData = (Map<String, Object>) postObj;
 
-        Object idObj = post.get("id");
+        Object idObj = postData.get("id");
         if (idObj == null) idObj = getIntent().getStringExtra("postId");
         
         if (idObj != null) {
@@ -67,10 +68,10 @@ public class PostDetailActivity extends AppCompatActivity {
                 postId = idStr;
             }
         } else {
-            postId = (String) post.get("originalPostId");
+            postId = (String) postData.get("originalPostId");
         }
 
-        displayPost(post);
+        displayPost(postData);
         setupComments();
 
         if (postId != null) {
@@ -147,12 +148,25 @@ public class PostDetailActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     commentList.clear();
                     commentIds.clear();
-                    for (CommentModel comment : response.body()) {
-                        commentList.add(comment);
-                        commentIds.add(String.valueOf(comment.id)); // Need to add id field to CommentModel
+                    
+                    List<CommentModel> allComments = response.body();
+                    // Sắp xếp bình luận: Cha -> Các con của cha -> Cha tiếp theo
+                    for (CommentModel c : allComments) {
+                        if (c.parentCommentId == null) {
+                            commentList.add(c);
+                            commentIds.add(String.valueOf(c.id));
+                            // Tìm các con của nó
+                            for (CommentModel child : allComments) {
+                                if (child.parentCommentId != null && child.parentCommentId.equals(c.id)) {
+                                    commentList.add(child);
+                                    commentIds.add(String.valueOf(child.id));
+                                }
+                            }
+                        }
                     }
+                    
                     adapter.notifyDataSetChanged();
-                    binding.tvCommentHeader.setText("Bình luận (" + commentList.size() + ")");
+                    binding.tvCommentHeader.setText("Bình luận (" + allComments.size() + ")");
                 }
             }
 
@@ -182,12 +196,18 @@ public class PostDetailActivity extends AppCompatActivity {
             pId = Integer.parseInt(postId);
         }
         
-        String authorPhotoUrl = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : "";
+        String authorPhotoUrl = getSharedPreferences("SmartCropPrefs", MODE_PRIVATE)
+                .getString("profile_image_" + user.getUid(), "");
+        if (authorPhotoUrl.startsWith("BASE64:")) authorPhotoUrl = authorPhotoUrl.substring(7);
+        if (authorPhotoUrl.isEmpty() && user.getPhotoUrl() != null) {
+            authorPhotoUrl = user.getPhotoUrl().toString();
+        }
         
+        final String finalAuthorPhotoUrl = authorPhotoUrl;
         Integer parentId = (currentReplyParentId != null) ? Integer.parseInt(currentReplyParentId) : null;
 
         ApiService apiService = RetrofitClient.getSqlService();
-        apiService.addComment(pId, user.getDisplayName(), user.getUid(), content, authorPhotoUrl, String.valueOf(parentId))
+        apiService.addComment(pId, user.getDisplayName(), user.getUid(), content, finalAuthorPhotoUrl, String.valueOf(parentId))
                 .enqueue(new retrofit2.Callback<Map<String, String>>() {
                     @Override
                     public void onResponse(retrofit2.Call<Map<String, String>> call, retrofit2.Response<Map<String, String>> response) {
@@ -195,7 +215,21 @@ public class PostDetailActivity extends AppCompatActivity {
                             binding.etComment.setText("");
                             binding.etComment.clearFocus();
                             currentReplyParentId = null;
+                            
+                            // Ẩn bàn phím
+                            android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+                            if (imm != null) imm.hideSoftInputFromWindow(binding.etComment.getWindowToken(), 0);
+
                             listenForComments(); // Refresh
+
+                            // Gửi thông báo tới tác giả bài viết
+                            if (postData != null) {
+                                Object uidObj = postData.get("uid");
+                                String question = (String) postData.get("question");
+                                if (uidObj != null && !uidObj.equals(user.getUid())) {
+                                    sendNotification(String.valueOf(uidObj), "COMMENT", postId, question != null ? question : "bài viết");
+                                }
+                            }
                         }
                     }
 

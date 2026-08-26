@@ -1,15 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#2E7D32</color>
-    <color name="primary_light">#60AD5E</color>
-    <color name="primary_dark">#005005</color>
-    <color name="secondary">#8BC34A</color>
-    <color name="background">#F1F8E9</color>
+    <!-- Brand Colors: Forest Green & Earth Brown -->
+    <color name="primary">#1B5E20</color>
+    <color name="primary_light">#4C8C4A</color>
+    <color name="primary_dark">#003300</color>
+
+    <color name="secondary">#795548</color>
+    <color name="secondary_light">#A98274</color>
+    <color name="secondary_dark">#4B2C20</color>
+
+    <!-- Signal Colors for Diagnosis -->
+    <color name="status_safe">#2E7D32</color>
+    <color name="status_warning">#FBC02D</color>
+    <color name="status_danger">#D32F2F</color>
+
+    <!-- Neutral Colors -->
+    <color name="background">#F5F7F2</color>
     <color name="surface">#FFFFFF</color>
     <color name="error">#B00020</color>
-
-    <color name="black">#000000</color>
+    <color name="black">#212121</color>
     <color name="white">#FFFFFF</color>
-    <color name="gray_light">#E0E0E0</color>
-    <color name="gray_dark">#757575</color>
+    <color name="gray_light">#F1F1F1</color>
+    <color name="gray_medium">#9E9E9E</color>
+    <color name="gray_dark">#616161</color>
 </resources>

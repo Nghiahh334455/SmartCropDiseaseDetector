@@ -44,6 +44,16 @@
                 android:text="32 lượt chẩn đoán"
                 android:textColor="@color/primary"
                 android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/tvCommonDiseaseDate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="20:15 - 10/08"
+                android:textColor="@color/gray_medium"
+                android:textSize="10sp"
+                android:visibility="gone" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

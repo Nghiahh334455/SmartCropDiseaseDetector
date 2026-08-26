@@ -126,6 +126,18 @@ public class DiagnosisActivity extends AppCompatActivity {
         binding.btnGallery.setOnClickListener(v -> openGallery());
         binding.btnPostForum.setOnClickListener(v -> showPostDialog());
 
+        binding.btnToggleAdvice.setOnClickListener(v -> {
+            // Hiệu ứng trượt mượt mà khi mở rộng lời khuyên
+            android.transition.TransitionManager.beginDelayedTransition(binding.layoutResult, new android.transition.AutoTransition());
+            if (binding.layoutAdviceContainer.getVisibility() == View.VISIBLE) {
+                binding.layoutAdviceContainer.setVisibility(View.GONE);
+                binding.btnToggleAdvice.setText("Xem tư vấn từ chuyên gia AI 🤖");
+            } else {
+                binding.layoutAdviceContainer.setVisibility(View.VISIBLE);
+                binding.btnToggleAdvice.setText("Ẩn bớt lời khuyên 👆");
+            }
+        });
+
         // Handle intent from HomeFragment
         String action = getIntent().getStringExtra("action");
         if ("camera".equals(action)) {
@@ -192,10 +204,6 @@ public class DiagnosisActivity extends AppCompatActivity {
                     PredictResponse result = response.body();
                     
                     // Cập nhật kết quả lên UI
-                    binding.tvDiseaseName.setText(result.getDiseaseName()); // Giả sử model có phương thức này, cần check
-                    // Nếu Model cũ trả về disease_name_vi, ta dùng field đó
-                    
-                    // ... Cập nhật các thông tin khác ...
                     processAiResult(result);
 
                     // Thông báo trạng thái gửi Email
@@ -233,6 +241,10 @@ public class DiagnosisActivity extends AppCompatActivity {
             binding.tvConfidence.setText(String.format("%.1f%%", confidence));
             binding.progressConfidence.setProgress((int) confidence);
             
+            // Reset Advice UI
+            binding.layoutAdviceContainer.setVisibility(View.GONE);
+            binding.btnToggleAdvice.setText("Xem tư vấn từ chuyên gia AI 🤖");
+            
             currentDiseaseName = name;
             binding.btnPostForum.setVisibility(View.VISIBLE);
 
@@ -249,6 +261,9 @@ public class DiagnosisActivity extends AppCompatActivity {
             }
             
             binding.tvAiAdvice.setText(result.getAiExpertAdvice());
+
+            // TỐI ƯU: Gọi API lấy lời khuyên chuyên sâu (Lazy Load)
+            fetchExpertAdvice(name, confidence);
 
             // Draw BBox
             Map<String, Integer> bbox = result.getBbox();
@@ -426,7 +441,13 @@ public class DiagnosisActivity extends AppCompatActivity {
 
         String uid = user.getUid();
         String userName = (user.getDisplayName() != null && !user.getDisplayName().isEmpty()) ? user.getDisplayName() : "Người dùng Thần Nông AI";
-        String userPhotoUrl = (user.getPhotoUrl() != null) ? user.getPhotoUrl().toString() : "";
+        
+        // Fix: Lấy ảnh Base64 từ SharedPreferences để đồng bộ đúng avatar
+        String userPhotoUrl = getSharedPreferences("SmartCropPrefs", MODE_PRIVATE)
+                .getString("profile_image_" + uid, null);
+        if (userPhotoUrl == null && user.getPhotoUrl() != null) {
+            userPhotoUrl = user.getPhotoUrl().toString();
+        }
 
         try {
             // Chuyển ảnh sang Base64
@@ -459,8 +480,12 @@ public class DiagnosisActivity extends AppCompatActivity {
     }
 
     private void saveToHistory(String disease, double confidence, String treatment, String base64) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        String uid = (user != null) ? user.getUid() : "guest";
+
         Executors.newSingleThreadExecutor().execute(() -> {
             HistoryEntity history = new HistoryEntity(
+                    uid,
                     disease,
                     confidence,
                     treatment,
@@ -468,6 +493,36 @@ public class DiagnosisActivity extends AppCompatActivity {
                     System.currentTimeMillis()
             );
             AppDatabase.getInstance(this).historyDao().insert(history);
+            
+            // Đồng bộ lên Cloud nếu đã đăng nhập
+            if (user != null) {
+                ApiService apiService = RetrofitClient.getSqlService();
+                apiService.saveHistoryToCloud(uid, disease, confidence, treatment, base64)
+                        .enqueue(new retrofit2.Callback<Map<String, String>>() {
+                            @Override
+                            public void onResponse(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull retrofit2.Response<Map<String, String>> response) {}
+                            @Override
+                            public void onFailure(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull Throwable t) {}
+                        });
+            }
+        });
+    }
+
+    private void fetchExpertAdvice(String name, double confidence) {
+        ApiService apiService = RetrofitClient.getAiService();
+        apiService.getExpertAdvice(name, confidence).enqueue(new retrofit2.Callback<Map<String, String>>() {
+            @Override
+            public void onResponse(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull retrofit2.Response<Map<String, String>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    String advice = response.body().get("advice");
+                    runOnUiThread(() -> binding.tvAiAdvice.setText(advice));
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull Throwable t) {
+                // Keep the placeholder or show error
+            }
         });
     }
 }

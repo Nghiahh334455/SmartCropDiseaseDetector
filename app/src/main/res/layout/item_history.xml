@@ -5,8 +5,9 @@
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="16dp"
     android:layout_marginVertical="8dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="2dp">
+    app:cardCornerRadius="18dp"
+    app:cardElevation="2dp"
+    app:strokeWidth="0dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -14,18 +15,20 @@
         android:orientation="horizontal"
         android:padding="12dp">
 
-        <ImageView
+        <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/ivHistoryImage"
-            android:layout_width="70dp"
-            android:layout_height="70dp"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
             android:scaleType="centerCrop"
-            android:src="@android:drawable/ic_menu_gallery" />
+            android:src="@android:drawable/ic_menu_gallery"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Medium" />
 
         <LinearLayout
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_marginStart="16dp"
             android:layout_weight="1"
+            android:gravity="center_vertical"
             android:orientation="vertical">
 
             <TextView
@@ -34,17 +37,33 @@
                 android:layout_height="wrap_content"
                 android:text="Tên bệnh"
                 android:textColor="@color/black"
-                android:textSize="16sp"
+                android:textSize="17sp"
                 android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/tvHistoryConfidence"
-                android:layout_width="match_parent"
+            <LinearLayout
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="Độ chính xác: 0%"
-                android:textColor="@color/primary"
-                android:textSize="14sp" />
+                android:layout_marginTop="6dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <View
+                    android:id="@+id/viewStatusBadge"
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
+                    android:background="@drawable/bg_circle_trans"
+                    android:backgroundTint="@color/status_warning" />
+
+                <TextView
+                    android:id="@+id/tvHistoryConfidence"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="95.5%"
+                    android:textColor="@color/primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/tvHistoryDate"
@@ -52,8 +71,15 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:text="20/07/2026"
-                android:textColor="@color/gray_dark"
+                android:textColor="@color/gray_medium"
                 android:textSize="12sp" />
         </LinearLayout>
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center_vertical"
+            android:src="@android:drawable/ic_media_play"
+            app:tint="@color/gray_light" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

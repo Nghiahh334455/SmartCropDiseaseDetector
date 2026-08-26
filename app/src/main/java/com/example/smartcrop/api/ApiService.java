@@ -21,6 +21,19 @@ import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 public interface ApiService {
+    // --- USERS ---
+    @FormUrlEncoded
+    @POST("/users")
+    Call<Map<String, String>> syncUser(
+        @Field("uid") String uid,
+        @Field("displayName") String displayName,
+        @Field("email") String email,
+        @Field("photoBase64") String photoBase64
+    );
+
+    @GET("/users/{uid}")
+    Call<Map<String, Object>> getUser(@Path("uid") String uid);
+
     @Multipart
     @POST("/predict")
     Call<PredictResponse> predictDisease(
@@ -31,6 +44,13 @@ public interface ApiService {
     @FormUrlEncoded
     @POST("/chat")
     Call<ChatResponse> askAI(@Field("question") String question);
+
+    @FormUrlEncoded
+    @POST("/expert-advice")
+    Call<Map<String, String>> getExpertAdvice(
+        @Field("disease_name_vi") String name,
+        @Field("confidence") double confidence
+    );
 
     // --- FORUM ---
     @GET("/posts")
@@ -83,6 +103,40 @@ public interface ApiService {
     @POST("/disease_stats/increment")
     Call<Map<String, String>> incrementDiseaseCount(@Field("name") String name, @Field("imageUrl") String imageUrl);
 
+    // --- DYNAMIC CONTENT (DISEASES & TIPS) ---
+    @GET("/diseases")
+    Call<List<Map<String, Object>>> getDiseasesFromDb();
+
+    @FormUrlEncoded
+    @POST("/diseases")
+    Call<Map<String, String>> addDiseaseToDb(
+        @Field("name") String name,
+        @Field("description") String description,
+        @Field("treatment") String treatment,
+        @Field("imageResource") String imageResource
+    );
+
+    @GET("/tips")
+    Call<List<Map<String, Object>>> getTipsFromDb();
+
+    @FormUrlEncoded
+    @POST("/tips")
+    Call<Map<String, String>> addTipToDb(
+        @Field("title") String title,
+        @Field("content") String content,
+        @Field("imageResource") String imageResource
+    );
+
+    // --- ADMIN ---
+    @GET("/admin/stats")
+    Call<Map<String, Object>> getAdminStats();
+
+    @GET("/admin/users")
+    Call<List<Map<String, Object>>> getAdminUsers();
+
+    @retrofit2.http.DELETE("/admin/users/{uid}")
+    Call<Map<String, String>> deleteUser(@Path("uid") String uid);
+
     @FormUrlEncoded
     @POST("/notifications")
     Call<Map<String, String>> sendNotification(
@@ -98,4 +152,20 @@ public interface ApiService {
     @FormUrlEncoded
     @POST("/users/update_photo")
     Call<Map<String, String>> updateProfilePhoto(@Field("uid") String uid, @Field("photoBase64") String photoBase64);
+
+    @GET("/posts/{post_id}")
+    Call<Map<String, Object>> getPostById(@Path("post_id") int postId);
+
+    @FormUrlEncoded
+    @POST("/history")
+    Call<Map<String, String>> saveHistoryToCloud(
+        @Field("uid") String uid,
+        @Field("diseaseName") String diseaseName,
+        @Field("confidence") double confidence,
+        @Field("treatment") String treatment,
+        @Field("imageBase64") String imageBase64
+    );
+
+    @GET("/history/{uid}")
+    Call<List<Map<String, Object>>> getHistoryFromCloud(@Path("uid") String uid);
 }

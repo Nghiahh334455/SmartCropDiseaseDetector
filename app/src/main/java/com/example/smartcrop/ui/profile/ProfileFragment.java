@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.bumptech.glide.Glide;
 import com.example.smartcrop.databinding.FragmentProfileBinding;
+import com.example.smartcrop.ui.admin.AdminDashboardActivity;
 import com.example.smartcrop.ui.auth.LoginActivity;
 import com.example.smartcrop.ui.history.HistoryActivity;
 import com.example.smartcrop.utils.ImageUtils;
@@ -51,31 +52,7 @@ public class ProfileFragment extends Fragment {
         loadSharedPosts();
         loadSavedPosts();
 
-        if (currentUser != null) {
-            binding.tvProfileEmail.setText(currentUser.getEmail());
-            if (currentUser.getDisplayName() != null && !currentUser.getDisplayName().isEmpty()) {
-                binding.tvProfileName.setText(currentUser.getDisplayName());
-            }
-            
-            // 1. Kiểm tra ảnh lưu cục bộ trước
-            String localPath = getContext().getSharedPreferences("SmartCropPrefs", android.content.Context.MODE_PRIVATE)
-                    .getString("profile_image_" + currentUser.getUid(), null);
-
-            if (localPath != null) {
-                if (localPath.startsWith("BASE64:")) {
-                    byte[] bytes = ImageUtils.base64ToBytes(localPath);
-                    if (bytes != null) Glide.with(this).load(bytes).placeholder(android.R.drawable.ic_menu_gallery).into(binding.ivProfile);
-                } else if (new File(localPath).exists()) {
-                    Glide.with(this).load(new File(localPath)).placeholder(android.R.drawable.ic_menu_gallery).into(binding.ivProfile);
-                }
-            } else if (currentUser.getPhotoUrl() != null) {
-                // 2. Nếu không có ảnh cục bộ, thử load từ Firebase (nếu có)
-                Glide.with(this)
-                        .load(currentUser.getPhotoUrl())
-                        .placeholder(android.R.drawable.ic_menu_gallery)
-                        .into(binding.ivProfile);
-            }
-        }
+        updateUserInfo();
 
         binding.btnHistory.setOnClickListener(v -> {
             startActivity(new Intent(getContext(), HistoryActivity.class));
@@ -96,7 +73,57 @@ public class ProfileFragment extends Fragment {
             startActivity(new Intent(getContext(), NotificationActivity.class));
         });
 
+        binding.btnAdminDashboard.setOnClickListener(v -> {
+            startActivity(new Intent(getContext(), AdminDashboardActivity.class));
+        });
+
+        boolean isAdmin = getContext().getSharedPreferences("SmartCropPrefs", android.content.Context.MODE_PRIVATE)
+                .getBoolean("is_admin", false);
+        if (isAdmin) {
+            binding.btnAdminDashboard.setVisibility(View.VISIBLE);
+            binding.dividerAdmin.setVisibility(View.VISIBLE);
+        }
+
         listenForUnreadNotifications();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateUserInfo();
+    }
+
+    private void updateUserInfo() {
+        if (!isAdded() || binding == null) return;
+        
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null && getContext() != null) {
+            binding.tvProfileEmail.setText(currentUser.getEmail());
+            if (currentUser.getDisplayName() != null && !currentUser.getDisplayName().isEmpty()) {
+                binding.tvProfileName.setText(currentUser.getDisplayName());
+            }
+
+            // 1. Kiểm tra ảnh lưu cục bộ trong SharedPreferences
+            String photoData = getContext().getSharedPreferences("SmartCropPrefs", android.content.Context.MODE_PRIVATE)
+                    .getString("profile_image_" + currentUser.getUid(), null);
+
+            if (photoData != null && photoData.startsWith("BASE64:")) {
+                byte[] bytes = ImageUtils.base64ToBytes(photoData);
+                if (bytes != null) {
+                    Glide.with(this).load(bytes)
+                            .placeholder(android.R.drawable.ic_menu_gallery)
+                            .circleCrop()
+                            .into(binding.ivProfile);
+                }
+            } else if (currentUser.getPhotoUrl() != null) {
+                // 2. Nếu không có ảnh cục bộ, load từ Firebase (dành cho tk mới hoặc ảnh cũ)
+                Glide.with(this)
+                        .load(currentUser.getPhotoUrl())
+                        .placeholder(android.R.drawable.ic_menu_gallery)
+                        .circleCrop()
+                        .into(binding.ivProfile);
+            }
+        }
     }
 
     private void listenForUnreadNotifications() {

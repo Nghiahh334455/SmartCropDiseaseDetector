@@ -8,13 +8,15 @@ public class HistoryEntity {
     @PrimaryKey(autoGenerate = true)
     public int id;
     
+    public String uid; // ID của người dùng (Firebase UID)
     public String diseaseName;
     public double confidence;
     public String treatment;
     public String imageBase64; // Lưu trực tiếp chuỗi ảnh Base64
     public long timestamp;
 
-    public HistoryEntity(String diseaseName, double confidence, String treatment, String imageBase64, long timestamp) {
+    public HistoryEntity(String uid, String diseaseName, double confidence, String treatment, String imageBase64, long timestamp) {
+        this.uid = uid;
         this.diseaseName = diseaseName;
         this.confidence = confidence;
         this.treatment = treatment;

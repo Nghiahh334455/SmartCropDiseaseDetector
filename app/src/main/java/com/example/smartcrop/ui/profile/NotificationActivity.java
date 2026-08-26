@@ -78,15 +78,32 @@ public class NotificationActivity extends AppCompatActivity {
         ApiService apiService = RetrofitClient.getSqlService();
         apiService.markNotifAsRead(notifId).enqueue(new retrofit2.Callback<Map<String, String>>() {
             @Override
-            public void onResponse(retrofit2.Call<Map<String, String>> call, retrofit2.Response<Map<String, String>> response) {
-                // Notif marked as read
-            }
-
+            public void onResponse(retrofit2.Call<Map<String, String>> call, retrofit2.Response<Map<String, String>> response) {}
             @Override
             public void onFailure(retrofit2.Call<Map<String, String>> call, Throwable t) {}
         });
 
-        // Navigate... (still need to fetch post by ID from SQL)
-        // For now, let's keep it simple or implement fetch post by ID if needed.
+        // Tải thông tin bài viết và chuyển hướng
+        if (notification.getPostId() != null && !notification.getPostId().isEmpty()) {
+            int pId = Integer.parseInt(notification.getPostId());
+            apiService.getPostById(pId).enqueue(new retrofit2.Callback<Map<String, Object>>() {
+                @Override
+                public void onResponse(retrofit2.Call<Map<String, Object>> call, retrofit2.Response<Map<String, Object>> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        Intent intent = new Intent(NotificationActivity.this, PostDetailActivity.class);
+                        intent.putExtra("post", new HashMap<>(response.body()));
+                        intent.putExtra("postId", notification.getPostId());
+                        startActivity(intent);
+                    } else {
+                        Toast.makeText(NotificationActivity.this, "Bài viết không còn tồn tại", Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onFailure(retrofit2.Call<Map<String, Object>> call, Throwable t) {
+                    Toast.makeText(NotificationActivity.this, "Lỗi kết nối Server", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
     }
 }

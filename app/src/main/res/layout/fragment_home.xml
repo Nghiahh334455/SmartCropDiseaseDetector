@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8F9FA">
+    android:background="@color/background">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -29,47 +29,46 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Chào bạn!"
-                    android:textColor="@color/primary_dark"
-                    android:textSize="24sp"
+                    android:textColor="@color/primary"
+                    android:textSize="26sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="Cùng bảo vệ mùa màng hôm nay"
+                    android:text="Cùng bảo vệ mùa màng hôm nay 🌿"
                     android:textColor="@color/gray_dark"
                     android:textSize="14sp" />
             </LinearLayout>
 
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivHomeAvatar"
-                android:layout_width="45dp"
-                android:layout_height="45dp"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
                 android:scaleType="centerCrop"
                 android:src="@android:drawable/ic_menu_gallery"
                 app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
                 app:strokeColor="@color/primary"
-                app:strokeWidth="1dp" />
+                app:strokeWidth="1.5dp" />
         </LinearLayout>
 
-        <!-- Banner Chụp ảnh -->
+        <!-- Modern AI Banner -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardCamera"
             android:layout_width="match_parent"
-            android:layout_height="160dp"
-            android:layout_marginTop="24dp"
+            android:layout_height="180dp"
+            android:layout_marginTop="28dp"
             android:clickable="true"
             android:focusable="true"
-            android:foreground="?attr/selectableItemBackground"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="4dp"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="6dp"
             app:strokeWidth="0dp">
 
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="@drawable/bg_gradient_green">
+                android:background="@color/primary">
 
                 <LinearLayout
                     android:layout_width="wrap_content"
@@ -84,73 +83,75 @@
                         android:layout_height="wrap_content"
                         android:text="Chụp ảnh AI"
                         android:textColor="@color/white"
-                        android:textSize="22sp"
+                        android:textSize="24sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Chẩn đoán bệnh tức thì"
-                        android:textColor="#F1F8E9"
-                        android:textSize="13sp" />
+                        android:text="Chẩn đoán bệnh tức thì trong 3s"
+                        android:textColor="#E8F5E9"
+                        android:textSize="14sp" />
 
                     <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnBannerScan"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="Thử ngay"
-                        android:textSize="12sp"
+                        android:layout_marginTop="16dp"
+                        android:text="Quét ngay"
+                        android:textSize="13sp"
                         app:backgroundTint="@color/white"
                         app:cornerRadius="20dp"
-                        android:textColor="@color/primary" />
+                        android:textColor="@color/primary"
+                        app:icon="@android:drawable/ic_menu_camera" />
                 </LinearLayout>
 
                 <ImageView
-                    android:layout_width="120dp"
-                    android:layout_height="120dp"
+                    android:layout_width="140dp"
+                    android:layout_height="140dp"
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
-                    android:layout_marginEnd="12dp"
-                    android:alpha="0.3"
+                    android:layout_marginEnd="-20dp"
+                    android:alpha="0.2"
                     android:src="@android:drawable/ic_menu_camera"
                     app:tint="@color/white" />
             </RelativeLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <LinearLayout
+        <GridLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:orientation="horizontal">
+            android:layout_marginTop="24dp"
+            android:columnCount="2">
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardUpload"
                 android:layout_width="0dp"
-                android:layout_height="80dp"
-                android:layout_marginEnd="10dp"
-                android:layout_weight="1"
-                app:cardCornerRadius="16dp"
+                android:layout_height="90dp"
+                android:layout_columnWeight="1"
+                android:layout_marginEnd="8dp"
+                app:cardCornerRadius="20dp"
                 app:cardElevation="2dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:gravity="center"
-                    android:orientation="horizontal">
+                    android:orientation="vertical">
 
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:src="@android:drawable/ic_menu_upload"
                         app:tint="@color/primary" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="Tải ảnh"
+                        android:layout_marginTop="4dp"
+                        android:text="Tải ảnh lên"
                         android:textColor="@color/black"
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -159,34 +160,34 @@
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardHistory"
                 android:layout_width="0dp"
-                android:layout_height="80dp"
-                android:layout_marginStart="10dp"
-                android:layout_weight="1"
-                app:cardCornerRadius="16dp"
+                android:layout_height="90dp"
+                android:layout_columnWeight="1"
+                android:layout_marginStart="8dp"
+                app:cardCornerRadius="20dp"
                 app:cardElevation="2dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:gravity="center"
-                    android:orientation="horizontal">
+                    android:orientation="vertical">
 
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:src="@android:drawable/ic_menu_recent_history"
                         app:tint="@color/primary" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
+                        android:layout_marginTop="4dp"
                         android:text="Lịch sử"
                         android:textColor="@color/black"
                         android:textStyle="bold" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
-        </LinearLayout>
+        </GridLayout>
 
         <!-- Most Common Diseases Section -->
         <LinearLayout
@@ -204,15 +205,46 @@
                 android:textSize="18sp"
                 android:textStyle="bold" />
             <TextView
+                android:id="@+id/tvViewAllDiseases"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Xem tất cả"
                 android:textColor="@color/primary"
-                android:textSize="12sp" />
+                android:textSize="12sp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground" />
         </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvCommonDiseases"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:clipToPadding="false"
+            android:orientation="horizontal"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+        <!-- Personal History Section -->
+        <LinearLayout
+            android:id="@+id/layoutPersonalHistory"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Lịch sử của bạn"
+                android:textColor="@color/black"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvPersonalHistory"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"

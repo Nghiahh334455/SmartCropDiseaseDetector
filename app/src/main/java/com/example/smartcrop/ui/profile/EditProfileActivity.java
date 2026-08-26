@@ -58,13 +58,23 @@ public class EditProfileActivity extends AppCompatActivity {
 
         binding.etEditName.setText(currentUser.getDisplayName());
         
-        // Load current Avatar
-        String userPhotoUrl = currentUser.getPhotoUrl() != null ? currentUser.getPhotoUrl().toString() : "";
-        if (userPhotoUrl.length() > 500) {
-            byte[] bytes = ImageUtils.base64ToBytes(userPhotoUrl);
-            if (bytes != null) Glide.with(this).load(bytes).placeholder(android.R.drawable.ic_menu_gallery).into(binding.ivEditProfile);
-        } else {
-            Glide.with(this).load(userPhotoUrl).placeholder(android.R.drawable.ic_menu_gallery).into(binding.ivEditProfile);
+        // Load Avatar: Ưu tiên lấy từ SharedPreferences (Base64) trước để đồng bộ ngay
+        String localPhoto = getSharedPreferences("SmartCropPrefs", MODE_PRIVATE)
+                .getString("profile_image_" + currentUser.getUid(), null);
+
+        if (localPhoto != null && localPhoto.startsWith("BASE64:")) {
+            byte[] bytes = ImageUtils.base64ToBytes(localPhoto);
+            if (bytes != null) {
+                Glide.with(this).load(bytes)
+                        .placeholder(android.R.drawable.ic_menu_gallery)
+                        .circleCrop()
+                        .into(binding.ivEditProfile);
+            }
+        } else if (currentUser.getPhotoUrl() != null) {
+            Glide.with(this).load(currentUser.getPhotoUrl())
+                    .placeholder(android.R.drawable.ic_menu_gallery)
+                    .circleCrop()
+                    .into(binding.ivEditProfile);
         }
 
         binding.toolbarEditProfile.setNavigationOnClickListener(v -> finish());
