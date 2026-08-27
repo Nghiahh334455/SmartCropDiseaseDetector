@@ -68,6 +68,19 @@ public class LibraryFragment extends Fragment {
             }
         });
 
+        // Setup Filter Chips
+        binding.chipGroupFilter.setOnCheckedStateChangeListener((group, checkedIds) -> {
+            if (checkedIds.isEmpty() || checkedIds.contains(R.id.chipAll)) {
+                adapter.getFilter().filter("");
+            } else if (checkedIds.contains(R.id.chipTomato)) {
+                adapter.getFilter().filter("Cà");
+            } else if (checkedIds.contains(R.id.chipRice)) {
+                adapter.getFilter().filter("Lúa");
+            } else if (checkedIds.contains(R.id.chipDanger)) {
+                adapter.getFilter().filter("Sương Mai");
+            }
+        });
+
         binding.btnAskAI.setOnClickListener(v -> showAISearchDialog());
     }
 
@@ -117,7 +130,7 @@ public class LibraryFragment extends Fragment {
                 // Hiển thị trạng thái đang tải ngay trong Dialog
                 layoutInput.setVisibility(View.GONE);
                 progressBar.setVisibility(View.VISIBLE);
-                tvTitle.setText("Chuyên gia đang suy nghĩ...");
+                tvTitle.setText("Chuyên gia AI 3.5 đang phân tích...");
                 
                 com.google.android.material.button.MaterialButton btn = view.findViewById(R.id.btnAskAI);
                 btn.setEnabled(false);
@@ -135,7 +148,7 @@ public class LibraryFragment extends Fragment {
                             progressBar.setVisibility(View.GONE);
                             if (response.isSuccessful() && response.body() != null) {
                                 // Hiển thị câu trả lời ngay tại Dialog này
-                                tvTitle.setText("Lời khuyên từ Chuyên gia");
+                                tvTitle.setText("Lời khuyên từ Chuyên gia AI 3.5");
                                 tvResponse.setVisibility(View.VISIBLE);
                                 tvResponse.setText(response.body().getResponse());
                                 

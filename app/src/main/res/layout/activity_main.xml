@@ -146,6 +146,42 @@
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
 
+            <!-- Camera Scan Guide Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardScanGuide"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                app:cardCornerRadius="16dp"
+                app:cardBackgroundColor="#F0F4C3"
+                app:cardElevation="1dp"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="12dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@android:drawable/ic_dialog_info"
+                        app:tint="@color/primary_dark" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="10dp"
+                        android:text="💡 Mẹo AI: Đặt lá nằm phẳng, chụp khoảng cách 15-20cm, đủ ánh sáng để AI nhận diện đạt độ chính xác &gt;95%"
+                        android:textColor="@color/primary_dark"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- Result Dashboard -->
             <LinearLayout
                 android:id="@+id/layoutResult"
@@ -248,6 +284,79 @@
                         android:text="Đang kết nối với chuyên gia AI..."
                         android:textColor="@color/primary_dark"
                         android:textSize="15sp" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Treatment Action Checklist Card -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardTreatmentChecklist"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="2dp"
+                    app:strokeColor="@color/primary_light"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Lộ trình điều trị 3 bước"
+                                android:textColor="@color/black"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvChecklistProgress"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="@drawable/bg_badge_orange"
+                                android:paddingHorizontal="8dp"
+                                android:paddingVertical="2dp"
+                                android:text="0/3 Hoàn thành"
+                                android:textColor="@color/white"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <CheckBox
+                            android:id="@+id/cbStep1"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="Bước 1: Cắt tỉa &amp; thu gom lá bệnh mang tiêu hủy xa vườn"
+                            android:textColor="@color/black"
+                            android:textSize="13sp" />
+
+                        <CheckBox
+                            android:id="@+id/cbStep2"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Bước 2: Phun thuốc sinh học/hóa học ướt đều 2 mặt lá"
+                            android:textColor="@color/black"
+                            android:textSize="13sp" />
+
+                        <CheckBox
+                            android:id="@+id/cbStep3"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Bước 3: Hẹn lịch phun lặp lại sau 5-7 ngày &amp; bổ sung Kali"
+                            android:textColor="@color/black"
+                            android:textSize="13sp" />
+
+                    </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
                 <!-- Details Grid -->

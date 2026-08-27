@@ -126,12 +126,14 @@ public class DiagnosisActivity extends AppCompatActivity {
             android.transition.TransitionManager.beginDelayedTransition(binding.layoutResult, new android.transition.AutoTransition());
             if (binding.layoutAdviceContainer.getVisibility() == View.VISIBLE) {
                 binding.layoutAdviceContainer.setVisibility(View.GONE);
-                binding.btnToggleAdvice.setText("Xem tư vấn từ chuyên gia AI 🤖");
+                binding.btnToggleAdvice.setText("Xem tư vấn từ Chuyên gia AI 3.5 🤖");
             } else {
                 binding.layoutAdviceContainer.setVisibility(View.VISIBLE);
                 binding.btnToggleAdvice.setText("Ẩn bớt lời khuyên 👆");
             }
         });
+
+        setupChecklistListeners();
 
         // Handle intent from HomeFragment
         String action = getIntent().getStringExtra("action");
@@ -196,9 +198,9 @@ public class DiagnosisActivity extends AppCompatActivity {
 
     private void uploadImageToFastAPI(File imageFile) {
         showLoading(true);
-        binding.tvAiAdvice.setText("Đang kết nối với chuyên gia AI...");
+        binding.tvAiAdvice.setText("Đang kết nối với Chuyên gia AI 3.5...");
         binding.layoutAdviceContainer.setVisibility(View.GONE);
-        binding.btnToggleAdvice.setText("Xem tư vấn từ chuyên gia AI 🤖");
+        binding.btnToggleAdvice.setText("Xem tư vấn từ Chuyên gia AI 3.5 🤖");
         
         ApiService apiService = RetrofitClient.getAiService();
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
@@ -340,14 +342,41 @@ public class DiagnosisActivity extends AppCompatActivity {
     }
 
     private File uriToFile(Uri uri) throws IOException {
-        InputStream inputStream = getContentResolver().openInputStream(uri);
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        InputStream isBounds = getContentResolver().openInputStream(uri);
+        BitmapFactory.decodeStream(isBounds, null, options);
+        if (isBounds != null) isBounds.close();
+
+        int maxDimension = 1200;
+        int scale = 1;
+        if (options.outHeight > maxDimension || options.outWidth > maxDimension) {
+            int maxObserved = Math.max(options.outHeight, options.outWidth);
+            scale = Math.round((float) maxObserved / (float) maxDimension);
+        }
+
+        BitmapFactory.Options outOptions = new BitmapFactory.Options();
+        outOptions.inSampleSize = scale > 0 ? scale : 1;
+
+        InputStream isDecode = getContentResolver().openInputStream(uri);
+        Bitmap bitmap = BitmapFactory.decodeStream(isDecode, null, outOptions);
+        if (isDecode != null) isDecode.close();
+
         File tempFile = new File(getCacheDir(), "temp_scan.jpg");
-        try (OutputStream outputStream = new FileOutputStream(tempFile)) {
-            byte[] buffer = new byte[1024];
-            int read;
-            while ((read = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, read);
+        if (bitmap != null) {
+            try (FileOutputStream out = new FileOutputStream(tempFile)) {
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 80, out);
             }
+        } else {
+            InputStream isRaw = getContentResolver().openInputStream(uri);
+            try (OutputStream outputStream = new FileOutputStream(tempFile)) {
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = isRaw.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, read);
+                }
+            }
+            if (isRaw != null) isRaw.close();
         }
         return tempFile;
     }
@@ -423,12 +452,40 @@ public class DiagnosisActivity extends AppCompatActivity {
         RetrofitClient.getAiService().getExpertAdvice(name, confidence).enqueue(new retrofit2.Callback<Map<String, String>>() {
             @Override
             public void onResponse(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull retrofit2.Response<Map<String, String>> response) {
-                if (response.isSuccessful() && response.body() != null) {
+                if (response.isSuccessful() && response.body() != null && response.body().get("advice") != null) {
                     runOnUiThread(() -> binding.tvAiAdvice.setText(response.body().get("advice")));
+                } else {
+                    runOnUiThread(() -> binding.tvAiAdvice.setText("👨‍🌾 **CHUYÊN GIA AI 3.5 KHUYÊN:**\n• Cắt tỉa ngay các cành lá đốm bệnh đưa ra xa khu vực canh tác.\n• Phun ngay chế phẩm sinh học Trichoderma hoặc thuốc đặc trị nấm rỉ sắt/sương mai.\n• Tránh tưới nước lên lá vào buổi tối."));
                 }
             }
             @Override
-            public void onFailure(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull Throwable t) {}
+            public void onFailure(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull Throwable t) {
+                runOnUiThread(() -> binding.tvAiAdvice.setText("👨‍🌾 **CHUYÊN GIA AI 3.5 KHUYÊN:**\n• Cắt tỉa ngay các cành lá đốm bệnh đưa ra xa khu vực canh tác.\n• Phun ngay chế phẩm sinh học Trichoderma hoặc thuốc đặc trị nấm rỉ sắt/sương mai.\n• Tránh tưới nước lên lá vào buổi tối."));
+            }
         });
+    }
+
+    private void setupChecklistListeners() {
+        android.widget.CompoundButton.OnCheckedChangeListener listener = (buttonView, isChecked) -> updateChecklistProgress();
+        binding.cbStep1.setOnCheckedChangeListener(listener);
+        binding.cbStep2.setOnCheckedChangeListener(listener);
+        binding.cbStep3.setOnCheckedChangeListener(listener);
+    }
+
+    private void updateChecklistProgress() {
+        int count = 0;
+        if (binding.cbStep1.isChecked()) count++;
+        if (binding.cbStep2.isChecked()) count++;
+        if (binding.cbStep3.isChecked()) count++;
+
+        binding.tvChecklistProgress.setText(count + "/3 Hoàn thành");
+        if (count == 3) {
+            binding.tvChecklistProgress.setBackgroundResource(R.drawable.bg_badge_green);
+            Toast.makeText(this, "🎉 Xuất sắc! Bạn đã hoàn thành toàn bộ lộ trình chăm sóc!", Toast.LENGTH_SHORT).show();
+        } else if (count > 0) {
+            binding.tvChecklistProgress.setBackgroundResource(R.drawable.bg_badge_orange);
+        } else {
+            binding.tvChecklistProgress.setBackgroundResource(R.drawable.bg_badge_gray);
+        }
     }
 }

@@ -1,11 +1,16 @@
-# Task List - AI Performance Optimization
+# Task List - Fix Startup Crash & UI Overhaul
 
-- [x] **Phase 1: Backend Optimization**
-    - [x] Refactor `main.py` to use `BackgroundTasks` for email
-    - [x] Optimize Gemini response settings for speed
-- [x] **Phase 2: Android UI/UX Enhancements**
-    - [x] Update `DiagnosisActivity.java` result handling
-    - [x] Improve advice section placeholder and state
-- [ ] **Phase 3: Verification**
-    - [ ] Measure diagnosis response time
-    - [ ] Verify email delivery in background
+- [x] **Fix Crash on First Run**
+    - [x] Add permission checks before triggering launchers in `DiagnosisActivity.java`
+    - [x] Initialize `imageUri` more robustly
+- [x] **Diagnosis UI Redesign**
+    - [x] Create `bg_glass_overlay.xml` for glassmorphism effect
+    - [x] Update `scanning_line.xml` for a modern "High-Tech" look
+    - [x] Overhaul `activity_main.xml` layout for a Card-based modern design
+- [x] **Logic Updates**
+    - [x] Update `DiagnosisActivity.java` to handle new UI components
+    - [x] Improve animation logic for scanning
+- [ ] **Verification**
+    - [x] Build project
+    - [ ] Test first-run scenario (clear data)
+    - [ ] Manual UI verification

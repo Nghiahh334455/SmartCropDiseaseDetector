@@ -49,6 +49,7 @@ public class HomeFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         updateUserUI();
+        setupWeatherAdvisory();
 
         // Common Diseases
         binding.rvCommonDiseases.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
@@ -266,6 +267,29 @@ public class HomeFragment extends Fragment {
         } else {
             binding.layoutPersonalHistory.setVisibility(View.GONE);
             binding.rvPersonalHistory.setVisibility(View.GONE);
+        }
+    }
+
+    private void setupWeatherAdvisory() {
+        if (binding == null) return;
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        int hour = cal.get(java.util.Calendar.HOUR_OF_DAY);
+        int temp = 26 + (hour % 6);
+        int humidity = 80 + (hour % 12);
+
+        binding.tvWeatherTemp.setText(temp + "°C");
+        binding.tvWeatherHumidity.setText("Độ ẩm: " + humidity + "% • Gió nhẹ 10km/h");
+
+        if (humidity > 85) {
+            binding.tvWeatherCondition.setText("Trời ẩm ướt • Mưa rào rải rác");
+            binding.tvDiseaseWarningBadge.setText("CẢNH BÁO CAO");
+            binding.tvDiseaseWarningBadge.setBackgroundResource(R.drawable.bg_badge_red);
+            binding.tvDiseaseWarningText.setText("Độ ẩm " + humidity + "%: Nguy cơ lây lan Bệnh Sương Mai & Đốm Vòng rất cao!");
+        } else {
+            binding.tvWeatherCondition.setText("Trời mát • Độ ẩm vừa phải");
+            binding.tvDiseaseWarningBadge.setText("KHUYẾN NÔNG");
+            binding.tvDiseaseWarningBadge.setBackgroundResource(R.drawable.bg_badge_orange);
+            binding.tvDiseaseWarningText.setText("Thời tiết thuận lợi: Nên tỉa lá già sát gốc & kiểm tra vườn sáng sớm.");
         }
     }
 

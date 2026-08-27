@@ -37,7 +37,7 @@
                 android:id="@+id/tvChatTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Chuyên gia Thần Nông AI"
+                android:text="Chuyên gia AI 3.5 (Thần Nông AI)"
                 android:textColor="@color/black"
                 android:textSize="18sp"
                 android:textStyle="bold" />

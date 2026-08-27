@@ -5,12 +5,10 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.bumptech.glide.Glide;
 import com.example.smartcrop.databinding.FragmentProfileBinding;
@@ -21,12 +19,6 @@ import com.example.smartcrop.utils.ImageUtils;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 public class ProfileFragment extends Fragment {
 
@@ -45,12 +37,6 @@ public class ProfileFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         mAuth = FirebaseAuth.getInstance();
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-
-        binding.rvSharedPosts.setLayoutManager(new LinearLayoutManager(getContext()));
-        binding.rvSavedPosts.setLayoutManager(new LinearLayoutManager(getContext()));
-        loadSharedPosts();
-        loadSavedPosts();
 
         updateUserInfo();
 
@@ -139,73 +125,6 @@ public class ProfileFragment extends Fragment {
                     if (isAdded() && binding != null) {
                         binding.viewNotificationBadge.setVisibility(value.size() > 0 ? View.VISIBLE : View.GONE);
                     }
-                });
-    }
-
-    private void loadSharedPosts() {
-        String uid = FirebaseAuth.getInstance().getUid();
-        if (uid == null) return;
-
-        FirebaseFirestore.getInstance().collection("user_shares")
-                .whereEqualTo("sharedByUid", uid)
-                .orderBy("shareTimestamp", Query.Direction.DESCENDING)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<Map<String, Object>> shares = new ArrayList<>();
-                    List<String> ids = new ArrayList<>();
-                    for (com.google.firebase.firestore.DocumentSnapshot doc : queryDocumentSnapshots) {
-                        shares.add(doc.getData());
-                        ids.add(doc.getId());
-                    }
-                    if (isAdded()) {
-                        SharedPostAdapter adapter = new SharedPostAdapter(shares, ids, (position, docId) -> {
-                            new androidx.appcompat.app.AlertDialog.Builder(getContext())
-                                    .setTitle("Xác nhận xóa")
-                                    .setMessage("Bạn có chắc chắn muốn xóa bài viết đã chia sẻ này không?")
-                                    .setPositiveButton("Xóa", (dialog, which) -> deleteItem("user_shares", docId))
-                                    .setNegativeButton("Hủy", null)
-                                    .show();
-                        });
-                        binding.rvSharedPosts.setAdapter(adapter);
-                    }
-                });
-    }
-
-    private void loadSavedPosts() {
-        String uid = FirebaseAuth.getInstance().getUid();
-        if (uid == null) return;
-
-        FirebaseFirestore.getInstance().collection("user_saved_posts")
-                .whereEqualTo("savedByUid", uid)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<Map<String, Object>> saved = new ArrayList<>();
-                    List<String> ids = new ArrayList<>();
-                    for (com.google.firebase.firestore.DocumentSnapshot doc : queryDocumentSnapshots) {
-                        saved.add(doc.getData());
-                        ids.add(doc.getId());
-                    }
-                    if (isAdded()) {
-                        SharedPostAdapter adapter = new SharedPostAdapter(saved, ids, (position, docId) -> {
-                            new androidx.appcompat.app.AlertDialog.Builder(getContext())
-                                    .setTitle("Xác nhận xóa")
-                                    .setMessage("Bạn có chắc chắn muốn xóa bài viết đã lưu này không?")
-                                    .setPositiveButton("Xóa", (dialog, which) -> deleteItem("user_saved_posts", docId))
-                                    .setNegativeButton("Hủy", null)
-                                    .show();
-                        });
-                        binding.rvSavedPosts.setAdapter(adapter);
-                    }
-                });
-    }
-
-    private void deleteItem(String collection, String docId) {
-        FirebaseFirestore.getInstance().collection(collection).document(docId)
-                .delete()
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(getContext(), "Đã xóa mục này", Toast.LENGTH_SHORT).show();
-                    if (collection.equals("user_shares")) loadSharedPosts();
-                    else loadSavedPosts();
                 });
     }
 
