@@ -9,7 +9,7 @@
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/white"
+        android:background="@android:color/transparent"
         app:elevation="0dp">
 
         <com.google.android.material.appbar.MaterialToolbar
@@ -17,7 +17,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:navigationIcon="@android:drawable/ic_menu_revert"
-            app:title="Chẩn đoán AI"
+            app:title="Chẩn đoán Thần Nông AI"
             app:titleCentered="true"
             app:titleTextColor="@color/primary" />
     </com.google.android.material.appbar.AppBarLayout>
@@ -31,20 +31,21 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="20dp">
 
-            <!-- Scanning Area with decorative frame -->
+            <!-- Scanning Area -->
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardScanContainer"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardCornerRadius="28dp"
+                android:layout_height="380dp"
+                app:cardCornerRadius="32dp"
                 app:cardElevation="12dp"
                 app:strokeColor="@color/primary_light"
-                app:strokeWidth="2dp">
+                app:strokeWidth="1dp">
 
                 <RelativeLayout
                     android:layout_width="match_parent"
-                    android:layout_height="340dp">
+                    android:layout_height="match_parent">
 
                     <ImageView
                         android:id="@+id/ivCropImage"
@@ -53,71 +54,96 @@
                         android:scaleType="centerCrop"
                         android:src="@android:drawable/ic_menu_gallery" />
 
-                    <!-- Gradient overlay for better text contrast if needed -->
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="80dp"
-                        android:layout_alignParentBottom="true"
-                        android:background="@android:drawable/screen_background_dark_transparent"
-                        android:alpha="0.3" />
-
-                    <!-- Scanning Animation View -->
+                    <!-- High-Tech Overlay when scanning -->
                     <View
                         android:id="@+id/viewScanningLine"
                         android:layout_width="match_parent"
-                        android:layout_height="4dp"
-                        android:background="@color/primary"
+                        android:layout_height="6dp"
+                        android:background="@drawable/scanning_line"
                         android:visibility="gone" />
 
-                    <ProgressBar
-                        android:id="@+id/progressBar"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
+                    <LinearLayout
+                        android:id="@+id/layoutProcessing"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:layout_centerInParent="true"
-                        android:visibility="gone"
-                        android:indeterminateTint="@color/white" />
+                        android:background="@drawable/bg_glass_overlay"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="24dp"
+                        android:visibility="gone">
+
+                        <ProgressBar
+                            android:id="@+id/progressBar"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:indeterminateTint="@color/primary" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:text="AI đang phân tích..."
+                            android:textColor="@color/primary"
+                            android:textStyle="bold" />
+                    </LinearLayout>
                 </RelativeLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Modern Control Panel -->
+            <!-- Floating Action Bar -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="28dp"
+                android:layout_marginTop="-30dp"
+                android:elevation="14dp"
                 android:gravity="center"
                 android:orientation="horizontal">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnGallery"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="0dp"
-                    android:layout_height="60dp"
-                    android:layout_weight="1"
-                    android:text="Thư viện"
-                    app:cornerRadius="20dp"
-                    app:icon="@android:drawable/ic_menu_gallery" />
-
-                <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-                    android:id="@+id/btnCamera"
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="16dp"
-                    android:text="Chụp"
-                    app:icon="@android:drawable/ic_menu_camera"
-                    app:backgroundTint="@color/primary"
-                    app:iconTint="@color/white"
-                    android:textColor="@color/white" />
+                    app:cardCornerRadius="30dp"
+                    app:cardElevation="8dp"
+                    app:strokeWidth="0dp">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnPostForum"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="0dp"
-                    android:layout_height="60dp"
-                    android:layout_weight="1"
-                    android:text="Chia sẻ"
-                    android:visibility="gone"
-                    app:cornerRadius="20dp"
-                    app:icon="@android:drawable/ic_menu_share" />
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="8dp">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnGallery"
+                            style="@style/Widget.Material3.Button.IconButton"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            app:icon="@android:drawable/ic_menu_gallery"
+                            app:iconSize="28dp"
+                            app:iconTint="@color/primary" />
+
+                        <com.google.android.material.floatingactionbutton.FloatingActionButton
+                            android:id="@+id/btnCamera"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="8dp"
+                            android:src="@android:drawable/ic_menu_camera"
+                            app:backgroundTint="@color/primary"
+                            app:elevation="0dp"
+                            app:fabCustomSize="64dp"
+                            app:maxImageSize="32dp"
+                            app:tint="@color/white" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnPostForum"
+                            style="@style/Widget.Material3.Button.IconButton"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:visibility="gone"
+                            app:icon="@android:drawable/ic_menu_share"
+                            app:iconSize="28dp"
+                            app:iconTint="@color/primary" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
 
             <!-- Result Dashboard -->
@@ -134,67 +160,58 @@
                     android:id="@+id/tvDiseaseName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Đang phân tích..."
+                    android:text="Tên bệnh hại"
                     android:textAlignment="center"
                     android:textColor="@color/black"
-                    android:textSize="28sp"
+                    android:textSize="32sp"
                     android:textStyle="bold" />
 
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:layout_marginTop="12dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="0dp"
-                    app:strokeColor="@color/gray_light"
-                    app:strokeWidth="1dp">
+                    android:layout_marginTop="16dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.progressindicator.CircularProgressIndicator
+                        android:id="@+id/progressConfidence"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        app:indicatorColor="@color/primary"
+                        app:indicatorSize="48dp"
+                        app:trackColor="@color/gray_light"
+                        app:trackThickness="6dp" />
 
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:paddingHorizontal="16dp"
-                        android:paddingVertical="8dp"
-                        android:gravity="center"
-                        android:orientation="horizontal">
-
-                        <com.google.android.material.progressindicator.CircularProgressIndicator
-                            android:id="@+id/progressConfidence"
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            app:indicatorColor="@color/primary"
-                            app:trackColor="@color/gray_light"
-                            app:trackThickness="3dp"
-                            app:indicatorSize="24dp"
-                            android:progress="75"/>
+                        android:layout_marginStart="16dp"
+                        android:orientation="vertical">
 
                         <TextView
                             android:id="@+id/tvConfidence"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="10dp"
-                            android:text="--%"
+                            android:text="95.5%"
                             android:textColor="@color/primary"
-                            android:textSize="18sp"
+                            android:textSize="22sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvSeverity"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_badge_gray"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="2dp"
+                            android:text="Mức độ: Đang tính"
+                            android:textColor="@color/white"
+                            android:textSize="12sp"
                             android:textStyle="bold" />
                     </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tvSeverity"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:layout_marginTop="16dp"
-                    android:background="@drawable/bg_badge_gray"
-                    android:paddingHorizontal="16dp"
-                    android:paddingVertical="6dp"
-                    android:text="Mức độ: Đang tính"
-                    android:textColor="@color/white"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <!-- AI Advice Trigger Button -->
+                <!-- AI Advice Trigger -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnToggleAdvice"
                     style="@style/Widget.Material3.Button.TonalButton"
@@ -203,14 +220,13 @@
                     android:layout_marginTop="32dp"
                     android:text="Xem tư vấn từ chuyên gia AI 🤖"
                     android:textColor="@color/primary_dark"
-                    app:cornerRadius="16dp"
+                    app:backgroundTint="#E8F5E9"
+                    app:cornerRadius="20dp"
                     app:icon="@android:drawable/stat_notify_chat"
                     app:iconGravity="textStart"
-                    app:backgroundTint="#E8F5E9"
                     app:strokeColor="@color/primary_light"
                     app:strokeWidth="1dp" />
 
-                <!-- Expert Advice Container (Hidden by default) -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/layoutAdviceContainer"
                     android:layout_width="match_parent"
@@ -218,51 +234,44 @@
                     android:layout_marginTop="12dp"
                     android:visibility="gone"
                     app:cardBackgroundColor="#F9FBE7"
-                    app:cardCornerRadius="20dp"
+                    app:cardCornerRadius="24dp"
                     app:cardElevation="2dp"
                     app:strokeColor="@color/primary_light"
                     app:strokeWidth="1dp">
 
-                    <LinearLayout
+                    <TextView
+                        android:id="@+id/tvAiAdvice"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="20dp">
-
-                        <TextView
-                            android:id="@+id/tvAiAdvice"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:lineSpacingExtra="8dp"
-                            android:text="Đang tải lời khuyên chuyên sâu..."
-                            android:textColor="@color/primary_dark"
-                            android:textSize="15sp" />
-                    </LinearLayout>
+                        android:padding="20dp"
+                        android:lineSpacingExtra="8dp"
+                        android:text="Đang kết nối với chuyên gia AI..."
+                        android:textColor="@color/primary_dark"
+                        android:textSize="15sp" />
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Treatment Grid -->
+                <!-- Details Grid -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="32dp"
-                    android:text="Phác đồ điều trị"
+                    android:text="Thông tin chi tiết"
                     android:textColor="@color/black"
-                    android:textSize="18sp"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
 
                 <GridLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:columnCount="2"
-                    android:rowCount="1">
+                    android:columnCount="2">
 
                     <com.google.android.material.card.MaterialCardView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_columnWeight="1"
                         android:layout_marginEnd="6dp"
-                        app:cardCornerRadius="16dp"
+                        app:cardCornerRadius="20dp"
                         app:cardElevation="1dp">
 
                         <LinearLayout
@@ -272,15 +281,15 @@
                             android:padding="16dp">
 
                             <ImageView
-                                android:layout_width="28dp"
-                                android:layout_height="28dp"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
                                 android:src="@android:drawable/ic_menu_share"
                                 app:tint="@color/status_safe" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="10dp"
+                                android:layout_marginTop="8dp"
                                 android:text="Sinh học"
                                 android:textColor="@color/status_safe"
                                 android:textStyle="bold" />
@@ -289,11 +298,10 @@
                                 android:id="@+id/tvBioTreatment"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="6dp"
+                                android:layout_marginTop="4dp"
                                 android:text="--"
                                 android:textColor="@color/gray_dark"
-                                android:textSize="13sp"
-                                android:lineSpacingExtra="2dp" />
+                                android:textSize="13sp" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
 
@@ -302,7 +310,7 @@
                         android:layout_height="wrap_content"
                         android:layout_columnWeight="1"
                         android:layout_marginStart="6dp"
-                        app:cardCornerRadius="16dp"
+                        app:cardCornerRadius="20dp"
                         app:cardElevation="1dp">
 
                         <LinearLayout
@@ -312,15 +320,15 @@
                             android:padding="16dp">
 
                             <ImageView
-                                android:layout_width="28dp"
-                                android:layout_height="28dp"
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
                                 android:src="@android:drawable/ic_menu_view"
                                 app:tint="@color/status_danger" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="10dp"
+                                android:layout_marginTop="8dp"
                                 android:text="Hóa học"
                                 android:textColor="@color/status_danger"
                                 android:textStyle="bold" />
@@ -329,11 +337,10 @@
                                 android:id="@+id/tvChemTreatment"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="6dp"
+                                android:layout_marginTop="4dp"
                                 android:text="--"
                                 android:textColor="@color/gray_dark"
-                                android:textSize="13sp"
-                                android:lineSpacingExtra="2dp" />
+                                android:textSize="13sp" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
                 </GridLayout>
@@ -341,8 +348,8 @@
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    app:cardCornerRadius="16dp"
+                    android:layout_marginTop="12dp"
+                    app:cardCornerRadius="20dp"
                     app:cardElevation="1dp">
 
                     <LinearLayout
@@ -362,20 +369,19 @@
                             android:id="@+id/tvSymptoms"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="10dp"
+                            android:layout_marginTop="8dp"
                             android:text="--"
                             android:textColor="@color/gray_dark"
-                            android:textSize="14sp"
-                            android:lineSpacingExtra="4dp" />
+                            android:textSize="14sp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="12dp"
                     android:layout_marginBottom="80dp"
-                    app:cardCornerRadius="16dp"
+                    app:cardCornerRadius="20dp"
                     app:cardElevation="1dp">
 
                     <LinearLayout
@@ -395,11 +401,10 @@
                             android:id="@+id/tvPrevention"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="10dp"
+                            android:layout_marginTop="8dp"
                             android:text="--"
                             android:textColor="@color/gray_dark"
-                            android:textSize="14sp"
-                            android:lineSpacingExtra="4dp" />
+                            android:textSize="14sp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>

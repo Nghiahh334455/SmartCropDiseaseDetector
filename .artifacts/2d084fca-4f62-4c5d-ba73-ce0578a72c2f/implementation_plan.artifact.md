@@ -1,37 +1,50 @@
-# Implementation Plan - AI Performance Optimization (v2)
+# Implementation Plan - Fix Startup Crash & UI Overhaul
 
-This plan addresses the slowness in diagnosis results by making the email alerting system asynchronous and optimizing the Gemini AI interaction.
+This plan addresses the crash occurring on the first run when interacting with the scan area and provides a major aesthetic upgrade to the diagnosis interface.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> **Email Bottleneck**: Currently, the `/predict` endpoint waits for the email to be sent via SMTP before returning the result to the app. SMTP handshake and sending can take 2-5 seconds, causing the "scanning" to feel very slow.
-> **Background Tasks**: I will move the email sending to a `BackgroundTask` so the app gets the diagnosis result immediately (< 1s).
+> **Crash Root Cause**: The crash is likely due to the application attempting to access the `cameraLauncher` or `galleryLauncher` before the necessary permissions have been fully granted or initialized on the first run.
+> **UI Transformation**: I will move from a standard linear layout to a more immersive, modern "Card-based" design with better visual hierarchy.
 
 ## Proposed Changes
 
-### [Backend - AI Optimization]
+### [Fix Crash on First Run]
 
-#### [MODIFY] [main.py](file:///D:/Plant_Disease_Pipeline/main.py)
-- **FastAPI BackgroundTasks**: Use `BackgroundTasks` to send the emergency email *after* the HTTP response has been sent to the Android app.
-- **Remove Blocking Wait**: Ensure the `predict` function does not await the email sending process.
-- **Gemini Parameters**: Adjust `generation_config` for Gemini 1.5 Flash to favor speed (lower top_p/top_k if necessary, or just rely on the model's default speed).
+#### [MODIFY] [DiagnosisActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/DiagnosisActivity.java)
+- Ensure permissions are handled *before* any launcher is triggered.
+- Add safety checks to the `ActivityResultLauncher` logic to handle edge cases during initialization.
+- Initialize `imageUri` more robustly to avoid `NullPointerException`.
 
 ---
 
-### [Android - UX Improvements]
+### [Diagnosis UI Redesign]
 
-#### [MODIFY] [DiagnosisActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/DiagnosisActivity.java)
-- **UI State**: Ensure the "Scanning" animation stops immediately when the first response arrives, and the result dashboard is shown instantly.
-- **Advice Placeholder**: Update the placeholder text to "Đang kết nối với chuyên gia AI..." while `fetchExpertAdvice` is running.
+#### [MODIFY] [activity_main.xml](file:///D:/Androi_DATN/app/src/main/res/layout/activity_main.xml)
+- **Top Header**: Use a transparent or modern Toolbar that blends with the content.
+- **Scanning Area**:
+    - Use a larger, more prominent image frame.
+    - Add a "Glassmorphism" effect overlay for scanning status.
+    - Improve the scanning line animation to look more "High-Tech".
+- **Interaction Buttons**:
+    - Replace standard buttons with a bottom action bar or floating action buttons (FABs).
+    - Use meaningful icons and cleaner typography.
+- **Results Dashboard**:
+    - Use larger, bold fonts for disease names.
+    - Redesign the confidence meter as a more elegant circular indicator.
+    - Add "Card" grouping for symptoms and treatment to improve readability.
+
+#### [NEW] Custom Drawables
+- Create a `bg_glass_overlay.xml` for the glass effect.
+- Update `scanning_line.xml` for a smoother glow effect.
 
 ## Verification Plan
 
 ### Automated Tests
-- Restart AI backend and perform a diagnosis.
-- Observe backend logs to see if "Email sent" appears *after* the app has already received the result.
+- Build and run the app to ensure no compilation errors.
 
 ### Manual Verification
-1.  **Diagnosis Speed**: Perform a scan. The disease name and bounding box should appear in less than 1.5 seconds.
-2.  **AI Advice**: The advice section should update independently 2-4 seconds later without blocking the main results.
-3.  **Email**: Verify the email is still received correctly by the user.
+1.  **First Run Test**: Clear App Data -> Launch App -> Click Scan Area -> Verify no crash and permission prompt appears correctly.
+2.  **UI Aesthetic Check**: Perform a diagnosis and verify the new layout looks modern and aligned with current design trends.
+3.  **Advice Toggle**: Verify the "Xem tư vấn" button still works smoothly with the new design.
