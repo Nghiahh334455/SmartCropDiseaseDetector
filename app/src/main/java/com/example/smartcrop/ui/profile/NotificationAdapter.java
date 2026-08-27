@@ -55,10 +55,17 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         holder.binding.tvNotificationMessage.setText(message);
         holder.binding.tvNotificationTime.setText(DateUtils.getRelativeTimeSpanString(notification.getTimestamp()));
 
-        Glide.with(holder.itemView.getContext())
-                .load(notification.getSenderAvatar())
-                .placeholder(android.R.drawable.ic_menu_gallery)
-                .into(holder.binding.ivSenderAvatar);
+        String avatar = notification.getSenderAvatar();
+        if (avatar != null && (avatar.startsWith("BASE64:") || avatar.length() > 500)) {
+            byte[] bytes = com.example.smartcrop.utils.ImageUtils.base64ToBytes(avatar);
+            if (bytes != null) Glide.with(holder.itemView.getContext()).load(bytes).circleCrop().into(holder.binding.ivSenderAvatar);
+        } else {
+            Glide.with(holder.itemView.getContext())
+                    .load(avatar)
+                    .placeholder(android.R.drawable.ic_menu_gallery)
+                    .circleCrop()
+                    .into(holder.binding.ivSenderAvatar);
+        }
 
         holder.binding.viewUnread.setVisibility(notification.isRead() ? View.GONE : View.VISIBLE);
         holder.binding.layoutNotification.setBackgroundColor(notification.isRead() ? 0xFFFFFFFF : 0xFFF1F8E9);

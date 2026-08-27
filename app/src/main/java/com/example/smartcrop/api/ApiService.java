@@ -137,6 +137,15 @@ public interface ApiService {
     @retrofit2.http.DELETE("/admin/users/{uid}")
     Call<Map<String, String>> deleteUser(@Path("uid") String uid);
 
+    @retrofit2.http.DELETE("/admin/posts/{post_id}")
+    Call<Map<String, String>> deletePostAdmin(@Path("post_id") int postId);
+
+    @retrofit2.http.DELETE("/admin/diseases/{name}")
+    Call<Map<String, String>> deleteDiseaseAdmin(@Path("name") String name);
+
+    @retrofit2.http.DELETE("/admin/tips/{tip_id}")
+    Call<Map<String, String>> deleteTipAdmin(@Path("tip_id") int tipId);
+
     @FormUrlEncoded
     @POST("/notifications")
     Call<Map<String, String>> sendNotification(

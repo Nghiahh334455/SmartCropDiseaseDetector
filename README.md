@@ -26,11 +26,23 @@
     *   Nếu dùng cáp USB, dùng `http://127.0.0.1:8000` và chạy lệnh `adb reverse tcp:8000 tcp:8000`.
 
 ### 2. Phía Server (Python)
-1.  Đảm bảo bạn đã cài đặt các thư viện: `fastapi`, `uvicorn`, `torch`, `torchvision`, `numpy`, `opencv-python`.
-2.  Chạy server bằng lệnh:
-    ```bash
-    uvicorn main:app --host 0.0.0.0 --port 8000
-    ```
+Dự án có 2 server Python cần chạy song song:
+
+**A. Server AI (Port 8000)**
+1. Di chuyển vào thư mục: `cd D:/Plant_Disease_Pipeline`
+2. Cài đặt thư viện: `pip install -r requirements.txt`
+3. Chạy server:
+   ```bash
+   uvicorn main:app --host 0.0.0.0 --port 8000
+   ```
+
+**B. Server SQL (Port 8001)**
+1. Di chuyển vào thư mục: `cd D:/Androi_DATN`
+2. Cài đặt thư viện: `pip install -r requirements.txt`
+3. Chạy server:
+   ```bash
+   python backend_sql.py
+   ```
 
 ## 📂 Cấu trúc thư mục chính
 *   `app/src/main/java/com/example/smartcrop/ui/`: Chứa các màn hình giao diện (Auth, Library, Profile, History).

@@ -41,6 +41,7 @@ public class ManageLibraryActivity extends AppCompatActivity {
         binding.toolbarManageLibrary.setNavigationOnClickListener(v -> finish());
 
         adapter = new LibraryAdapter(diseaseList);
+        adapter.setOnItemLongClickListener((disease, position) -> showOptionsDialog(disease));
         binding.rvManageLibrary.setLayoutManager(new LinearLayoutManager(this));
         binding.rvManageLibrary.setAdapter(adapter);
 
@@ -73,6 +74,39 @@ public class ManageLibraryActivity extends AppCompatActivity {
                 Toast.makeText(ManageLibraryActivity.this, "Lỗi tải thư viện", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void showOptionsDialog(DiseaseModel disease) {
+        String[] options = {"Sửa", "Xóa"};
+        new AlertDialog.Builder(this)
+                .setTitle(disease.name)
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) showDiseaseDialog(disease);
+                    else deleteDisease(disease);
+                })
+                .show();
+    }
+
+    private void deleteDisease(DiseaseModel disease) {
+        new AlertDialog.Builder(this)
+                .setTitle("Xác nhận")
+                .setMessage("Xóa bệnh '" + disease.name + "'?")
+                .setPositiveButton("Xóa", (dialog, which) -> {
+                    ApiService apiService = RetrofitClient.getSqlService();
+                    apiService.deleteDiseaseAdmin(disease.name).enqueue(new Callback<Map<String, String>>() {
+                        @Override
+                        public void onResponse(Call<Map<String, String>> call, Response<Map<String, String>> response) {
+                            if (response.isSuccessful()) {
+                                Toast.makeText(ManageLibraryActivity.this, "Đã xóa!", Toast.LENGTH_SHORT).show();
+                                loadDiseases();
+                            }
+                        }
+                        @Override
+                        public void onFailure(Call<Map<String, String>> call, Throwable t) {}
+                    });
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
     }
 
     private void showDiseaseDialog(DiseaseModel existing) {

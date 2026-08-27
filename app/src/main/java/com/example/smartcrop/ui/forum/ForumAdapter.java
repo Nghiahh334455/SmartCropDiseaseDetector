@@ -214,8 +214,11 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
         popup.getMenu().add("Lưu bài viết");
         popup.getMenu().add("Ẩn bài viết");
 
-        // Nếu là chủ bài viết, hiện nút Xóa
-        if (currentUid != null && currentUid.equals(post.get("uid"))) {
+        // Nếu là chủ bài viết HOẶC là Admin, hiện nút Xóa
+        boolean isAdmin = context.getSharedPreferences("SmartCropPrefs", Context.MODE_PRIVATE)
+                .getBoolean("is_admin", false);
+        
+        if ((currentUid != null && currentUid.equals(post.get("uid"))) || isAdmin) {
             popup.getMenu().add("Xóa bài viết");
         }
         
@@ -230,7 +233,10 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
                 new androidx.appcompat.app.AlertDialog.Builder(context)
                         .setTitle("Xác nhận xóa")
                         .setMessage("Bạn có chắc chắn muốn xóa bài viết này không?")
-                        .setPositiveButton("Xóa", (dialog, which) -> deletePost(postId))
+                        .setPositiveButton("Xóa", (dialog, which) -> {
+                            if (isAdmin) deletePostSql(postId, position);
+                            else deletePostFirebase(postId);
+                        })
                         .setNegativeButton("Hủy", null)
                         .show();
             }
@@ -239,11 +245,31 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
         popup.show();
     }
 
-    private void deletePost(String postId) {
+    private void deletePostFirebase(String postId) {
         FirebaseFirestore.getInstance().collection("forum_posts")
                 .document(postId)
                 .delete()
-                .addOnSuccessListener(aVoid -> Toast.makeText(context, "Đã xóa bài viết", Toast.LENGTH_SHORT).show());
+                .addOnSuccessListener(aVoid -> Toast.makeText(context, "Đã xóa bài bài viết (FB)", Toast.LENGTH_SHORT).show());
+    }
+
+    private void deletePostSql(String postId, int position) {
+        int pId = (int) Double.parseDouble(postId);
+        ApiService apiService = RetrofitClient.getSqlService();
+        apiService.deletePostAdmin(pId).enqueue(new retrofit2.Callback<Map<String, String>>() {
+            @Override
+            public void onResponse(retrofit2.Call<Map<String, String>> call, retrofit2.Response<Map<String, String>> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(context, "Đã xóa bài viết (SQL)", Toast.LENGTH_SHORT).show();
+                    postList.remove(position);
+                    postIds.remove(position);
+                    notifyItemRemoved(position);
+                }
+            }
+            @Override
+            public void onFailure(retrofit2.Call<Map<String, String>> call, Throwable t) {
+                Toast.makeText(context, "Lỗi xóa bài viết SQL", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void savePost(Map<String, Object> post, String postId) {

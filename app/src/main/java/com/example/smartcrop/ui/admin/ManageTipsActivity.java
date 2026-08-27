@@ -48,18 +48,21 @@ public class ManageTipsActivity extends AppCompatActivity {
 
         loadTips();
 
-        binding.btnAddTip.setOnClickListener(v -> showTipDialog());
+        binding.btnAddTip.setOnClickListener(v -> showTipDialog(null));
     }
 
     private void loadTips() {
         ApiService apiService = RetrofitClient.getSqlService();
         apiService.getTipsFromDb().enqueue(new Callback<List<Map<String, Object>>>() {
             @Override
-            public void onResponse(Call<List<Map<String, Object>>> call, Response<List<Map<String, Object>>> response) {
+            public void onResponse(@NonNull Call<List<Map<String, Object>>> call, @NonNull Response<List<Map<String, Object>>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     tipsList.clear();
                     for (Map<String, Object> map : response.body()) {
+                        Object idObj = map.get("id");
+                        int id = (idObj instanceof Double) ? ((Double) idObj).intValue() : (int) idObj;
                         tipsList.add(new TipModel(
+                                id,
                                 (String) map.get("title"),
                                 (String) map.get("content"),
                                 (String) map.get("imageResource")
@@ -76,13 +79,18 @@ public class ManageTipsActivity extends AppCompatActivity {
         });
     }
 
-    private void showTipDialog() {
+    private void showTipDialog(TipModel existing) {
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_add_tip, null);
         EditText etTitle = view.findViewById(R.id.etTipTitle);
         EditText etContent = view.findViewById(R.id.etTipContent);
 
+        if (existing != null) {
+            etTitle.setText(existing.title);
+            etContent.setText(existing.content);
+        }
+
         new AlertDialog.Builder(this)
-                .setTitle("Thêm mẹo mới")
+                .setTitle(existing == null ? "Thêm mẹo mới" : "Sửa mẹo")
                 .setView(view)
                 .setPositiveButton("Lưu", (dialog, which) -> {
                     saveTip(etTitle.getText().toString(), etContent.getText().toString());
@@ -125,6 +133,44 @@ public class ManageTipsActivity extends AppCompatActivity {
             TipModel tip = list.get(position);
             holder.text1.setText(tip.title);
             holder.text2.setText(tip.content);
+            
+            holder.itemView.setOnLongClickListener(v -> {
+                showTipOptions(tip, position);
+                return true;
+            });
+        }
+
+        private void showTipOptions(TipModel tip, int position) {
+            String[] options = {"Sửa", "Xóa"};
+            new AlertDialog.Builder(ManageTipsActivity.this)
+                    .setTitle(tip.title)
+                    .setItems(options, (dialog, which) -> {
+                        if (which == 0) showTipDialog(tip);
+                        else deleteTip(tip);
+                    })
+                    .show();
+        }
+
+        private void deleteTip(TipModel tip) {
+            new AlertDialog.Builder(ManageTipsActivity.this)
+                    .setTitle("Xác nhận")
+                    .setMessage("Xóa mẹo này?")
+                    .setPositiveButton("Xóa", (dialog, which) -> {
+                        ApiService apiService = RetrofitClient.getSqlService();
+                        apiService.deleteTipAdmin(tip.id).enqueue(new Callback<Map<String, String>>() {
+                            @Override
+                            public void onResponse(Call<Map<String, String>> call, Response<Map<String, String>> response) {
+                                if (response.isSuccessful()) {
+                                    Toast.makeText(ManageTipsActivity.this, "Đã xóa!", Toast.LENGTH_SHORT).show();
+                                    loadTips();
+                                }
+                            }
+                            @Override
+                            public void onFailure(Call<Map<String, String>> call, Throwable t) {}
+                        });
+                    })
+                    .setNegativeButton("Hủy", null)
+                    .show();
         }
 
         @Override

@@ -1,36 +1,37 @@
-# Implementation Plan - AI Speed Optimization & Reliability
+# Implementation Plan - AI Performance Optimization (v2)
 
-This plan addresses the slowness and 503 errors in the AI backend by using the correct model name and adding robust retry logic. Finally, all pending changes will be committed to Git.
+This plan addresses the slowness in diagnosis results by making the email alerting system asynchronous and optimizing the Gemini AI interaction.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> **Model Version**: The current code uses `gemini-3.5-flash`, which does not exist. I will update this to `gemini-1.5-flash`, which is the fastest stable version available.
-> **Git Commit**: I will commit all changes in the `D:/Androi_DATN` directory, including the recently added Admin Panel and Notification fixes.
+> **Email Bottleneck**: Currently, the `/predict` endpoint waits for the email to be sent via SMTP before returning the result to the app. SMTP handshake and sending can take 2-5 seconds, causing the "scanning" to feel very slow.
+> **Background Tasks**: I will move the email sending to a `BackgroundTask` so the app gets the diagnosis result immediately (< 1s).
 
 ## Proposed Changes
 
-### [AI Backend Optimization]
+### [Backend - AI Optimization]
 
 #### [MODIFY] [main.py](file:///D:/Plant_Disease_Pipeline/main.py)
-- **Model Update**: Change all instances of `gemini-3.5-flash` to `gemini-1.5-flash`.
-- **Retry Logic**: Wrap Gemini AI calls in a retry loop (3 attempts) with exponential backoff to handle 503 "High Demand" errors.
-- **Safety**: Add a 15-second timeout to prevent the application from hanging indefinitely on slow responses.
+- **FastAPI BackgroundTasks**: Use `BackgroundTasks` to send the emergency email *after* the HTTP response has been sent to the Android app.
+- **Remove Blocking Wait**: Ensure the `predict` function does not await the email sending process.
+- **Gemini Parameters**: Adjust `generation_config` for Gemini 1.5 Flash to favor speed (lower top_p/top_k if necessary, or just rely on the model's default speed).
 
 ---
 
-### [Version Control]
+### [Android - UX Improvements]
 
-#### [EXECUTE] Git Commit & Push
-- `git add .` to stage all changes (Admin Dashboard, Library CRUD, Tip Management, Notification Fixes).
-- `git commit -m "Enhance: Admin Panel, Notification deep-linking, Avatar Sync, and AI Speed Optimization"`
+#### [MODIFY] [DiagnosisActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/DiagnosisActivity.java)
+- **UI State**: Ensure the "Scanning" animation stops immediately when the first response arrives, and the result dashboard is shown instantly.
+- **Advice Placeholder**: Update the placeholder text to "Đang kết nối với chuyên gia AI..." while `fetchExpertAdvice` is running.
 
 ## Verification Plan
 
 ### Automated Tests
-- Restart the Python backend and monitor logs for successful model initialization.
+- Restart AI backend and perform a diagnosis.
+- Observe backend logs to see if "Email sent" appears *after* the app has already received the result.
 
 ### Manual Verification
-1.  **Speed Check**: Ask a question in the AI Chat and verify the response returns within a few seconds.
-2.  **Error Handling**: If a 503 occurs, verify the backend retries automatically (logs will show "Retrying...").
-3.  **VCS**: Run `git status` to ensure a clean working directory.
+1.  **Diagnosis Speed**: Perform a scan. The disease name and bounding box should appear in less than 1.5 seconds.
+2.  **AI Advice**: The advice section should update independently 2-4 seconds later without blocking the main results.
+3.  **Email**: Verify the email is still received correctly by the user.

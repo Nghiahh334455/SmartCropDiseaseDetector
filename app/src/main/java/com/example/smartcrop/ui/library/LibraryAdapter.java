@@ -20,6 +20,15 @@ public class LibraryAdapter extends RecyclerView.Adapter<LibraryAdapter.ViewHold
 
     private final List<DiseaseModel> diseaseList;
     private final List<DiseaseModel> diseaseListFull;
+    private OnItemLongClickListener longClickListener;
+
+    public interface OnItemLongClickListener {
+        void onItemLongClick(DiseaseModel disease, int position);
+    }
+
+    public void setOnItemLongClickListener(OnItemLongClickListener listener) {
+        this.longClickListener = listener;
+    }
 
     public LibraryAdapter(List<DiseaseModel> diseaseList) {
         this.diseaseList = diseaseList;
@@ -67,6 +76,14 @@ public class LibraryAdapter extends RecyclerView.Adapter<LibraryAdapter.ViewHold
             Intent intent = new Intent(v.getContext(), DiseaseDetailActivity.class);
             intent.putExtra("name", disease.name);
             v.getContext().startActivity(intent);
+        });
+
+        holder.itemView.setOnLongClickListener(v -> {
+            if (longClickListener != null) {
+                longClickListener.onItemLongClick(disease, position);
+                return true;
+            }
+            return false;
         });
     }
 

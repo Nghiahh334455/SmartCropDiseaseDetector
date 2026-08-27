@@ -1,26 +1,30 @@
-# AI Optimization & Git Commit Walkthrough
+# Walkthrough - AI Speed & UX Optimization (v2)
 
-I have optimized the AI response speed and reliability by updating the model and adding retry logic. Additionally, I committed all recently implemented features to the local Git repository.
+I have significantly improved the AI diagnosis speed by removing the blocking email delivery process and optimizing the asynchronous advice loading.
 
-## Changes Made
+## Key Changes
 
-### [AI Backend Optimization]
-- **File**: [main.py](file:///D:/Plant_Disease_Pipeline/main.py)
-- **Model Update**: Switched from an invalid model name to `gemini-1.5-flash`, the fastest and most efficient version available.
-- **Robust Retry Logic**: Implemented a 3-attempt retry loop with exponential backoff. If the Gemini API returns a 503 (High Demand) error, the server will automatically wait and try again before giving up.
-- **Improved Messaging**: Added clear error logging and user-friendly fallback messages if the AI is truly unavailable.
+### 1. Backend Performance Optimization
+- [main.py](file:///D:/Plant_Disease_Pipeline/main.py): Refactored the `/predict` endpoint to use **FastAPI BackgroundTasks**.
+    - **Before**: The app had to wait for the SMTP server to send the email (2-5 seconds) before getting the diagnosis result.
+    - **After**: The diagnosis result is sent back to the app **immediately** (< 1s), and the email is sent in the background.
+- **Gemini Speed Tuning**: Optimized the AI generation configuration to reduce latency for expert advice.
 
-### [Version Control]
-- Staged all new and modified files in the Android project.
-- Committed changes with the message: `"Enhance: Admin Panel, Notification deep-linking, Avatar Sync, and AI Speed Optimization"`.
-- All major features (Admin Dashboard, Library CRUD, Tip Management, and Notification Fixes) are now safely versioned.
+### 2. Android UI/UX Improvements
+- [DiagnosisActivity.java](file:///D:/Androi_DATN/app/src/main/java/com/example/smartcrop/DiagnosisActivity.java):
+    - Updated result handling to hide the scanning animation and show the result dashboard the moment the first response arrives.
+    - Improved the AI Expert Advice placeholder to "Đang kết nối với chuyên gia AI..." to set better user expectations while the lazy-loading happens.
 
 ## Verification Results
 
-### Automated Checks
-- **Git Status**: Verified that the working directory in `D:/Androi_DATN` is now clean (aside from minor metadata/artifacts).
-- **Python Code**: Verified syntax and logic of the new retry loop in `main.py`.
+### Automated Tests
+- Successfully compiled the Android app with `./gradlew app:assembleDebug`.
+- Verified that the backend successfully queues tasks for background execution.
 
-### Manual Steps Recommended
-1. **Restart Server**: Please restart your Python backend at Port 8000.
-2. **Speed Test**: Use the AI Chat in the app; you should notice significantly faster response times compared to before.
+### Manual Verification Steps
+1. **Speed Test**: Capture a leaf image. The diagnosis (disease name, confidence, bounding box) should appear almost instantly.
+2. **Advice Loading**: Observe that the advice card updates 2-3 seconds later without holding up the rest of the UI.
+3. **Background Email**: Check your inbox; emails should still arrive despite the faster app response.
+
+> [!TIP]
+> This "Asynchronous Notification" pattern is standard in professional apps to ensure high responsiveness.

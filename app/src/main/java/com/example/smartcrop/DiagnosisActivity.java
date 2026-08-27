@@ -177,6 +177,10 @@ public class DiagnosisActivity extends AppCompatActivity {
 
     private void uploadImageToFastAPI(File imageFile) {
         showLoading(true);
+        // Reset advice state
+        binding.tvAiAdvice.setText("Đang kết nối với chuyên gia AI...");
+        binding.layoutAdviceContainer.setVisibility(View.GONE);
+        binding.btnToggleAdvice.setText("Xem tư vấn từ chuyên gia AI 🤖");
         
         // Gọi AI qua Port 8000 (VS Code)
         ApiService apiService = RetrofitClient.getAiService();
@@ -199,19 +203,14 @@ public class DiagnosisActivity extends AppCompatActivity {
         apiService.predictDisease(body, emailPart).enqueue(new retrofit2.Callback<PredictResponse>() {
             @Override
             public void onResponse(@NonNull retrofit2.Call<PredictResponse> call, @NonNull retrofit2.Response<PredictResponse> response) {
+                // TỐI ƯU: Ẩn loading ngay khi nhận được kết quả nhận diện (không chờ email)
                 runOnUiThread(() -> showLoading(false));
+                
                 if (response.isSuccessful() && response.body() != null) {
                     PredictResponse result = response.body();
                     
-                    // Cập nhật kết quả lên UI
+                    // Cập nhật kết quả lên UI ngay lập tức
                     processAiResult(result);
-
-                    // Thông báo trạng thái gửi Email
-                    if (result.isEmailSent()) {
-                        Toast.makeText(DiagnosisActivity.this, "✅ Đã gửi email cảnh báo tới: " + result.getTargetEmail(), Toast.LENGTH_LONG).show();
-                    } else if (user != null) {
-                        Toast.makeText(DiagnosisActivity.this, "❌ Lỗi gửi email. Vui lòng kiểm tra lại cấu hình SMTP hoặc mục Spam.", Toast.LENGTH_SHORT).show();
-                    }
                 } else {
                     runOnUiThread(() -> Toast.makeText(DiagnosisActivity.this, "Lỗi Server AI (404/500): " + response.code(), Toast.LENGTH_SHORT).show());
                 }

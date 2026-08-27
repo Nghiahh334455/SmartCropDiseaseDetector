@@ -30,11 +30,15 @@ async def sync_user(
     try:
         db = get_db()
         cursor = db.cursor()
-        cursor.execute("SELECT 1 FROM Users WHERE uid = ?", (uid,))
-        if cursor.fetchone():
+        cursor.execute("SELECT displayName, email, photoBase64 FROM Users WHERE uid = ?", (uid,))
+        existing = cursor.fetchone()
+
+        if existing:
+            # Chỉ cập nhật avatar nếu giá trị gửi lên không rỗng (tránh bị mất ảnh khi login máy mới chưa có cache)
+            final_photo = photoBase64 if (photoBase64 and len(photoBase64) > 100) else existing[2]
             cursor.execute(
                 "UPDATE Users SET displayName = ?, email = ?, photoBase64 = ? WHERE uid = ?",
-                (displayName, email, photoBase64, uid)
+                (displayName, email, final_photo, uid)
             )
         else:
             cursor.execute(
@@ -86,7 +90,15 @@ async def create_post(
 async def get_posts():
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("SELECT id, uid, author, userPhotoUrl, question, imageUrl, disease, timestamp, likesCount, commentsCount FROM Posts ORDER BY timestamp DESC")
+    # SỬ DỤNG JOIN ĐỂ LUÔN LẤY ẢNH ĐẠI DIỆN MỚI NHẤT TỪ BẢNG USERS
+    cursor.execute("""
+        SELECT p.id, p.uid, p.author,
+               COALESCE(u.photoBase64, p.userPhotoUrl) as userPhotoUrl,
+               p.question, p.imageUrl, p.disease, p.timestamp, p.likesCount, p.commentsCount
+        FROM Posts p
+        LEFT JOIN Users u ON p.uid = u.uid
+        ORDER BY p.timestamp DESC
+    """)
     rows = cursor.fetchall()
 
     posts = []
@@ -129,7 +141,16 @@ async def add_comment(
 async def get_comments(post_id: int):
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("SELECT id, authorName, content, timestamp, authorUid, authorPhotoUrl, parentCommentId FROM Comments WHERE postId = ? ORDER BY timestamp ASC", (post_id,))
+    # JOIN USERS ĐỂ LẤY AVATAR MỚI NHẤT
+    cursor.execute("""
+        SELECT c.id, c.authorName, c.content, c.timestamp, c.authorUid,
+               COALESCE(u.photoBase64, c.authorPhotoUrl) as authorPhotoUrl,
+               c.parentCommentId
+        FROM Comments c
+        LEFT JOIN Users u ON c.authorUid = u.uid
+        WHERE c.postId = ?
+        ORDER BY c.timestamp ASC
+    """, (post_id,))
     rows = cursor.fetchall()
     return [{
         "id": r[0], "authorName": r[1], "content": r[2], "timestamp": int(r[3].timestamp() * 1000),
@@ -179,7 +200,16 @@ async def add_notif(
 async def get_notifs(uid: str):
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("SELECT id, targetUid, senderName, senderAvatar, type, postId, postContent, timestamp, isRead FROM Notifications WHERE targetUid = ? ORDER BY timestamp DESC", (uid,))
+    # JOIN USERS ĐỂ LẤY AVATAR NGƯỜI GỬI MỚI NHẤT
+    cursor.execute("""
+        SELECT n.id, n.targetUid, n.senderName,
+               COALESCE(u.photoBase64, n.senderAvatar) as senderAvatar,
+               n.type, n.postId, n.postContent, n.timestamp, n.isRead
+        FROM Notifications n
+        LEFT JOIN Users u ON n.senderUid = u.uid
+        WHERE n.targetUid = ?
+        ORDER BY n.timestamp DESC
+    """, (uid,))
     rows = cursor.fetchall()
     return [{
         "id": r[0], "targetUid": r[1], "senderName": r[2], "senderAvatar": r[3],
@@ -212,6 +242,14 @@ async def add_disease(name: str = Form(...), description: str = Form(...), treat
     db.commit()
     return {"status": "success"}
 
+@app.delete("/admin/diseases/{name}")
+async def delete_disease(name: str):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("DELETE FROM Diseases WHERE name = ?", (name,))
+    db.commit()
+    return {"status": "success"}
+
 @app.get("/tips")
 async def get_all_tips():
     db = get_db()
@@ -227,21 +265,25 @@ async def add_tip(title: str = Form(...), content: str = Form(...), imageResourc
     db.commit()
     return {"status": "success"}
 
+@app.delete("/admin/tips/{tip_id}")
+async def delete_tip(tip_id: int):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("DELETE FROM Tips WHERE id = ?", (tip_id,))
+    db.commit()
+    return {"status": "success"}
+
 # --- ADMIN APIs ---
 @app.get("/admin/stats")
 async def get_admin_stats():
     db = get_db()
     cursor = db.cursor()
-    # Thống kê bệnh
     cursor.execute("SELECT diseaseName, count FROM DiseaseStats ORDER BY count DESC")
     stats = [{"name": r[0], "count": r[1]} for r in cursor.fetchall()]
-
-    # Tổng hợp
     cursor.execute("SELECT COUNT(*) FROM Users")
     user_count = cursor.fetchone()[0]
     cursor.execute("SELECT COUNT(*) FROM Posts")
     post_count = cursor.fetchone()[0]
-
     return {"diseaseStats": stats, "totalUsers": user_count, "totalPosts": post_count}
 
 @app.get("/admin/users")
@@ -259,12 +301,27 @@ async def delete_user(uid: str):
     db.commit()
     return {"status": "success"}
 
+@app.delete("/admin/posts/{post_id}")
+async def delete_post_admin(post_id: int):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("DELETE FROM Posts WHERE id = ?", (post_id,))
+    db.commit()
+    return {"status": "success"}
+
 # --- COMMON UTILS ---
 @app.get("/posts/{post_id}")
 async def get_post_by_id(post_id: int):
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("SELECT id, uid, author, userPhotoUrl, question, imageUrl, disease, timestamp, likesCount, commentsCount FROM Posts WHERE id = ?", (post_id,))
+    cursor.execute("""
+        SELECT p.id, p.uid, p.author,
+               COALESCE(u.photoBase64, p.userPhotoUrl) as userPhotoUrl,
+               p.question, p.imageUrl, p.disease, p.timestamp, p.likesCount, p.commentsCount
+        FROM Posts p
+        LEFT JOIN Users u ON p.uid = u.uid
+        WHERE p.id = ?
+    """, (post_id,))
     row = cursor.fetchone()
     if not row: return {"status": "error", "message": "Post not found"}
     cursor.execute("SELECT uid FROM Likes WHERE postId = ?", (post_id,))
@@ -273,7 +330,8 @@ async def get_post_by_id(post_id: int):
         "id": row[0], "uid": row[1], "author": row[2], "userPhotoUrl": row[3],
         "question": row[4], "imageUrl": row[5], "disease": row[6],
         "timestamp": int(row[7].timestamp() * 1000),
-        "likesCount": row[8], "commentsCount": row[9], "likedBy": liked_uids
+        "likesCount": row[8], "commentsCount": row[9],
+        "likedBy": liked_uids
     }
 
 @app.post("/history")
@@ -299,6 +357,7 @@ async def update_profile_photo(uid: str = Form(...), photoBase64: str = Form(...
         db = get_db()
         cursor = db.cursor()
         cursor.execute("UPDATE Users SET photoBase64 = ? WHERE uid = ?", (photoBase64, uid))
+        # Với JOIN, các lệnh UPDATE dưới đây không còn bắt buộc nhưng vẫn giữ để đảm bảo tính tương thích nếu cache chưa reload
         cursor.execute("UPDATE Posts SET userPhotoUrl = ? WHERE uid = ?", (photoBase64, uid))
         cursor.execute("UPDATE Comments SET authorPhotoUrl = ? WHERE authorUid = ?", (photoBase64, uid))
         cursor.execute("UPDATE Notifications SET senderAvatar = ? WHERE senderUid = ?", (photoBase64, uid))

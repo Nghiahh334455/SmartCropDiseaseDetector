@@ -40,6 +40,8 @@ public class ManagePostsActivity extends AppCompatActivity {
         binding.rvManagePosts.setLayoutManager(new LinearLayoutManager(this));
         binding.rvManagePosts.setAdapter(adapter);
 
+        // Add long click to delete in adapter or handle it here?
+        // Let's modify ForumAdapter to optionally support admin deletion
         loadPosts();
     }
 
