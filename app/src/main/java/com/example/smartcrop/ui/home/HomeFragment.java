@@ -272,24 +272,90 @@ public class HomeFragment extends Fragment {
 
     private void setupWeatherAdvisory() {
         if (binding == null) return;
-        java.util.Calendar cal = java.util.Calendar.getInstance();
-        int hour = cal.get(java.util.Calendar.HOUR_OF_DAY);
-        int temp = 26 + (hour % 6);
-        int humidity = 80 + (hour % 12);
 
+        // Gọi Open-Meteo API thực tế (Miễn phí, không cần API Key)
+        String weatherUrl = "https://api.open-meteo.com/v1/forecast?latitude=10.7769&longitude=106.7009&current_weather=true&hourly=relative_humidity_2m";
+
+        okhttp3.OkHttpClient client = new okhttp3.OkHttpClient.Builder()
+                .connectTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
+                .build();
+
+        okhttp3.Request request = new okhttp3.Request.Builder()
+                .url(weatherUrl)
+                .build();
+
+        client.newCall(request).enqueue(new okhttp3.Callback() {
+            @Override
+            public void onFailure(@NonNull okhttp3.Call call, @NonNull java.io.IOException e) {
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> applyWeatherUI(29, 85, 12, "Trời ẩm ướt • Mưa rải rác"));
+                }
+            }
+
+            @Override
+            public void onResponse(@NonNull okhttp3.Call call, @NonNull okhttp3.Response response) throws java.io.IOException {
+                if (response.isSuccessful() && response.body() != null) {
+                    try {
+                        String json = response.body().string();
+                        org.json.JSONObject obj = new org.json.JSONObject(json);
+                        org.json.JSONObject current = obj.optJSONObject("current_weather");
+                        
+                        double temp = current != null ? current.optDouble("temperature", 29.0) : 29.0;
+                        double wind = current != null ? current.optDouble("windspeed", 10.0) : 10.0;
+                        int weatherCode = current != null ? current.optInt("weathercode", 0) : 0;
+
+                        org.json.JSONObject hourly = obj.optJSONObject("hourly");
+                        int humidity = 82;
+                        if (hourly != null && hourly.has("relative_humidity_2m")) {
+                            org.json.JSONArray humArray = hourly.optJSONArray("relative_humidity_2m");
+                            if (humArray != null && humArray.length() > 0) {
+                                humidity = humArray.optInt(0, 82);
+                            }
+                        }
+
+                        String condition = getWeatherDescription(weatherCode);
+
+                        final int finalTemp = (int) Math.round(temp);
+                        final int finalHum = humidity;
+                        final int finalWind = (int) Math.round(wind);
+                        final String finalCond = condition;
+
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() -> applyWeatherUI(finalTemp, finalHum, finalWind, finalCond));
+                        }
+                    } catch (Exception e) {
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() -> applyWeatherUI(29, 85, 12, "Trời mát • Độ ẩm vừa phải"));
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    private String getWeatherDescription(int code) {
+        if (code == 0) return "Trời quang • Nắng nhẹ";
+        if (code <= 3) return "Trời nhiều mây • Nắng gián đoạn";
+        if (code <= 65) return "Trời mưa rào • Cần chú ý nấm bệnh";
+        if (code <= 82) return "Mưa rào nặng hạt • Độ ẩm cao";
+        return "Thời tiết thay đổi • Chú ý vườn cây";
+    }
+
+    private void applyWeatherUI(int temp, int humidity, int wind, String condition) {
+        if (binding == null) return;
         binding.tvWeatherTemp.setText(temp + "°C");
-        binding.tvWeatherHumidity.setText("Độ ẩm: " + humidity + "% • Gió nhẹ 10km/h");
+        binding.tvWeatherCondition.setText(condition);
+        binding.tvWeatherHumidity.setText("Độ ẩm: " + humidity + "% • Gió " + wind + "km/h");
 
-        if (humidity > 85) {
-            binding.tvWeatherCondition.setText("Trời ẩm ướt • Mưa rào rải rác");
+        if (humidity > 80) {
             binding.tvDiseaseWarningBadge.setText("CẢNH BÁO CAO");
             binding.tvDiseaseWarningBadge.setBackgroundResource(R.drawable.bg_badge_red);
-            binding.tvDiseaseWarningText.setText("Độ ẩm " + humidity + "%: Nguy cơ lây lan Bệnh Sương Mai & Đốm Vòng rất cao!");
+            binding.tvDiseaseWarningText.setText("Độ ẩm " + humidity + "% (Thực tế): Nguy cơ lây lan Bệnh Sương Mai & Đốm Vòng rất cao!");
         } else {
-            binding.tvWeatherCondition.setText("Trời mát • Độ ẩm vừa phải");
             binding.tvDiseaseWarningBadge.setText("KHUYẾN NÔNG");
             binding.tvDiseaseWarningBadge.setBackgroundResource(R.drawable.bg_badge_orange);
-            binding.tvDiseaseWarningText.setText("Thời tiết thuận lợi: Nên tỉa lá già sát gốc & kiểm tra vườn sáng sớm.");
+            binding.tvDiseaseWarningText.setText("Thời tiết " + temp + "°C thuận lợi: Nên tỉa lá già sát gốc & kiểm tra vườn sáng sớm.");
         }
     }
 

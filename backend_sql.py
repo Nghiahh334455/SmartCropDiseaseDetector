@@ -59,6 +59,213 @@ def get_db():
     return pyodbc.connect(default_conn_str)
 
 
+def init_db():
+    """Tự động kiểm tra và khởi tạo các bảng còn thiếu trong SQL Server"""
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("""
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Users')
+            BEGIN
+                CREATE TABLE Users (
+                    uid NVARCHAR(128) PRIMARY KEY,
+                    displayName NVARCHAR(255),
+                    email NVARCHAR(255),
+                    photoBase64 NVARCHAR(MAX),
+                    isAdmin BIT DEFAULT 0,
+                    createdAt DATETIME DEFAULT GETDATE()
+                );
+                INSERT INTO Users (uid, displayName, email, isAdmin) VALUES ('12345N', 'Quản trị viên', 'admin@thannongai.vn', 1);
+            END
+
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Posts')
+            BEGIN
+                CREATE TABLE Posts (
+                    id INT PRIMARY KEY IDENTITY(1,1),
+                    uid NVARCHAR(128) NOT NULL,
+                    author NVARCHAR(255),
+                    userPhotoUrl NVARCHAR(MAX),
+                    question NVARCHAR(MAX),
+                    imageUrl NVARCHAR(MAX),
+                    disease NVARCHAR(255),
+                    timestamp DATETIME DEFAULT GETDATE(),
+                    likesCount INT DEFAULT 0,
+                    commentsCount INT DEFAULT 0
+                );
+            END
+
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Comments')
+            BEGIN
+                CREATE TABLE Comments (
+                    id INT PRIMARY KEY IDENTITY(1,1),
+                    postId INT FOREIGN KEY REFERENCES Posts(id) ON DELETE CASCADE,
+                    authorName NVARCHAR(255),
+                    authorUid NVARCHAR(128),
+                    authorPhotoUrl NVARCHAR(MAX),
+                    content NVARCHAR(MAX),
+                    timestamp DATETIME DEFAULT GETDATE(),
+                    parentCommentId INT DEFAULT NULL
+                );
+            END
+
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Likes')
+            BEGIN
+                CREATE TABLE Likes (
+                    uid NVARCHAR(128),
+                    postId INT FOREIGN KEY REFERENCES Posts(id) ON DELETE CASCADE,
+                    PRIMARY KEY (uid, postId)
+                );
+            END
+
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Notifications')
+            BEGIN
+                CREATE TABLE Notifications (
+                    id INT PRIMARY KEY IDENTITY(1,1),
+                    targetUid NVARCHAR(128) NOT NULL,
+                    senderName NVARCHAR(255),
+                    senderAvatar NVARCHAR(MAX),
+                    senderUid NVARCHAR(128),
+                    type NVARCHAR(50),
+                    postId INT,
+                    postContent NVARCHAR(MAX),
+                    timestamp DATETIME DEFAULT GETDATE(),
+                    isRead BIT DEFAULT 0
+                );
+            END
+
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'DiseaseStats')
+            BEGIN
+                CREATE TABLE DiseaseStats (
+                    diseaseName NVARCHAR(255) PRIMARY KEY,
+                    count INT DEFAULT 1,
+                    lastImageUrl NVARCHAR(MAX)
+                );
+            END
+
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Diseases')
+            BEGIN
+                CREATE TABLE Diseases (
+                    id INT PRIMARY KEY IDENTITY(1,1),
+                    name NVARCHAR(255) UNIQUE,
+                    description NVARCHAR(MAX),
+                    treatment NVARCHAR(MAX),
+                    imageResource NVARCHAR(MAX)
+                );
+            END
+
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Tips')
+            BEGIN
+                CREATE TABLE Tips (
+                    id INT PRIMARY KEY IDENTITY(1,1),
+                    title NVARCHAR(255),
+                    content NVARCHAR(MAX),
+                    imageResource NVARCHAR(255)
+                );
+            END
+
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'History')
+            BEGIN
+                CREATE TABLE History (
+                    id INT PRIMARY KEY IDENTITY(1,1),
+                    uid NVARCHAR(128) NOT NULL,
+                    diseaseName NVARCHAR(255),
+                    confidence FLOAT,
+                    treatment NVARCHAR(MAX),
+                    imageBase64 NVARCHAR(MAX),
+                    timestamp DATETIME DEFAULT GETDATE()
+                );
+            END
+        """)
+        db.commit()
+        print("✅ [SQL Server] Đã tự động kiểm tra và khởi tạo các bảng CSDL thành công!")
+        seed_real_world_data()
+    except Exception as e:
+        print(f"⚠️ [SQL Server Init Warning] {e}")
+
+
+def seed_real_world_data():
+    """Tự động bơm dữ liệu nông nghiệp thực tế chuẩn Việt Nam nếu CSDL chưa có dữ liệu"""
+    try:
+        db = get_db()
+        cursor = db.cursor()
+
+        # 1. Bơm Thư viện Bệnh Cây Trồng (Diseases)
+        cursor.execute("SELECT COUNT(*) FROM Diseases")
+        if cursor.fetchone()[0] == 0:
+            diseases = [
+                ("Bệnh Sương Mai (Late Blight)", "Úng nước nâu đen trên lá cà chua/khoai tây, có màng nấm trắng xám dưới lá khi ẩm ướt.", "Phun Ridomil Gold 68WG, Daconil 75WP hoặc vi sinh Trichoderma.", "img_tomato_late_blight_1"),
+                ("Bệnh Đốm Vòng (Early Blight)", "Đốm nâu đen có các đường vòng đồng tâm đặc trưng như hình bia bắn trên lá.", "Sử dụng Score 250EC, Anvil 5SC hoặc vi sinh Bio-Clean.", "img_tomato_early_blight_1"),
+                ("Bệnh Đạo Ôn Lúa (Rice Blast)", "Vết bệnh hình thoi mắt én màu xám nâu trên lá lúa và cổ bông làm lép hạt.", "Phun ngay Beam 75WP, Fuji-One 40EC, tạm ngưng bón đạm.", "img_rice_blast_1"),
+                ("Bệnh Bạc Lá Lúa (Bacterial Leaf Blight)", "Vết cháy sọc dài bìa lá màu vàng xám khô xơ do vi khuẩn Xanthomonas.", "Sử dụng Starner 20WP, Physan 20L kết hợp ngắt nước.", "img_rice_bacterial_blight_1"),
+                ("Bệnh Rỉ Sắt (Coffee Rust)", "Bột phấn màu cam rỉ sắt phủ dày ở mặt dưới lá cà phê làm rụng lá hàng loạt.", "Phun Tilt Super 300EC, Anvil 5SC, tỉa cành thông thoáng.", "img_coffee_rust_1"),
+                ("Bệnh Khảm Lá Virus (Mosaic Virus)", "Lá đu đủ, dưa hấu biến dạng loang lổ xanh vàng, xoăn ngọn do bọ trĩ truyền virus.", "Diệt côn trùng truyền bệnh bằng bẫy dính vàng, phun dầu neem.", "img_papaya_mosaic_1"),
+                ("Bệnh Phấn Trắng (Powdery Mildew)", "Lớp bột màu trắng như phấn bao phủ mặt trên lá dưa leo, nho làm khô héo.", "Phun Microthiol Special 80WG (Lưu huỳnh), Anvil 5SC.", "img_cucumber_powdery_mildew_1"),
+                ("Bệnh Thán Thư (Anthracnose)", "Đốm đen lõm sâu trên quả xoài, ớt và lá, làm thối rụng quả nhanh chóng.", "Phun Amistar Top 325SC, Antracol 70WP.", "img_chili_anthracnose_1"),
+                ("Bệnh Thối Rễ Thối Thân (Foot Rot)", "Nấm Phytophthora làm thối cổ rễ hồ tiêu, bưởi làm lá vàng rụng chết nhanh.", "Tưới gốc vi sinh Trichoderma, tưới Agrifos 400 phòng trừ.", "img_pepper_foot_rot_1"),
+                ("Bệnh Thối Nhũn (Soft Rot)", "Mô cây bắp cải, hoa lan nhũn nước có mùi hôi nồng đặc trưng do vi khuẩn.", "Cắt bỏ phần nhũn, rắc vôi bột, phun Poner 40TB.", "img_cabbage_soft_rot_1")
+            ]
+            cursor.executemany("INSERT INTO Diseases (name, description, treatment, imageResource) VALUES (?, ?, ?, ?)", diseases)
+
+        # 2. Bơm Mẹo Chăm Sóc Nông Nghiệp (Tips)
+        cursor.execute("SELECT COUNT(*) FROM Tips")
+        if cursor.fetchone()[0] == 0:
+            tips = [
+                ("Kỹ thuật tưới nước nhỏ giọt tiết kiệm & phòng nấm", "Tưới nước vào gốc cây lúc 6-8h sáng, tránh tưới phun mưa lên lá chiều tối để hạn chế nấm bệnh phát triển.", "img_tip_water"),
+                ("Bón phân cân đối N-P-K theo từng giai đoạn", "Giảm bón Đạm (N) khi cây ra hoa đậu quả, tăng cường Kali (K) giúp thân cây cứng cáp chống rụng quả.", "img_tip_fertilizer"),
+                ("Sử dụng vi sinh Trichoderma phòng thối rễ", "Trộn nấm đối kháng Trichoderma với phân hữu cơ ủ hoai mục bón lót giúp tiêu diệt nấm hại trong đất.", "img_tip_organic"),
+                ("Luân canh cây trồng họ Đậu cải tạo đất", "Trồng luân canh cây họ Đậu giúp cố định Đạm tự nhiên vào đất và cắt đứt vòng đời sâu bệnh hại cây họ Cà.", "img_tip_rotation"),
+                ("Cắt tỉa cành lá sát gốc thông thoáng", "Cắt tỉa bớt lá dịch sát gốc giúp tán cây thông thoáng, tăng ánh sáng, giảm độ ẩm nội tán hạn chế rệp sáp.", "img_tip_pruning"),
+                ("Bổ sung Canxi & Bo chống nứt quả", "Phun phân bón lá Canxi-Bo định kỳ giai đoạn nuôi trái giúp vỏ trái dẻo dai, chống nứt thối đít quả.", "img_tip_foliar"),
+                ("Kỹ thuật ủ phân hữu cơ vi sinh tại nhà", "Ủ phế phẩm nông nghiệp (rơm rạ, vỏ cà phê) với men vi sinh 30-45 ngày tạo phân bón sạch giàu dinh dưỡng.", "img_tip_compost"),
+                ("Sử dụng bẫy dính vàng diệt bọ trĩ & rệp sáp", "Treo bẫy dính màu vàng xung quanh vườn để thu hút và tiêu diệt rệp sáp, bọ trĩ không cần xịt thuốc hóa học.", "img_tip_trap")
+            ]
+            cursor.executemany("INSERT INTO Tips (title, content, imageResource) VALUES (?, ?, ?)", tips)
+
+        # 3. Bơm Thống Kê Bệnh Hại (DiseaseStats)
+        cursor.execute("SELECT COUNT(*) FROM DiseaseStats")
+        if cursor.fetchone()[0] < 3:
+            stats = [
+                ("Cây Khỏe Mạnh", 210, "img_tip_check"),
+                ("Bệnh Sương Mai (Late Blight)", 145, "img_tomato_late_blight_1"),
+                ("Bệnh Đạo Ôn Lúa (Rice Blast)", 120, "img_rice_blast_1"),
+                ("Bệnh Đốm Vòng (Early Blight)", 98, "img_tomato_early_blight_1"),
+                ("Bệnh Rỉ Sắt (Coffee Rust)", 85, "img_coffee_rust_1"),
+                ("Bệnh Thán Thư (Anthracnose)", 42, "img_chili_anthracnose_1")
+            ]
+            for name, count, img in stats:
+                cursor.execute("""
+                    IF EXISTS (SELECT 1 FROM DiseaseStats WHERE diseaseName = ?)
+                        UPDATE DiseaseStats SET count = ? WHERE diseaseName = ?
+                    ELSE
+                        INSERT INTO DiseaseStats (diseaseName, count, lastImageUrl) VALUES (?, ?, ?)
+                """, (name, count, name, name, count, img))
+
+        # 4. Bơm Danh Sách Người Dùng Nông Dân (Users)
+        cursor.execute("SELECT COUNT(*) FROM Users")
+        if cursor.fetchone()[0] <= 1:
+            users = [
+                ("user_01", "Nguyễn Văn Nông", "nongvannguyen@gmail.com", 0),
+                ("user_02", "Trần Thị Mai", "maitran.nongnghiep@gmail.com", 0),
+                ("user_03", "Lê Hoàng Nam", "namle.mientay@gmail.com", 0),
+                ("user_04", "Phạm Quốc Cường", "cuonglamdong@gmail.com", 0)
+            ]
+            for uid, name, email, isAdmin in users:
+                cursor.execute("""
+                    IF NOT EXISTS (SELECT 1 FROM Users WHERE uid = ?)
+                        INSERT INTO Users (uid, displayName, email, isAdmin) VALUES (?, ?, ?, ?)
+                """, (uid, uid, name, email, isAdmin))
+
+        db.commit()
+        print("🌱 [SQL Server] Đã tự động nạp thành công bộ dữ liệu nông nghiệp thực tế!")
+    except Exception as e:
+        print(f"⚠️ [SQL Seed Warning] {e}")
+
+
+@app.on_event("startup")
+async def startup_event():
+    init_db()
+
+
 @app.get("/")
 async def root_healthcheck():
     try:

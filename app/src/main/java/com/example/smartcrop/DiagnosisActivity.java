@@ -266,14 +266,18 @@ public class DiagnosisActivity extends AppCompatActivity {
                 drawBoundingBoxOnImage(bbox.get("x1"), bbox.get("y1"), bbox.get("x2"), bbox.get("y2"));
             }
 
-            String base64Image = ImageUtils.bitmapToBase64(originalBitmap);
-            boolean isHealthy = name.toLowerCase().contains("khỏe mạnh") || name.toLowerCase().contains("healthy");
+            // Chạy việc nén/mã hóa ảnh Base64 và lưu Lịch sử song song ở Background Thread để UI không bị giật lag
+            final Bitmap bitmapToCompress = originalBitmap;
+            Executors.newSingleThreadExecutor().execute(() -> {
+                String base64Image = ImageUtils.bitmapToBase64(bitmapToCompress);
+                boolean isHealthy = name.toLowerCase().contains("khỏe mạnh") || name.toLowerCase().contains("healthy");
 
-            if (!isHealthy && !base64Image.isEmpty()) {
-                incrementDiseaseCount(name, base64Image);
-            }
-            
-            saveToHistory(name, confidence, "Chẩn đoán Thần Nông AI", base64Image);
+                if (!isHealthy && !base64Image.isEmpty()) {
+                    incrementDiseaseCount(name, base64Image);
+                }
+                
+                saveToHistory(name, confidence, "Chẩn đoán Thần Nông AI", base64Image);
+            });
         } catch (Exception e) {
             e.printStackTrace();
         }
