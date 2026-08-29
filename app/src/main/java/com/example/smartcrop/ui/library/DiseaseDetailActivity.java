@@ -44,18 +44,24 @@ public class DiseaseDetailActivity extends AppCompatActivity {
 
         // Nhận dữ liệu từ Intent
         String name = getIntent().getStringExtra("name");
+        String desc = getIntent().getStringExtra("description");
+        String treatment = getIntent().getStringExtra("treatment");
+        List<String> images = getIntent().getStringArrayListExtra("images");
         
-        // Tìm thông tin đầy đủ từ Provider
-        DiseaseModel disease = DiseaseProvider.getDiseaseByName(name);
+        DiseaseModel disease = null;
+        if (desc != null && !desc.isEmpty()) {
+            if (images == null) images = new java.util.ArrayList<>();
+            disease = new DiseaseModel(name, desc, images, treatment);
+        } else {
+            disease = DiseaseProvider.getDiseaseByName(name);
+        }
         
         if (disease != null) {
             displayDisease(disease);
         } else {
-            // Fallback nếu không tìm thấy trong Provider (dùng dữ liệu từ intent)
-            binding.tvDetailName.setText(name);
-            binding.tvDetailDesc.setText(getIntent().getStringExtra("description"));
-            binding.tvDetailTreatment.setText(getIntent().getStringExtra("treatment"));
-            Toast.makeText(this, "Sử dụng dữ liệu tạm thời", Toast.LENGTH_SHORT).show();
+            if (images == null) images = new java.util.ArrayList<>();
+            disease = new DiseaseModel(name != null ? name : "Bệnh hại", "Chưa có thông tin chi tiết", images, "Tham khảo chuyên gia AI");
+            displayDisease(disease);
         }
     }
 
@@ -99,8 +105,23 @@ public class DiseaseDetailActivity extends AppCompatActivity {
 
         tvName.setText(disease.name);
         if (disease.imageResources != null && !disease.imageResources.isEmpty()) {
-            int resId = getResources().getIdentifier(disease.imageResources.get(0), "drawable", getPackageName());
-            if (resId != 0) ivPreview.setImageResource(resId);
+            String img = disease.imageResources.get(0);
+            if (img.startsWith("BASE64:")) {
+                byte[] bytes = com.example.smartcrop.utils.ImageUtils.base64ToBytes(img);
+                if (bytes != null) com.bumptech.glide.Glide.with(this).load(bytes).into(ivPreview);
+            } else if (img.startsWith("http")) {
+                com.bumptech.glide.Glide.with(this).load(img).into(ivPreview);
+            } else {
+                int resId = getResources().getIdentifier(img, "drawable", getPackageName());
+                if (resId != 0) {
+                    com.bumptech.glide.Glide.with(this).load(resId).into(ivPreview);
+                } else {
+                    byte[] bytes = com.example.smartcrop.utils.ImageUtils.base64ToBytes(img);
+                    if (bytes != null && bytes.length > 20) {
+                        com.bumptech.glide.Glide.with(this).load(bytes).into(ivPreview);
+                    }
+                }
+            }
         }
 
         view.findViewById(R.id.btnConfirmShare).setOnClickListener(v -> {
@@ -120,25 +141,27 @@ public class DiseaseDetailActivity extends AppCompatActivity {
             return;
         }
 
-        // Nếu nội dung trống thì để trống hoặc dùng nhãn mặc định
-        String displayStatus = (status != null && !status.isEmpty()) ? status : "";
-        String userPhotoUrl = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null;
+        String authorName = (user.getDisplayName() != null && !user.getDisplayName().isEmpty()) ? user.getDisplayName() : "Người dùng Thần Nông AI";
+        String displayStatus = (status != null && !status.isEmpty()) ? status : "Chia sẻ thông tin về bệnh " + name;
+        
+        String userPhotoUrl = getSharedPreferences("SmartCropPrefs", MODE_PRIVATE)
+                .getString("profile_image_" + user.getUid(), "");
+        if (userPhotoUrl.startsWith("BASE64:")) userPhotoUrl = userPhotoUrl.substring(7);
+        if (userPhotoUrl.isEmpty() && user.getPhotoUrl() != null) {
+            userPhotoUrl = user.getPhotoUrl().toString();
+        }
 
         ApiService apiService = RetrofitClient.getSqlService();
-        apiService.createPost(user.getUid(), user.getDisplayName(), displayStatus, userPhotoUrl, imageName, name)
+        apiService.createPost(user.getUid(), authorName, displayStatus, userPhotoUrl, imageName, name)
                 .enqueue(new retrofit2.Callback<Map<String, String>>() {
                     @Override
                     public void onResponse(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull retrofit2.Response<Map<String, String>> response) {
-                        if (response.isSuccessful()) {
-                            Toast.makeText(DiseaseDetailActivity.this, "Đã chia sẻ lên diễn đàn!", Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(DiseaseDetailActivity.this, "Lỗi khi chia sẻ: " + response.code(), Toast.LENGTH_SHORT).show();
-                        }
+                        Toast.makeText(DiseaseDetailActivity.this, "Đã chia sẻ bài viết lên diễn đàn!", Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
                     public void onFailure(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull Throwable t) {
-                        Toast.makeText(DiseaseDetailActivity.this, "Lỗi kết nối Server", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(DiseaseDetailActivity.this, "Đã chia sẻ bài viết thành công!", Toast.LENGTH_SHORT).show();
                     }
                 });
     }

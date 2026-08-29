@@ -56,25 +56,57 @@ public class LibraryAdapter extends RecyclerView.Adapter<LibraryAdapter.ViewHold
         holder.binding.tvDiseaseTitle.setText(disease.name);
         holder.binding.tvDiseaseShortDesc.setText(disease.description);
 
-        // Load thumbnail (ảnh đầu tiên trong list nội bộ)
+        // Load thumbnail (xử lý linh hoạt cả Base64, URL và Resource Drawable)
         if (disease.imageResources != null && !disease.imageResources.isEmpty()) {
             String thumbnailName = disease.imageResources.get(0);
-            int resId = holder.itemView.getContext().getResources().getIdentifier(thumbnailName, "drawable", holder.itemView.getContext().getPackageName());
-            if (resId != 0) {
-                Glide.with(holder.itemView.getContext())
-                        .load(resId)
-                        .placeholder(android.R.drawable.ic_menu_gallery)
-                        .into(holder.binding.ivDiseaseThumbnail);
-            } else {
-                Glide.with(holder.itemView.getContext())
-                        .load(android.R.drawable.ic_menu_gallery)
-                        .into(holder.binding.ivDiseaseThumbnail);
+            if (thumbnailName != null && !thumbnailName.isEmpty()) {
+                if (thumbnailName.startsWith("BASE64:")) {
+                    byte[] bytes = com.example.smartcrop.utils.ImageUtils.base64ToBytes(thumbnailName);
+                    if (bytes != null) {
+                        Glide.with(holder.itemView.getContext())
+                                .load(bytes)
+                                .placeholder(android.R.drawable.ic_menu_gallery)
+                                .into(holder.binding.ivDiseaseThumbnail);
+                    } else {
+                        holder.binding.ivDiseaseThumbnail.setImageResource(android.R.drawable.ic_menu_gallery);
+                    }
+                } else if (thumbnailName.startsWith("http://") || thumbnailName.startsWith("https://")) {
+                    Glide.with(holder.itemView.getContext())
+                            .load(thumbnailName)
+                            .placeholder(android.R.drawable.ic_menu_gallery)
+                            .into(holder.binding.ivDiseaseThumbnail);
+                } else {
+                    int resId = holder.itemView.getContext().getResources().getIdentifier(thumbnailName, "drawable", holder.itemView.getContext().getPackageName());
+                    if (resId != 0) {
+                        Glide.with(holder.itemView.getContext())
+                                .load(resId)
+                                .placeholder(android.R.drawable.ic_menu_gallery)
+                                .into(holder.binding.ivDiseaseThumbnail);
+                    } else {
+                        byte[] bytes = com.example.smartcrop.utils.ImageUtils.base64ToBytes(thumbnailName);
+                        if (bytes != null && bytes.length > 20) {
+                            Glide.with(holder.itemView.getContext())
+                                    .load(bytes)
+                                    .placeholder(android.R.drawable.ic_menu_gallery)
+                                    .into(holder.binding.ivDiseaseThumbnail);
+                        } else {
+                            Glide.with(holder.itemView.getContext())
+                                    .load(android.R.drawable.ic_menu_gallery)
+                                    .into(holder.binding.ivDiseaseThumbnail);
+                        }
+                    }
+                }
             }
         }
 
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(v.getContext(), DiseaseDetailActivity.class);
             intent.putExtra("name", disease.name);
+            intent.putExtra("description", disease.description);
+            intent.putExtra("treatment", disease.treatment);
+            if (disease.imageResources != null && !disease.imageResources.isEmpty()) {
+                intent.putStringArrayListExtra("images", new ArrayList<>(disease.imageResources));
+            }
             v.getContext().startActivity(intent);
         });
 

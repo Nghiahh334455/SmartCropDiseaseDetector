@@ -1,24 +1,30 @@
 package com.example.smartcrop.ui.admin;
 
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.smartcrop.R;
 import com.example.smartcrop.api.ApiService;
 import com.example.smartcrop.api.RetrofitClient;
 import com.example.smartcrop.databinding.ActivityManageTipsBinding;
 import com.example.smartcrop.ui.home.TipModel;
+import com.example.smartcrop.utils.ImageUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +39,21 @@ public class ManageTipsActivity extends AppCompatActivity {
     private ActivityManageTipsBinding binding;
     private List<TipModel> tipsList = new ArrayList<>();
     private TipsManageAdapter adapter;
+
+    private Uri selectedImageUri;
+    private ImageView currentPreviewImageView;
+
+    private final ActivityResultLauncher<String> imagePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.GetContent(),
+            uri -> {
+                if (uri != null) {
+                    selectedImageUri = uri;
+                    if (currentPreviewImageView != null) {
+                        Glide.with(this).load(uri).into(currentPreviewImageView);
+                    }
+                }
+            }
+    );
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,28 +101,51 @@ public class ManageTipsActivity extends AppCompatActivity {
     }
 
     private void showTipDialog(TipModel existing) {
+        selectedImageUri = null;
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_add_tip, null);
         EditText etTitle = view.findViewById(R.id.etTipTitle);
         EditText etContent = view.findViewById(R.id.etTipContent);
+        ImageView ivPreview = view.findViewById(R.id.ivTipPreview);
+        View btnSelectImage = view.findViewById(R.id.btnSelectTipImage);
+
+        currentPreviewImageView = ivPreview;
 
         if (existing != null) {
             etTitle.setText(existing.title);
             etContent.setText(existing.content);
+            if (existing.imageUrl != null && !existing.imageUrl.isEmpty()) {
+                if (existing.imageUrl.startsWith("BASE64:")) {
+                    byte[] bytes = ImageUtils.base64ToBytes(existing.imageUrl);
+                    if (bytes != null) Glide.with(this).load(bytes).into(ivPreview);
+                } else {
+                    int resId = getResources().getIdentifier(existing.imageUrl, "drawable", getPackageName());
+                    if (resId != 0) Glide.with(this).load(resId).into(ivPreview);
+                }
+            }
         }
+
+        btnSelectImage.setOnClickListener(v -> imagePickerLauncher.launch("image/*"));
 
         new AlertDialog.Builder(this)
                 .setTitle(existing == null ? "Thêm mẹo mới" : "Sửa mẹo")
                 .setView(view)
                 .setPositiveButton("Lưu", (dialog, which) -> {
-                    saveTip(etTitle.getText().toString(), etContent.getText().toString());
+                    String imgStr = "img_tip_check";
+                    if (selectedImageUri != null) {
+                        String b64 = ImageUtils.uriToBase64(this, selectedImageUri);
+                        if (!b64.isEmpty()) imgStr = "BASE64:" + b64;
+                    } else if (existing != null && existing.imageUrl != null && !existing.imageUrl.isEmpty()) {
+                        imgStr = existing.imageUrl;
+                    }
+                    saveTip(etTitle.getText().toString(), etContent.getText().toString(), imgStr);
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
     }
 
-    private void saveTip(String title, String content) {
+    private void saveTip(String title, String content, String imageResource) {
         ApiService apiService = RetrofitClient.getSqlService();
-        apiService.addTipToDb(title, content, "img_tip_check").enqueue(new Callback<Map<String, String>>() {
+        apiService.addTipToDb(title, content, imageResource).enqueue(new Callback<Map<String, String>>() {
             @Override
             public void onResponse(Call<Map<String, String>> call, Response<Map<String, String>> response) {
                 if (response.isSuccessful()) {

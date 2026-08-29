@@ -49,41 +49,67 @@ public class PostDetailActivity extends AppCompatActivity {
 
         // Get data from intent
         Object postObj = getIntent().getSerializableExtra("post");
-        if (!(postObj instanceof Map)) {
-            finish();
-            return;
-        }
-        postData = (Map<String, Object>) postObj;
+        String intentPostId = getIntent().getStringExtra("postId");
 
-        Object idObj = postData.get("id");
-        if (idObj == null) idObj = getIntent().getStringExtra("postId");
-        
-        if (idObj != null) {
-            String idStr = String.valueOf(idObj);
-            try {
-                // Sửa lỗi ID dạng 1.0 từ GSON/SQL
-                double d = Double.parseDouble(idStr);
-                postId = String.valueOf((int) d);
-            } catch (Exception e) {
-                postId = idStr;
+        if (postObj instanceof Map) {
+            postData = (Map<String, Object>) postObj;
+            Object idObj = postData.get("id");
+            if (idObj != null) {
+                try {
+                    postId = String.valueOf((int) Double.parseDouble(String.valueOf(idObj)));
+                } catch (Exception e) {
+                    postId = String.valueOf(idObj);
+                }
+            } else {
+                postId = intentPostId;
             }
+            displayPost(postData);
+            setupComments();
+            if (postId != null) listenForComments();
+        } else if (intentPostId != null && !intentPostId.isEmpty()) {
+            postId = intentPostId;
+            setupComments();
+            loadPostById(postId);
         } else {
-            postId = (String) postData.get("originalPostId");
-        }
-
-        displayPost(postData);
-        setupComments();
-
-        if (postId != null) {
-            listenForComments();
-        } else {
-            binding.tvCommentHeader.setText("Bình luận (Tính năng chỉ dành cho bài đăng gốc)");
-            binding.layoutCommentInput.setVisibility(View.GONE);
+            Toast.makeText(this, "Không thể tải bài viết", Toast.LENGTH_SHORT).show();
+            finish();
         }
 
         binding.btnSendComment.setOnClickListener(v -> sendComment());
-        
         loadUserAvatar();
+    }
+
+    private void loadPostById(String pIdStr) {
+        int pId;
+        try {
+            pId = (int) Double.parseDouble(pIdStr);
+        } catch (Exception e) {
+            try {
+                pId = Integer.parseInt(pIdStr);
+            } catch (Exception ex) {
+                return;
+            }
+        }
+
+        ApiService apiService = RetrofitClient.getSqlService();
+        apiService.getPostById(pId).enqueue(new retrofit2.Callback<Map<String, Object>>() {
+            @Override
+            public void onResponse(@androidx.annotation.NonNull retrofit2.Call<Map<String, Object>> call, @androidx.annotation.NonNull retrofit2.Response<Map<String, Object>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    postData = response.body();
+                    displayPost(postData);
+                    listenForComments();
+                } else {
+                    Toast.makeText(PostDetailActivity.this, "Bài viết không còn tồn tại", Toast.LENGTH_SHORT).show();
+                    finish();
+                }
+            }
+
+            @Override
+            public void onFailure(@androidx.annotation.NonNull retrofit2.Call<Map<String, Object>> call, @androidx.annotation.NonNull Throwable t) {
+                Toast.makeText(PostDetailActivity.this, "Lỗi kết nối Server", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void loadUserAvatar() {

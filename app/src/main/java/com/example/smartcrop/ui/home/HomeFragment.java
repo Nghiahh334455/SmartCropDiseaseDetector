@@ -200,7 +200,17 @@ public class HomeFragment extends Fragment {
             public void onResponse(retrofit2.Call<List<Map<String, Object>>> call, retrofit2.Response<List<Map<String, Object>>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     if (isAdded()) {
-                        CommonDiseaseAdapter adapter = new CommonDiseaseAdapter(response.body());
+                        List<Map<String, Object>> filteredDiseases = new ArrayList<>();
+                        for (Map<String, Object> map : response.body()) {
+                            String name = (String) map.get("name");
+                            if (name != null) {
+                                String lower = name.toLowerCase();
+                                if (!lower.contains("khỏe mạnh") && !lower.contains("healthy")) {
+                                    filteredDiseases.add(map);
+                                }
+                            }
+                        }
+                        CommonDiseaseAdapter adapter = new CommonDiseaseAdapter(filteredDiseases);
                         binding.rvCommonDiseases.setAdapter(adapter);
                     }
                 }

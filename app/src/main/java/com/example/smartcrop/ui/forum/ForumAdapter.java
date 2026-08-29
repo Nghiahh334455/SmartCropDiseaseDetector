@@ -150,18 +150,26 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
         String imageUrl = (String) post.get("imageUrl");
         if (imageUrl != null && !imageUrl.isEmpty()) {
             holder.binding.ivPostImage.setVisibility(android.view.View.VISIBLE);
-            if (imageUrl.length() > 500) { // Base64
+            if (imageUrl.startsWith("BASE64:") || imageUrl.length() > 500) {
                 byte[] imageBytes = ImageUtils.base64ToBytes(imageUrl);
-                if (imageBytes != null) Glide.with(context).load(imageBytes).placeholder(android.R.drawable.ic_menu_gallery).into(holder.binding.ivPostImage);
-            } else if (imageUrl.startsWith("http")) {
+                if (imageBytes != null) {
+                    Glide.with(context).load(imageBytes).placeholder(android.R.drawable.ic_menu_gallery).into(holder.binding.ivPostImage);
+                } else {
+                    holder.binding.ivPostImage.setVisibility(android.view.View.GONE);
+                }
+            } else if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
                 Glide.with(context).load(imageUrl).placeholder(android.R.drawable.ic_menu_gallery).into(holder.binding.ivPostImage);
             } else {
-                // It's a resource name
                 int resId = context.getResources().getIdentifier(imageUrl, "drawable", context.getPackageName());
                 if (resId != 0) {
                     Glide.with(context).load(resId).placeholder(android.R.drawable.ic_menu_gallery).into(holder.binding.ivPostImage);
                 } else {
-                    holder.binding.ivPostImage.setVisibility(android.view.View.GONE);
+                    byte[] imageBytes = ImageUtils.base64ToBytes(imageUrl);
+                    if (imageBytes != null && imageBytes.length > 20) {
+                        Glide.with(context).load(imageBytes).placeholder(android.R.drawable.ic_menu_gallery).into(holder.binding.ivPostImage);
+                    } else {
+                        holder.binding.ivPostImage.setVisibility(android.view.View.GONE);
+                    }
                 }
             }
         } else {

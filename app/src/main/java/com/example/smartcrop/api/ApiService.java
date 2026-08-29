@@ -34,6 +34,9 @@ public interface ApiService {
     @GET("/users/{uid}")
     Call<Map<String, Object>> getUser(@Path("uid") String uid);
 
+    @GET("/users/email/{email}")
+    Call<Map<String, Object>> getUserByEmail(@Path("email") String email);
+
     @Multipart
     @POST("/predict")
     Call<PredictResponse> predictDisease(

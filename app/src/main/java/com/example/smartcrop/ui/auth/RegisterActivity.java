@@ -29,7 +29,7 @@ public class RegisterActivity extends AppCompatActivity {
     }
 
     private void registerUser() {
-        String email = binding.etEmail.getText().toString().trim();
+        String email = binding.etEmail.getText().toString().trim().toLowerCase();
         String password = binding.etPassword.getText().toString().trim();
 
         if (TextUtils.isEmpty(email) || TextUtils.isEmpty(password)) {
@@ -46,11 +46,14 @@ public class RegisterActivity extends AppCompatActivity {
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
                         Toast.makeText(RegisterActivity.this, "Đăng ký thành công", Toast.LENGTH_SHORT).show();
-                        startActivity(new Intent(RegisterActivity.this, MainActivity.class));
+                        Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
                         finish();
                     } else {
-                        Toast.makeText(RegisterActivity.this, "Đăng ký thất bại: " + task.getException().getMessage(),
-                                Toast.LENGTH_SHORT).show();
+                        String err = task.getException() != null ? task.getException().getMessage() : "Lỗi đăng ký";
+                        Toast.makeText(RegisterActivity.this, "Đăng ký thất bại: " + err,
+                                Toast.LENGTH_LONG).show();
                     }
                 });
     }

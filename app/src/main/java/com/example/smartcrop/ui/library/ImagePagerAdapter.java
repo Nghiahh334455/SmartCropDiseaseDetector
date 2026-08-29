@@ -34,15 +34,29 @@ public class ImagePagerAdapter extends RecyclerView.Adapter<ImagePagerAdapter.Vi
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         String imageName = imageResources.get(position);
-        
-        // Chuyển đổi tên file String sang resource ID
-        int resId = context.getResources().getIdentifier(imageName, "drawable", context.getPackageName());
-        
-        if (resId != 0) {
-            Glide.with(context).load(resId).into(holder.imageView);
-        } else {
-            // Nếu không tìm thấy ảnh thật, hiển thị ảnh mặc định
-            Glide.with(context).load(android.R.drawable.ic_menu_gallery).into(holder.imageView);
+        if (imageName != null && !imageName.isEmpty()) {
+            if (imageName.startsWith("BASE64:")) {
+                byte[] bytes = com.example.smartcrop.utils.ImageUtils.base64ToBytes(imageName);
+                if (bytes != null) {
+                    Glide.with(context).load(bytes).placeholder(android.R.drawable.ic_menu_gallery).into(holder.imageView);
+                } else {
+                    holder.imageView.setImageResource(android.R.drawable.ic_menu_gallery);
+                }
+            } else if (imageName.startsWith("http://") || imageName.startsWith("https://")) {
+                Glide.with(context).load(imageName).placeholder(android.R.drawable.ic_menu_gallery).into(holder.imageView);
+            } else {
+                int resId = context.getResources().getIdentifier(imageName, "drawable", context.getPackageName());
+                if (resId != 0) {
+                    Glide.with(context).load(resId).placeholder(android.R.drawable.ic_menu_gallery).into(holder.imageView);
+                } else {
+                    byte[] bytes = com.example.smartcrop.utils.ImageUtils.base64ToBytes(imageName);
+                    if (bytes != null && bytes.length > 20) {
+                        Glide.with(context).load(bytes).placeholder(android.R.drawable.ic_menu_gallery).into(holder.imageView);
+                    } else {
+                        Glide.with(context).load(android.R.drawable.ic_menu_gallery).into(holder.imageView);
+                    }
+                }
+            }
         }
     }
 

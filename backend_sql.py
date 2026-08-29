@@ -240,20 +240,8 @@ def seed_real_world_data():
                         INSERT INTO DiseaseStats (diseaseName, count, lastImageUrl) VALUES (?, ?, ?)
                 """, (name, count, name, name, count, img))
 
-        # 4. Bơm Danh Sách Người Dùng Nông Dân (Users)
-        cursor.execute("SELECT COUNT(*) FROM Users")
-        if cursor.fetchone()[0] <= 1:
-            users = [
-                ("user_01", "Nguyễn Văn Nông", "nongvannguyen@gmail.com", 0),
-                ("user_02", "Trần Thị Mai", "maitran.nongnghiep@gmail.com", 0),
-                ("user_03", "Lê Hoàng Nam", "namle.mientay@gmail.com", 0),
-                ("user_04", "Phạm Quốc Cường", "cuonglamdong@gmail.com", 0)
-            ]
-            for uid, name, email, isAdmin in users:
-                cursor.execute("""
-                    IF NOT EXISTS (SELECT 1 FROM Users WHERE uid = ?)
-                        INSERT INTO Users (uid, displayName, email, isAdmin) VALUES (?, ?, ?, ?)
-                """, (uid, uid, name, email, isAdmin))
+        # 4. Dọn dẹp tài khoản giả lập để Admin chỉ hiển thị 100% tài khoản thực tế từ Firebase
+        cursor.execute("DELETE FROM Users WHERE uid LIKE 'user_0%'")
 
         db.commit()
         print("🌱 [SQL Server] Đã tự động nạp thành công bộ dữ liệu nông nghiệp thực tế!")
@@ -316,6 +304,23 @@ async def get_user(uid: str):
         row = cursor.fetchone()
         if row:
             return {
+                "uid": row[0], "displayName": row[1], "email": row[2],
+                "photoBase64": row[3], "isAdmin": bool(row[4])
+            }
+        return {"status": "error", "message": "User not found"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/users/email/{email}")
+async def get_user_by_email(email: str):
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("SELECT uid, displayName, email, photoBase64, isAdmin FROM Users WHERE LOWER(email) = LOWER(?)", (email.strip(),))
+        row = cursor.fetchone()
+        if row:
+            return {
+                "status": "success",
                 "uid": row[0], "displayName": row[1], "email": row[2],
                 "photoBase64": row[3], "isAdmin": bool(row[4])
             }
