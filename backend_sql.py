@@ -5,6 +5,7 @@ import pyodbc
 from pydantic import BaseModel
 import time
 from datetime import datetime
+from r2_storage import upload_base64_to_r2
 
 app = FastAPI(title="Thần Nông AI - SQL Database Server (Cổng 8001)")
 
@@ -276,11 +277,12 @@ async def sync_user(
     try:
         db = get_db()
         cursor = db.cursor()
+        r2_photo = upload_base64_to_r2(photoBase64, folder="avatars") if photoBase64 else ""
         cursor.execute("SELECT displayName, email, photoBase64 FROM Users WHERE uid = ?", (uid,))
         existing = cursor.fetchone()
 
         if existing:
-            final_photo = photoBase64 if (photoBase64 and len(photoBase64) > 100) else existing[2]
+            final_photo = r2_photo if (r2_photo and len(r2_photo) > 5) else existing[2]
             cursor.execute(
                 "UPDATE Users SET displayName = ?, email = ?, photoBase64 = ? WHERE uid = ?",
                 (displayName, email, final_photo, uid)
@@ -288,7 +290,7 @@ async def sync_user(
         else:
             cursor.execute(
                 "INSERT INTO Users (uid, displayName, email, photoBase64) VALUES (?, ?, ?, ?)",
-                (uid, displayName, email, photoBase64)
+                (uid, displayName, email, r2_photo)
             )
         db.commit()
         return {"status": "success"}
@@ -342,9 +344,11 @@ async def create_post(
     try:
         db = get_db()
         cursor = db.cursor()
+        r2_user_photo = upload_base64_to_r2(userPhotoUrl, folder="avatars") if userPhotoUrl else ""
+        r2_image_url = upload_base64_to_r2(imageUrl, folder="posts") if imageUrl else ""
         cursor.execute(
             "INSERT INTO Posts (uid, author, userPhotoUrl, question, imageUrl, disease) VALUES (?, ?, ?, ?, ?, ?)",
-            (uid, author, userPhotoUrl, question, imageUrl, disease)
+            (uid, author, r2_user_photo, question, r2_image_url, disease)
         )
         db.commit()
         return {"status": "success", "message": "Post created"}
@@ -523,8 +527,9 @@ async def add_disease(name: str = Form(...), description: str = Form(...), treat
     try:
         db = get_db()
         cursor = db.cursor()
+        r2_disease_img = upload_base64_to_r2(imageResource, folder="diseases") if imageResource else ""
         cursor.execute("IF EXISTS (SELECT 1 FROM Diseases WHERE name = ?) UPDATE Diseases SET description=?, treatment=?, imageResource=? WHERE name=? ELSE INSERT INTO Diseases (name, description, treatment, imageResource) VALUES (?,?,?,?)",
-                       (name, description, treatment, imageResource, name, name, description, treatment, imageResource))
+                       (name, description, treatment, r2_disease_img, name, name, description, treatment, r2_disease_img))
         db.commit()
         return {"status": "success"}
     except Exception as e:
@@ -556,7 +561,8 @@ async def add_tip(title: str = Form(...), content: str = Form(...), imageResourc
     try:
         db = get_db()
         cursor = db.cursor()
-        cursor.execute("INSERT INTO Tips (title, content, imageResource) VALUES (?, ?, ?)", (title, content, imageResource))
+        r2_tip_img = upload_base64_to_r2(imageResource, folder="tips") if imageResource else ""
+        cursor.execute("INSERT INTO Tips (title, content, imageResource) VALUES (?, ?, ?)", (title, content, r2_tip_img))
         db.commit()
         return {"status": "success"}
     except Exception as e:
@@ -637,8 +643,9 @@ async def increment_disease_count(name: str = Form(...), imageUrl: str = Form(""
     try:
         db = get_db()
         cursor = db.cursor()
+        r2_stat_img = upload_base64_to_r2(imageUrl, folder="stats") if imageUrl else ""
         cursor.execute("IF EXISTS (SELECT 1 FROM DiseaseStats WHERE diseaseName = ?) UPDATE DiseaseStats SET count = count + 1, lastImageUrl = ? WHERE diseaseName = ? ELSE INSERT INTO DiseaseStats (diseaseName, count, lastImageUrl) VALUES (?, 1, ?)",
-                       (name, imageUrl, name, name, imageUrl))
+                       (name, r2_stat_img, name, name, r2_stat_img))
         db.commit()
         return {"status": "success"}
     except Exception as e:
@@ -677,7 +684,8 @@ async def add_history(uid: str = Form(...), diseaseName: str = Form(...), confid
     try:
         db = get_db()
         cursor = db.cursor()
-        cursor.execute("INSERT INTO History (uid, diseaseName, confidence, treatment, imageBase64) VALUES (?, ?, ?, ?, ?)", (uid, diseaseName, confidence, treatment, imageBase64))
+        r2_history_img = upload_base64_to_r2(imageBase64, folder="history") if imageBase64 else ""
+        cursor.execute("INSERT INTO History (uid, diseaseName, confidence, treatment, imageBase64) VALUES (?, ?, ?, ?, ?)", (uid, diseaseName, confidence, treatment, r2_history_img))
         db.commit()
         return {"status": "success"}
     except Exception as e: return {"status": "error", "message": str(e)}
@@ -697,10 +705,11 @@ async def update_profile_photo(uid: str = Form(...), photoBase64: str = Form(...
     try:
         db = get_db()
         cursor = db.cursor()
-        cursor.execute("UPDATE Users SET photoBase64 = ? WHERE uid = ?", (photoBase64, uid))
-        cursor.execute("UPDATE Posts SET userPhotoUrl = ? WHERE uid = ?", (photoBase64, uid))
-        cursor.execute("UPDATE Comments SET authorPhotoUrl = ? WHERE authorUid = ?", (photoBase64, uid))
-        cursor.execute("UPDATE Notifications SET senderAvatar = ? WHERE senderUid = ?", (photoBase64, uid))
+        r2_photo = upload_base64_to_r2(photoBase64, folder="avatars") if photoBase64 else ""
+        cursor.execute("UPDATE Users SET photoBase64 = ? WHERE uid = ?", (r2_photo, uid))
+        cursor.execute("UPDATE Posts SET userPhotoUrl = ? WHERE uid = ?", (r2_photo, uid))
+        cursor.execute("UPDATE Comments SET authorPhotoUrl = ? WHERE authorUid = ?", (r2_photo, uid))
+        cursor.execute("UPDATE Notifications SET senderAvatar = ? WHERE senderUid = ?", (r2_photo, uid))
         db.commit()
         return {"status": "success"}
     except Exception as e: return {"status": "error", "message": str(e)}
