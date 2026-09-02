@@ -145,7 +145,7 @@ public class LibraryFragment extends Fragment {
                 android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) getContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
                 if (imm != null) imm.hideSoftInputFromWindow(etInput.getWindowToken(), 0);
 
-                ApiService apiService = RetrofitClient.getAiService();
+                ApiService apiService = RetrofitClient.getSqlService();
                 apiService.askAI(question).enqueue(new Callback<ChatResponse>() {
                     @Override
                     public void onResponse(Call<ChatResponse> call, Response<ChatResponse> response) {

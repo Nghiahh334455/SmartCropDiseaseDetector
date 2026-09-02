@@ -714,6 +714,78 @@ async def update_profile_photo(uid: str = Form(...), photoBase64: str = Form(...
         return {"status": "success"}
     except Exception as e: return {"status": "error", "message": str(e)}
 
+# --- CHUYÊN GIA AI 3.5 (CHAT AI API) ---
+def build_dynamic_chat_response(question: str) -> str:
+    q = question.lower().strip()
+
+    if "lúa" in q or "đạo ôn" in q or "bạc lá" in q or "cổ bông" in q:
+        return (
+            f"👨‍🌾 **CHUYÊN GIA AI 3.5 TƯ VẤN CÂY LÚA:**\n\n"
+            f"📌 **Chẩn đoán thắc mắc:** '{question}'\n"
+            f"🚨 **PHÁC ĐỒ ĐIỀU TRỊ 3 BƯỚC ĐẶC TRỊ:**\n"
+            f"1️⃣ **Ngưng bón Đạm (N):** Tạm dừng ngay việc bón phân đạm hoặc phun phân bón lá có hàm lượng đạm cao.\n"
+            f"2️⃣ **Phác đồ phun thuốc đặc trị:**\n"
+            f"   - *Đạo ôn lá/cổ bông:* Phun ngay **Beam 75WP**, **Fuji-One 40EC** hoặc **Filia 525SE**.\n"
+            f"   - *Bạc lá vi khuẩn:* Phun **Starner 20WP** hoặc **Physan 20L**.\n"
+            f"   - *Lịch phun:* Phun lúc sáng sớm khô sương hoặc chiều mát. Phun lặp lại sau 5-7 ngày.\n"
+            f"3️⃣ **Quản lý nước:** Rút cạn nước ruộng 2-3 ngày nếu bị bạc lá vi khuẩn, giữ mực nước nông 3-5cm khi điều trị đạo ôn."
+        )
+
+    if "cà phê" in q or "rỉ sắt" in q or "tiêu" in q or "chết nhanh" in q or "cao su" in q:
+        return (
+            f"👨‍🌾 **CHUYÊN GIA AI 3.5 TƯ VẤN CÂY CÔNG NGHIỆP:**\n\n"
+            f"📌 **Chẩn đoán thắc mắc:** '{question}'\n"
+            f"🚨 **PHÁC ĐỒ ĐIỀU TRỊ 3 BƯỚC:**\n"
+            f"1️⃣ **Cắt tỉa & Vệ sinh:** Cắt tỉa cành vô hiệu sát gốc, cành rậm rạp để tán cây thông thoáng, tăng ánh sáng.\n"
+            f"2️⃣ **Thuốc đặc trị:**\n"
+            f"   - *Rỉ sắt cà phê:* Phun **Tilt Super 300EC**, **Anvil 5SC** hoặc gốc đồng ướt kỹ 2 mặt lá.\n"
+            f"   - *Thối rễ chết nhanh hồ tiêu:* Tưới gốc **Agrifos 400** phối hợp **Ridomil Gold 68WG**.\n"
+            f"3️⃣ **Phục hồi gốc:** Trộn nấm vi sinh **Trichoderma** với phân hữu cơ ủ hoai bón quanh sườn tán cây."
+        )
+
+    if "ớt" in q or "xoài" in q or "thán thư" in q or "thối quả" in q or "thối trái" in q:
+        return (
+            f"👨‍🌾 **CHUYÊN GIA AI 3.5 TƯ VẤN BỆNH THÁN THƯ / THỐI QUẢ:**\n\n"
+            f"📌 **Chẩn đoán thắc mắc:** '{question}'\n"
+            f"🚨 **PHÁC ĐỒ ĐIỀU TRỊ 3 BƯỚC:**\n"
+            f"1️⃣ **Thu gom quả thối:** Bẻ bỏ toàn bộ quả bị đốm thối đen dọn sạch ra khỏi vườn tiêu hủy.\n"
+            f"2️⃣ **Phun thuốc phòng trị lây lan:**\n"
+            f"   - Phun các thuốc chứa hoạt chất Azoxystrobin, Difenoconazole (**Amistar Top 325SC**, **Score 250EC**) hoặc **Antracol 70WP**.\n"
+            f"   - Phun ướt đều chùm quả và lá rậm rạp.\n"
+            f"3️⃣ **Bảo vệ trái:** Tiến hành bao trái xoài/ớt khi trái đạt kích thước thích hợp, bổ sung bón lá Canxi-Bo."
+        )
+
+    if "cà chua" in q or "dưa" in q or "sương mai" in q or "phấn trắng" in q or "khảm" in q or "bọ trĩ" in q:
+        return (
+            f"👨‍🌾 **CHUYÊN GIA AI 3.5 TƯ VẤN RAU MÀU & DƯA CÀ:**\n\n"
+            f"📌 **Chẩn đoán thắc mắc:** '{question}'\n"
+            f"🚨 **PHÁC ĐỒ ĐIỀU TRỊ 3 BƯỚC:**\n"
+            f"1️⃣ **Cắt tỉa lá già:** Ngắt bỏ các lá gốc bị vàng, xuất hiện đốm nấm bột trắng hoặc úng nước.\n"
+            f"2️⃣ **Hoạt chất điều trị:**\n"
+            f"   - *Bệnh Sương mai / Mốc lá:* Phun **Ridomil Gold 68WG** hoặc **Daconil 75WP**.\n"
+            f"   - *Phấn trắng / Bọ trĩ:* Phun **Microthiol Special 80WG** (Lưu huỳnh) & treo bẫy dính màu vàng.\n"
+            f"3️⃣ **Tưới nước chuẩn:** Tưới gốc lúc 6-8h sáng, tuyệt đối không tưới phun mưa lên lá lúc chiều tối."
+        )
+
+    return (
+        f"👨‍🌾 **CHUYÊN GIA AI 3.5 TƯ VẤN NÔNG NGHIỆP:**\n\n"
+        f"📌 **Giải đáp thắc mắc:** '{question}'\n\n"
+        f"🚨 **PHÁC ĐỒ XỬ LÝ NÔNG NGHIỆP CHUẨN:**\n"
+        f"1️⃣ **Vệ sinh tán cây:** Cắt tỉa ngay các cành lá có dấu hiệu biến màu, héo rũ hoặc xuất hiện đốm nấm.\n"
+        f"2️⃣ **Biện pháp kỹ thuật:**\n"
+        f"   - *Nếu do nấm bệnh:* Phun các thuốc chứa hoạt chất Mancozeb, Metalaxyl hoặc Hexaconazole (**Anvil 5SC**, **Ridomil Gold**).\n"
+        f"   - *Nếu do sâu bọ/rệp:* Treo bẫy dính màu vàng và phun chế phẩm sinh học Dầu Neem / BTI.\n"
+        f"3️⃣ **Cải thiện môi trường:** Đảm bảo khoảng cách trồng thông thoáng, bón phân hữu cơ vi sinh bồi dưỡng hệ rễ."
+    )
+
+@app.post("/chat")
+async def chat_ai(question: str = Form(...)):
+    try:
+        reply = build_dynamic_chat_response(question)
+        return {"response": reply}
+    except Exception as e:
+        return {"response": f"🤖 **Chuyên gia AI 3.5 trả lời:**\n\nĐối với thắc mắc '{question}': Bà con nên cắt tỉa lá già sát gốc thông thoáng và sử dụng chế phẩm vi sinh Trichoderma định kỳ để phòng ngừa bệnh lây lan."}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)

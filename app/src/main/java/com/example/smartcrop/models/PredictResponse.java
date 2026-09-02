@@ -37,4 +37,14 @@ public class PredictResponse {
     public Map<String, Integer> getBbox() { return bbox; }
     public boolean isEmailSent() { return emailSent; }
     public String getTargetEmail() { return targetEmail; }
+
+    // Setters
+    public void setStatus(String status) { this.status = status; }
+    public void setDiseaseName(String diseaseName) { this.diseaseName = diseaseName; }
+    public void setConfidence(double confidence) { this.confidence = confidence; }
+    public void setAiExpertAdvice(String aiExpertAdvice) { this.aiExpertAdvice = aiExpertAdvice; }
+    public void setTreatmentDetails(Map<String, String> treatmentDetails) { this.treatmentDetails = treatmentDetails; }
+    public void setBbox(Map<String, Integer> bbox) { this.bbox = bbox; }
+    public void setEmailSent(boolean emailSent) { this.emailSent = emailSent; }
+    public void setTargetEmail(String targetEmail) { this.targetEmail = targetEmail; }
 }

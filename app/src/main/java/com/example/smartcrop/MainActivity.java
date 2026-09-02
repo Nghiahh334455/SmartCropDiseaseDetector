@@ -60,8 +60,33 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private final android.os.Handler notifHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable notifRunnable = new Runnable() {
+        @Override
+        public void run() {
+            listenForNotifications();
+            notifHandler.postDelayed(this, 5000); // Tự động quét thông báo mới mỗi 5 giây
+        }
+    };
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        listenForNotifications();
+        notifHandler.postDelayed(notifRunnable, 5000);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        notifHandler.removeCallbacks(notifRunnable);
+    }
+
     private void listenForNotifications() {
-        String uid = FirebaseAuth.getInstance().getUid();
+        boolean isAdmin = getSharedPreferences("SmartCropPrefs", MODE_PRIVATE).getBoolean("is_admin", false);
+        com.google.firebase.auth.FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        
+        String uid = isAdmin ? "12345N" : (user != null ? user.getUid() : null);
         if (uid == null) return;
 
         ApiService apiService = RetrofitClient.getSqlService();
