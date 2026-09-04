@@ -489,7 +489,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:layout_marginBottom="80dp"
                     app:cardCornerRadius="20dp"
                     app:cardElevation="1dp">
 
@@ -514,6 +513,63 @@
                             android:text="--"
                             android:textColor="@color/gray_dark"
                             android:textSize="14sp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Share to Forum Card at the Bottom -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardShareToForumBottom"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="80dp"
+                    app:cardBackgroundColor="#E8F5E9"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="3dp"
+                    app:strokeColor="@color/primary"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="20dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Hỏi ý kiến cộng đồng"
+                                android:textColor="@color/primary_dark"
+                                android:textSize="17sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="Chia sẻ ảnh chẩn đoán và câu hỏi lên diễn đàn Thần Nông AI"
+                                android:textColor="@color/gray_dark"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnBottomShareForum"
+                            style="@style/Widget.Material3.Button"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:text="Chia sẻ"
+                            app:backgroundTint="@color/primary"
+                            app:cornerRadius="20dp"
+                            app:icon="@android:drawable/ic_menu_share" />
+
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>

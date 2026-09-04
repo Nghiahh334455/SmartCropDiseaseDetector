@@ -121,6 +121,7 @@ public class DiagnosisActivity extends AppCompatActivity {
             if (checkPermissions()) openGallery();
         });
         binding.btnPostForum.setOnClickListener(v -> showPostDialog());
+        binding.btnBottomShareForum.setOnClickListener(v -> showPostDialog());
 
         binding.btnToggleAdvice.setOnClickListener(v -> {
             android.transition.TransitionManager.beginDelayedTransition(binding.layoutResult, new android.transition.AutoTransition());
@@ -217,44 +218,56 @@ public class DiagnosisActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     processAiResult(response.body());
                 } else {
-                    runOnDeviceFallbackScan();
+                    Toast.makeText(DiagnosisActivity.this, "Server AI trả về lỗi: " + response.code(), Toast.LENGTH_LONG).show();
                 }
             }
 
             @Override
             public void onFailure(@NonNull retrofit2.Call<PredictResponse> call, @NonNull Throwable t) {
-                runOnUiThread(() -> runOnDeviceFallbackScan());
+                // Tự động thử kết nối qua 10.0.2.2 (Máy ảo Android) nếu 127.0.0.1 không phản hồi
+                tryEmulatorAiFallback(body, emailPart);
             }
         });
     }
 
-    private void runOnDeviceFallbackScan() {
-        runOnUiThread(() -> {
-            showLoading(false);
-            Toast.makeText(DiagnosisActivity.this, "⚡ Đã phân tích thành công qua Bộ chẩn đoán AI 3.5!", Toast.LENGTH_SHORT).show();
+    private void tryEmulatorAiFallback(MultipartBody.Part body, RequestBody emailPart) {
+        ApiService fallbackService = new retrofit2.Retrofit.Builder()
+                .baseUrl("http://10.0.2.2:8000")
+                .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
+                .client(new okhttp3.OkHttpClient.Builder().connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS).build())
+                .build()
+                .create(ApiService.class);
 
-            PredictResponse fallback = new PredictResponse();
-            fallback.setStatus("success");
-            fallback.setDiseaseName("Bệnh Sương Mai (Late Blight)");
-            fallback.setConfidence(95.2);
+        fallbackService.predictDisease(body, emailPart).enqueue(new retrofit2.Callback<PredictResponse>() {
+            @Override
+            public void onResponse(@NonNull retrofit2.Call<PredictResponse> call, @NonNull retrofit2.Response<PredictResponse> response) {
+                runOnUiThread(() -> showLoading(false));
+                if (response.isSuccessful() && response.body() != null) {
+                    processAiResult(response.body());
+                } else {
+                    showConnectionErrorDialog();
+                }
+            }
 
-            Map<String, String> details = new java.util.HashMap<>();
-            details.put("severity", "Rất cao (Cấp tính - Lây lan nhanh)");
-            details.put("symptoms", "Mặt lá có đốm nâu úng nước, viền vàng tái. Mặt dưới lá có màng nấm mỏng màu trắng xám.");
-            details.put("biological_treatment", "Phun ngay chế phẩm sinh học Trichoderma hoặc dung dịch vi sinh Bacillus subtilis.");
-            details.put("chemical_treatment", "Phun Ridomil Gold 68WG hoặc Daconil 75WP ướt đều 2 mặt lá.");
-            details.put("prevention", "Cắt tỉa lá già sát gốc. Tránh tưới phun mưa chiều tối.");
-            fallback.setTreatmentDetails(details);
-
-            Map<String, Integer> bbox = new java.util.HashMap<>();
-            bbox.put("x1", 60);
-            bbox.put("y1", 80);
-            bbox.put("x2", 340);
-            bbox.put("y2", 360);
-            fallback.setBbox(bbox);
-
-            processAiResult(fallback);
+            @Override
+            public void onFailure(@NonNull retrofit2.Call<PredictResponse> call, @NonNull Throwable t) {
+                runOnUiThread(() -> {
+                    showLoading(false);
+                    showConnectionErrorDialog();
+                });
+            }
         });
+    }
+
+    private void showConnectionErrorDialog() {
+        new androidx.appcompat.app.AlertDialog.Builder(DiagnosisActivity.this)
+                .setTitle("Không thể kết nối Server AI (Cổng 8000)")
+                .setMessage("Để mô hình AI bạn đã huấn luyện hoạt động, vui lòng kiểm tra:\n\n" +
+                        "1. Mở Terminal / VSCode tại thư mục D:/Plant_Disease_Pipeline chạy lệnh:\n   python main.py\n\n" +
+                        "2. Nếu test bằng điện thoại thật cắm cáp USB, gõ lệnh:\n   adb reverse tcp:8000 tcp:8000\n   adb reverse tcp:8001 tcp:8001\n\n" +
+                        "(Nếu dùng máy ảo Android Studio 10.0.2.2 đã được tự động kết nối)")
+                .setPositiveButton("Đã hiểu", null)
+                .show();
     }
 
     private void processAiResult(PredictResponse result) {
@@ -483,14 +496,14 @@ public class DiagnosisActivity extends AppCompatActivity {
             @Override
             public void onResponse(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull retrofit2.Response<Map<String, String>> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().get("advice") != null) {
-                    runOnUiThread(() -> binding.tvAiAdvice.setText(response.body().get("advice")));
+                    runOnUiThread(() -> binding.tvAiAdvice.setText(ImageUtils.formatMarkdownHtml(response.body().get("advice"))));
                 } else {
-                    runOnUiThread(() -> binding.tvAiAdvice.setText("👨‍🌾 **CHUYÊN GIA AI 3.5 KHUYÊN:**\n• Cắt tỉa ngay các cành lá đốm bệnh đưa ra xa khu vực canh tác.\n• Phun ngay chế phẩm sinh học Trichoderma hoặc thuốc đặc trị nấm rỉ sắt/sương mai.\n• Tránh tưới nước lên lá vào buổi tối."));
+                    runOnUiThread(() -> binding.tvAiAdvice.setText(ImageUtils.formatMarkdownHtml("👨‍🌾 **CHUYÊN GIA AI 3.5 KHUYÊN:**\n• Cắt tỉa ngay các cành lá đốm bệnh đưa ra xa khu vực canh tác.\n• Phun ngay chế phẩm sinh học **Trichoderma** hoặc thuốc đặc trị **Ridomil Gold** / **Anvil**.\n• Tránh tưới nước lên lá vào buổi tối.")));
                 }
             }
             @Override
             public void onFailure(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull Throwable t) {
-                runOnUiThread(() -> binding.tvAiAdvice.setText("👨‍🌾 **CHUYÊN GIA AI 3.5 KHUYÊN:**\n• Cắt tỉa ngay các cành lá đốm bệnh đưa ra xa khu vực canh tác.\n• Phun ngay chế phẩm sinh học Trichoderma hoặc thuốc đặc trị nấm rỉ sắt/sương mai.\n• Tránh tưới nước lên lá vào buổi tối."));
+                runOnUiThread(() -> binding.tvAiAdvice.setText(ImageUtils.formatMarkdownHtml("👨‍🌾 **CHUYÊN GIA AI 3.5 KHUYÊN:**\n• Cắt tỉa ngay các cành lá đốm bệnh đưa ra xa khu vực canh tác.\n• Phun ngay chế phẩm sinh học **Trichoderma** hoặc thuốc đặc trị **Ridomil Gold** / **Anvil**.\n• Tránh tưới nước lên lá vào buổi tối.")));
             }
         });
     }

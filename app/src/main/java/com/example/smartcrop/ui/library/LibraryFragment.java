@@ -155,9 +155,9 @@ public class LibraryFragment extends Fragment {
                             tvResponse.setVisibility(View.VISIBLE);
 
                             if (response.isSuccessful() && response.body() != null && response.body().getResponse() != null) {
-                                tvResponse.setText(response.body().getResponse());
+                                tvResponse.setText(com.example.smartcrop.utils.ImageUtils.formatMarkdownHtml(response.body().getResponse()));
                             } else {
-                                tvResponse.setText("🤖 **Chuyên gia AI 3.5 trả lời:**\n\nĐối với thắc mắc '" + question + "': Bà con nên kiểm tra kỹ vết bệnh trên lá, đảm bảo thoát nước tốt cho vườn cây, cắt tỉa cành rậm sát gốc và sử dụng chế phẩm vi sinh Trichoderma định kỳ để nâng cao sức đề kháng cho cây trồng.");
+                                tvResponse.setText(com.example.smartcrop.utils.ImageUtils.formatMarkdownHtml("🤖 **Chuyên gia AI 3.5 trả lời:**\n\nĐối với thắc mắc **'" + question + "'**: Bà con nên kiểm tra kỹ vết bệnh trên lá, đảm bảo thoát nước tốt cho vườn cây, cắt tỉa cành rậm sát gốc và sử dụng chế phẩm vi sinh **Trichoderma** định kỳ để nâng cao sức đề kháng cho cây trồng."));
                             }
                             
                             com.google.android.material.button.MaterialButton btn = view.findViewById(R.id.btnAskAI);

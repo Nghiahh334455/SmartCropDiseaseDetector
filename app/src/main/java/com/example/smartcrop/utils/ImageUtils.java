@@ -82,4 +82,19 @@ public class ImageUtils {
             return null;
         }
     }
+
+    /**
+     * Chuyển đổi cú pháp Markdown **chữ in đậm** sang HTML bold để TextView hiển thị in đậm rõ ràng
+     */
+    public static CharSequence formatMarkdownHtml(String text) {
+        if (text == null || text.isEmpty()) return "";
+        try {
+            // Chuyển **văn bản** thành <b>văn bản</b>
+            String formatted = text.replaceAll("\\*\\*(.*?)\\*\\*", "<b>$1</b>");
+            formatted = formatted.replace("\n", "<br/>");
+            return android.text.Html.fromHtml(formatted, android.text.Html.FROM_HTML_MODE_LEGACY);
+        } catch (Exception e) {
+            return text;
+        }
+    }
 }

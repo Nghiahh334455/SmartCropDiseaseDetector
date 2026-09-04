@@ -280,11 +280,44 @@ public class HomeFragment extends Fragment {
         }
     }
 
+    @SuppressWarnings("MissingPermission")
+    private android.location.Location getUserLocation() {
+        try {
+            if (getContext() == null) return null;
+            android.location.LocationManager lm = (android.location.LocationManager) getContext().getSystemService(android.content.Context.LOCATION_SERVICE);
+            if (lm == null) return null;
+
+            boolean hasFine = androidx.core.content.ContextCompat.checkSelfPermission(getContext(), android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED;
+            boolean hasCoarse = androidx.core.content.ContextCompat.checkSelfPermission(getContext(), android.Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED;
+
+            if (hasFine || hasCoarse) {
+                android.location.Location loc = null;
+                if (lm.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER)) {
+                    loc = lm.getLastKnownLocation(android.location.LocationManager.NETWORK_PROVIDER);
+                }
+                if (loc == null && lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)) {
+                    loc = lm.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER);
+                }
+                return loc;
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
     private void setupWeatherAdvisory() {
         if (binding == null) return;
 
-        // Gọi Open-Meteo API thực tế (Miễn phí, không cần API Key)
-        String weatherUrl = "https://api.open-meteo.com/v1/forecast?latitude=10.7769&longitude=106.7009&current_weather=true&hourly=relative_humidity_2m";
+        double lat = 10.7769; // Mặc định Việt Nam (TPHCM)
+        double lng = 106.7009;
+
+        android.location.Location loc = getUserLocation();
+        if (loc != null) {
+            lat = loc.getLatitude();
+            lng = loc.getLongitude();
+        }
+
+        // Gọi Open-Meteo API thực tế theo vị trí GPS thực tế của người dùng
+        String weatherUrl = String.format(java.util.Locale.US, "https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f&current_weather=true&hourly=relative_humidity_2m", lat, lng);
 
         okhttp3.OkHttpClient client = new okhttp3.OkHttpClient.Builder()
                 .connectTimeout(5, java.util.concurrent.TimeUnit.SECONDS)

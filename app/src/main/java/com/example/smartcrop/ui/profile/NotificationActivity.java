@@ -47,7 +47,10 @@ public class NotificationActivity extends AppCompatActivity {
     }
 
     private void listenForNotifications() {
-        String uid = FirebaseAuth.getInstance().getUid();
+        boolean isAdmin = getSharedPreferences("SmartCropPrefs", MODE_PRIVATE).getBoolean("is_admin", false);
+        com.google.firebase.auth.FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        String uid = isAdmin ? "12345N" : (user != null ? user.getUid() : getSharedPreferences("SmartCropPrefs", MODE_PRIVATE).getString("user_uid", null));
+
         if (uid == null) return;
 
         ApiService apiService = RetrofitClient.getSqlService();
@@ -72,10 +75,19 @@ public class NotificationActivity extends AppCompatActivity {
         });
     }
 
+    private int parseId(String idStr) {
+        if (idStr == null) return 0;
+        try {
+            return (int) Double.parseDouble(idStr);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
     private void onNotificationClick(NotificationModel notification) {
         // Mark as read in SQL Server
-        try {
-            int notifId = Integer.parseInt(notification.getId());
+        int notifId = parseId(notification.getId());
+        if (notifId > 0) {
             ApiService apiService = RetrofitClient.getSqlService();
             apiService.markNotifAsRead(notifId).enqueue(new retrofit2.Callback<Map<String, String>>() {
                 @Override
@@ -83,12 +95,12 @@ public class NotificationActivity extends AppCompatActivity {
                 @Override
                 public void onFailure(retrofit2.Call<Map<String, String>> call, Throwable t) {}
             });
-        } catch (Exception ignored) {}
+        }
 
         // Chuyển hướng trực tiếp đến bài viết
         if (notification.getPostId() != null && !notification.getPostId().isEmpty()) {
             Intent intent = new Intent(NotificationActivity.this, PostDetailActivity.class);
-            intent.putExtra("postId", notification.getPostId());
+            intent.putExtra("postId", String.valueOf(parseId(notification.getPostId())));
             startActivity(intent);
         }
     }
