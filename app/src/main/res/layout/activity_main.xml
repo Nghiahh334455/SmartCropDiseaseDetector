@@ -9,17 +9,19 @@
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
+        android:background="@color/primary"
         app:elevation="0dp">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbarDiagnosis"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
+            android:background="@color/primary"
             app:navigationIcon="@android:drawable/ic_menu_revert"
+            app:navigationIconTint="@color/white"
             app:title="Chẩn đoán Thần Nông AI"
             app:titleCentered="true"
-            app:titleTextColor="@color/primary" />
+            app:titleTextColor="@color/white" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -38,9 +40,10 @@
                 android:id="@+id/cardScanContainer"
                 android:layout_width="match_parent"
                 android:layout_height="380dp"
+                app:cardBackgroundColor="#EAF7EA"
                 app:cardCornerRadius="32dp"
                 app:cardElevation="12dp"
-                app:strokeColor="@color/primary_light"
+                app:strokeColor="#D6EEDB"
                 app:strokeWidth="1dp">
 
                 <RelativeLayout
@@ -102,9 +105,11 @@
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    app:cardBackgroundColor="#F8FBF8"
                     app:cardCornerRadius="30dp"
-                    app:cardElevation="8dp"
-                    app:strokeWidth="0dp">
+                    app:cardElevation="10dp"
+                    app:strokeColor="#DAEEDC"
+                    app:strokeWidth="1dp">
 
                     <LinearLayout
                         android:layout_width="wrap_content"
@@ -117,6 +122,7 @@
                             style="@style/Widget.Material3.Button.IconButton"
                             android:layout_width="56dp"
                             android:layout_height="56dp"
+                            app:backgroundTint="#EAF7EA"
                             app:icon="@android:drawable/ic_menu_gallery"
                             app:iconSize="28dp"
                             app:iconTint="@color/primary" />
@@ -139,6 +145,7 @@
                             android:layout_width="56dp"
                             android:layout_height="56dp"
                             android:visibility="gone"
+                            app:backgroundTint="#EAF7EA"
                             app:icon="@android:drawable/ic_menu_share"
                             app:iconSize="28dp"
                             app:iconTint="@color/primary" />
@@ -152,10 +159,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                app:cardCornerRadius="16dp"
-                app:cardBackgroundColor="#F0F4C3"
+                app:cardBackgroundColor="#F1F9F2"
+                app:cardCornerRadius="18dp"
                 app:cardElevation="1dp"
-                app:strokeWidth="0dp">
+                app:strokeColor="#DCEFE1"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -164,18 +172,27 @@
                     android:orientation="horizontal"
                     android:padding="12dp">
 
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@android:drawable/ic_dialog_info"
-                        app:tint="@color/primary_dark" />
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        app:cardBackgroundColor="#E7F7E8"
+                        app:cardCornerRadius="14dp"
+                        app:cardElevation="0dp">
+
+                        <ImageView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:padding="6dp"
+                            android:src="@android:drawable/ic_dialog_info"
+                            app:tint="@color/primary" />
+                    </com.google.android.material.card.MaterialCardView>
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:layout_marginStart="10dp"
-                        android:text="💡 Mẹo AI: Đặt lá nằm phẳng, chụp khoảng cách 15-20cm, đủ ánh sáng để AI nhận diện đạt độ chính xác &gt;95%"
+                        android:layout_weight="1"
+                        android:text="Mẹo AI: Đặt lá nằm phẳng, chụp khoảng cách 15-20cm, đủ ánh sáng để AI nhận diện chính xác hơn."
                         android:textColor="@color/primary_dark"
                         android:textSize="12sp" />
 
@@ -284,79 +301,6 @@
                         android:text="Đang kết nối với chuyên gia AI..."
                         android:textColor="@color/primary_dark"
                         android:textSize="15sp" />
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Treatment Action Checklist Card -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardTreatmentChecklist"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    app:cardCornerRadius="20dp"
-                    app:cardElevation="2dp"
-                    app:strokeColor="@color/primary_light"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="Lộ trình điều trị 3 bước"
-                                android:textColor="@color/black"
-                                android:textSize="16sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:id="@+id/tvChecklistProgress"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:background="@drawable/bg_badge_orange"
-                                android:paddingHorizontal="8dp"
-                                android:paddingVertical="2dp"
-                                android:text="0/3 Hoàn thành"
-                                android:textColor="@color/white"
-                                android:textSize="11sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-
-                        <CheckBox
-                            android:id="@+id/cbStep1"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="Bước 1: Cắt tỉa &amp; thu gom lá bệnh mang tiêu hủy xa vườn"
-                            android:textColor="@color/black"
-                            android:textSize="13sp" />
-
-                        <CheckBox
-                            android:id="@+id/cbStep2"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Bước 2: Phun thuốc sinh học/hóa học ướt đều 2 mặt lá"
-                            android:textColor="@color/black"
-                            android:textSize="13sp" />
-
-                        <CheckBox
-                            android:id="@+id/cbStep3"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Bước 3: Hẹn lịch phun lặp lại sau 5-7 ngày &amp; bổ sung Kali"
-                            android:textColor="@color/black"
-                            android:textSize="13sp" />
-
-                    </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
                 <!-- Details Grid -->

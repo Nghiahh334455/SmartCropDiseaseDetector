@@ -1,3 +1,5 @@
+import os
+from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File, Form, Query
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List, Any, Dict
@@ -6,6 +8,8 @@ from pydantic import BaseModel
 import time
 from datetime import datetime
 from r2_storage import upload_base64_to_r2
+
+load_dotenv()
 
 app = FastAPI(title="Thần Nông AI - SQL Database Server (Cổng 8001)")
 
@@ -18,22 +22,30 @@ app.add_middleware(
 )
 
 def get_db():
-    """Tự động phát hiện ODBC Driver và thử danh sách Server name khả thi để kết nối SQL Server"""
+    """T? ??ng ph?t hi?n ODBC Driver v? th? danh s?ch Server name kh? thi ?? k?t n?i SQL Server."""
     drivers = pyodbc.drivers()
     preferred_drivers = [
         "ODBC Driver 17 for SQL Server",
+        "ODBC Driver 18 for SQL Server",
         "SQL Server",
-        "SQL Server Native Client 11.0",
-        "ODBC Driver 18 for SQL Server"
+        "SQL Server Native Client 11.0"
     ]
 
-    usable_driver = "SQL Server"
-    for d in preferred_drivers:
-        if d in drivers:
-            usable_driver = d
-            break
+    driver = os.getenv("SQL_DRIVER")
+    if not driver:
+        for candidate in preferred_drivers:
+            if candidate in drivers:
+                driver = candidate
+                break
+    driver = driver or "SQL Server"
+
+    server = os.getenv("SQL_SERVER", "localhost")
+    database = os.getenv("SQL_DATABASE", "ThanNongAI")
+    uid = os.getenv("SQL_UID", "sa")
+    password = os.getenv("SQL_PWD", "Admin123")
 
     servers = [
+        server,
         r"TRONGNGHIA\KKK",
         r"localhost\KKK",
         r"127.0.0.1\KKK",
@@ -41,13 +53,20 @@ def get_db():
         r"127.0.0.1"
     ]
 
-    for server in servers:
+    unique_servers = []
+    seen = set()
+    for candidate in servers:
+        if candidate and candidate not in seen:
+            seen.add(candidate)
+            unique_servers.append(candidate)
+
+    for current_server in unique_servers:
         conn_str = (
-            f"Driver={{{usable_driver}}};"
-            f"Server={server};"
-            f"Database=ThanNongAI;"
-            f"UID=sa;"
-            f"PWD=12345;"
+            f"Driver={{{driver}}};"
+            f"Server={current_server};"
+            f"Database={database};"
+            f"UID={uid};"
+            f"PWD={password};"
             f"TrustServerCertificate=yes;"
         )
         try:
@@ -55,8 +74,14 @@ def get_db():
         except Exception:
             continue
 
-    # Fallback kết nối mặc định
-    default_conn_str = r"Driver={SQL Server};Server=TRONGNGHIA\KKK;Database=ThanNongAI;UID=sa;PWD=12345;"
+    default_conn_str = (
+        f"Driver={{{driver}}};"
+        f"Server={server};"
+        f"Database={database};"
+        f"UID={uid};"
+        f"PWD={password};"
+        f"TrustServerCertificate=yes;"
+    )
     return pyodbc.connect(default_conn_str)
 
 
@@ -178,10 +203,10 @@ def init_db():
             END
         """)
         db.commit()
-        print("✅ [SQL Server] Đã tự động kiểm tra và khởi tạo các bảng CSDL thành công!")
+        print("[SQL Server] Da tu dong kiem tra va khoi tao cac bang CSDL thanh cong!")
         seed_real_world_data()
     except Exception as e:
-        print(f"⚠️ [SQL Server Init Warning] {e}")
+        print("[SQL Server Init Warning] " + str(e))
 
 
 def seed_real_world_data():
@@ -245,9 +270,9 @@ def seed_real_world_data():
         cursor.execute("DELETE FROM Users WHERE uid LIKE 'user_0%'")
 
         db.commit()
-        print("🌱 [SQL Server] Đã tự động nạp thành công bộ dữ liệu nông nghiệp thực tế!")
+        print("[SQL Server] Da tu dong nap thanh cong bo du lieu nong nghiep thuc te!")
     except Exception as e:
-        print(f"⚠️ [SQL Seed Warning] {e}")
+        print("[SQL Seed Warning] " + str(e))
 
 
 @app.on_event("startup")

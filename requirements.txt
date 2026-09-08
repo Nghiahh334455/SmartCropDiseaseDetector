@@ -3,3 +3,4 @@ uvicorn
 pyodbc
 pydantic
 python-multipart
+python-dotenv

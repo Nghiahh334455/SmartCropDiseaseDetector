@@ -3,33 +3,34 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginTop="10dp"
     android:layout_marginHorizontal="8dp"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="2dp"
-    app:strokeWidth="0dp">
+    android:layout_marginTop="10dp"
+    app:cardBackgroundColor="@color/surface"
+    app:cardCornerRadius="22dp"
+    app:cardElevation="3dp"
+    app:strokeColor="#E3F0E5"
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- User Header -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:padding="12dp">
+            android:padding="14dp">
 
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivPostAvatar"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
+                android:layout_width="46dp"
+                android:layout_height="46dp"
                 android:src="@android:drawable/ic_menu_gallery"
                 app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
-                app:strokeColor="@color/gray_light"
-                app:strokeWidth="1dp" />
+                app:strokeColor="@color/primary_light"
+                app:strokeWidth="2dp" />
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -60,27 +61,26 @@
                 android:id="@+id/ivPostMenu"
                 android:layout_width="32dp"
                 android:layout_height="32dp"
-                android:padding="4dp"
+                android:background="@drawable/bg_glass_overlay"
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackgroundBorderless"
+                android:padding="6dp"
                 android:src="@android:drawable/ic_menu_more"
                 app:tint="@color/gray_dark" />
         </LinearLayout>
 
-        <!-- Question Content -->
         <TextView
             android:id="@+id/tvPostQuestion"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:lineSpacingExtra="4dp"
             android:paddingHorizontal="16dp"
             android:paddingBottom="12dp"
             android:text="Nội dung câu hỏi của người nông dân..."
-            android:textColor="#333333"
-            android:textSize="16sp"
-            android:lineSpacingExtra="3dp" />
+            android:textColor="#2C2C2C"
+            android:textSize="16sp" />
 
-        <!-- Disease Label -->
         <com.google.android.material.chip.Chip
             android:id="@+id/chipDisease"
             android:layout_width="wrap_content"
@@ -90,18 +90,17 @@
             android:text="Bệnh đạo ôn"
             android:textColor="@color/primary_dark"
             android:textSize="12sp"
-            app:chipBackgroundColor="#F1F8E9"
+            app:chipBackgroundColor="#EAF7EA"
             app:chipIcon="@android:drawable/ic_menu_info_details"
             app:chipIconSize="16dp"
             app:chipIconTint="@color/primary"
             app:chipStrokeWidth="0dp" />
 
-        <!-- Post Image -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="8dp"
-            app:cardCornerRadius="12dp"
+            app:cardCornerRadius="16dp"
             app:cardElevation="0dp">
             <ImageView
                 android:id="@+id/ivPostImage"
@@ -109,11 +108,10 @@
                 android:layout_height="wrap_content"
                 android:adjustViewBounds="true"
                 android:maxHeight="450dp"
-                android:scaleType="fitCenter"
+                android:scaleType="centerCrop"
                 android:src="@android:drawable/ic_menu_gallery" />
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Stats -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -155,7 +153,6 @@
             android:layout_marginHorizontal="16dp"
             android:background="#F0F0F0" />
 
-        <!-- Interactions -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

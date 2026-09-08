@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="160dp"
+    android:layout_width="168dp"
     android:layout_height="wrap_content"
     android:layout_marginEnd="12dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="2dp">
+    app:cardBackgroundColor="@color/surface"
+    app:cardCornerRadius="18dp"
+    app:cardElevation="4dp"
+    app:strokeColor="#DCEEE1"
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -15,7 +18,7 @@
         <ImageView
             android:id="@+id/ivCommonDisease"
             android:layout_width="match_parent"
-            android:layout_height="100dp"
+            android:layout_height="108dp"
             android:scaleType="centerCrop"
             android:src="@android:drawable/ic_menu_gallery" />
 
@@ -23,7 +26,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="8dp">
+            android:padding="10dp">
 
             <TextView
                 android:id="@+id/tvCommonDiseaseName"
@@ -32,7 +35,7 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="Tên bệnh"
-                android:textColor="@color/black"
+                android:textColor="@color/primary_dark"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
@@ -40,7 +43,7 @@
                 android:id="@+id/tvCommonDiseaseCount"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
+                android:layout_marginTop="4dp"
                 android:text="32 lượt chẩn đoán"
                 android:textColor="@color/primary"
                 android:textSize="11sp" />

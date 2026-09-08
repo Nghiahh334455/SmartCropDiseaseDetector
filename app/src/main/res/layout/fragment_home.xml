@@ -28,7 +28,7 @@
                     android:id="@+id/tvWelcome"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Chào bạn!"
+                    android:text="Chào bạn, nông dân!"
                     android:textColor="@color/primary"
                     android:textSize="26sp"
                     android:textStyle="bold" />
@@ -44,13 +44,13 @@
 
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivHomeAvatar"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
+                android:layout_width="54dp"
+                android:layout_height="54dp"
                 android:scaleType="centerCrop"
                 android:src="@android:drawable/ic_menu_gallery"
                 app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
                 app:strokeColor="@color/primary"
-                app:strokeWidth="1.5dp" />
+                app:strokeWidth="2dp" />
         </LinearLayout>
 
         <!-- Weather & Crop Advisory Card -->
@@ -59,11 +59,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="3dp"
-            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#EAF7EA"
             app:strokeWidth="1dp"
-            app:strokeColor="#E8F5E9">
+            app:strokeColor="#D6EEDB">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -166,14 +166,14 @@
             android:layout_marginTop="20dp"
             android:clickable="true"
             android:focusable="true"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="6dp"
+            app:cardCornerRadius="30dp"
+            app:cardElevation="8dp"
             app:strokeWidth="0dp">
 
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="@color/primary">
+                android:background="@drawable/bg_auth_gradient">
 
                 <LinearLayout
                     android:layout_width="wrap_content"

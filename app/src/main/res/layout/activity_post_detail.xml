@@ -8,14 +8,18 @@
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/white">
+        android:background="@color/white"
+        app:elevation="0dp">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbarPostDetail"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
+            android:background="@color/white"
             app:navigationIcon="@android:drawable/ic_menu_revert"
+            app:navigationIconTint="@color/primary_dark"
             app:title="Chi tiết bài viết"
+            app:titleCentered="false"
             app:titleTextColor="@color/primary_dark" />
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -27,7 +31,9 @@
         <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_above="@+id/layoutCommentInput">
+            android:layout_above="@+id/layoutCommentInput"
+            android:fillViewport="true"
+            android:paddingBottom="8dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -42,21 +48,25 @@
                     android:id="@+id/tvCommentHeader"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_margin="16dp"
+                    android:layout_marginStart="20dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="8dp"
                     android:text="Bình luận"
-                    android:textColor="@color/black"
+                    android:textColor="@color/primary_dark"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rvComments"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:nestedScrollingEnabled="false" />
+                    android:nestedScrollingEnabled="false"
+                    android:paddingHorizontal="8dp"
+                    android:paddingBottom="8dp" />
 
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
 
-        <!-- Comment Input Bar -->
         <LinearLayout
             android:id="@+id/layoutCommentInput"
             android:layout_width="match_parent"
@@ -66,15 +76,17 @@
             android:elevation="8dp"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:padding="8dp">
+            android:padding="10dp">
 
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivUserAvatar"
                 android:layout_width="36dp"
                 android:layout_height="36dp"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="4dp"
                 android:src="@android:drawable/ic_menu_gallery"
-                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
+                app:strokeColor="#E4F2E7"
+                app:strokeWidth="1dp" />
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etComment"
@@ -83,19 +95,29 @@
                 android:layout_marginHorizontal="8dp"
                 android:layout_weight="1"
                 android:background="@drawable/bg_comment_bubble"
+                android:backgroundTint="#F3F9F4"
                 android:hint="Viết bình luận..."
                 android:paddingHorizontal="16dp"
-                android:paddingVertical="10dp"
+                android:paddingVertical="11dp"
+                android:textColorHint="#7A7A7A"
                 android:textSize="14sp" />
 
-            <ImageView
-                android:id="@+id/btnSendComment"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginEnd="8dp"
-                android:padding="8dp"
-                android:src="@android:drawable/ic_menu_send"
-                app:tint="@color/primary" />
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_marginEnd="4dp"
+                app:cardBackgroundColor="#E7F7E8"
+                app:cardCornerRadius="21dp"
+                app:cardElevation="0dp">
+
+                <ImageView
+                    android:id="@+id/btnSendComment"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="10dp"
+                    android:src="@android:drawable/ic_menu_send"
+                    app:tint="@color/primary" />
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
     </RelativeLayout>

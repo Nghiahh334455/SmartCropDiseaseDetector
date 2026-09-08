@@ -6,9 +6,11 @@
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="8dp"
     android:layout_marginVertical="4dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="0dp"
-    app:strokeWidth="0dp">
+    app:cardBackgroundColor="@color/surface"
+    app:cardCornerRadius="18dp"
+    app:cardElevation="2dp"
+    app:strokeColor="#E5F0E7"
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:id="@+id/layoutNotification"
@@ -24,7 +26,9 @@
             android:layout_height="50dp"
             android:scaleType="centerCrop"
             android:src="@android:drawable/ic_menu_gallery"
-            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
+            app:strokeColor="@color/primary_light"
+            app:strokeWidth="2dp" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -53,8 +57,8 @@
 
         <View
             android:id="@+id/viewUnread"
-            android:layout_width="8dp"
-            android:layout_height="8dp"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
             android:layout_marginStart="8dp"
             android:background="@drawable/bg_circle_trans"
             android:backgroundTint="@color/error"

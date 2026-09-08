@@ -1,26 +1,30 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Theme.SmartCrop" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Primary brand color. -->
         <item name="colorPrimary">@color/primary</item>
         <item name="colorOnPrimary">@color/white</item>
-        <item name="colorPrimaryContainer">#E8F5E9</item>
+        <item name="colorPrimaryContainer">@color/accent_green</item>
         <item name="colorOnPrimaryContainer">@color/primary_dark</item>
 
-        <!-- Secondary brand color. -->
         <item name="colorSecondary">@color/secondary</item>
         <item name="colorOnSecondary">@color/white</item>
 
-        <!-- Background and surface colors. -->
         <item name="android:windowBackground">@color/background</item>
         <item name="colorSurface">@color/surface</item>
         <item name="colorOnSurface">@color/black</item>
+        <item name="colorSurfaceContainerHighest">#F9FBF8</item>
 
-        <!-- Status bar color. -->
         <item name="android:statusBarColor">@color/primary_dark</item>
+        <item name="android:navigationBarColor">@color/white</item>
 
-        <!-- Shape appearance -->
         <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.SmartCrop.Large</item>
+        <item name="materialButtonStyle">@style/Widget.SmartCrop.Button</item>
+    </style>
+
+    <style name="Widget.SmartCrop.Button" parent="Widget.Material3.Button">
+        <item name="android:textAllCaps">false</item>
+        <item name="cornerRadius">20dp</item>
+        <item name="android:layout_height">56dp</item>
     </style>
 
     <style name="ShapeAppearance.SmartCrop.Large" parent="ShapeAppearance.Material3.MediumComponent">

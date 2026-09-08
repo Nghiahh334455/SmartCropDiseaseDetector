@@ -1,26 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Brand Colors: Forest Green & Earth Brown -->
-    <color name="primary">#1B5E20</color>
-    <color name="primary_light">#4C8C4A</color>
-    <color name="primary_dark">#003300</color>
+    <color name="primary">#2E7D32</color>
+    <color name="primary_light">#66BB6A</color>
+    <color name="primary_dark">#1B5E20</color>
 
-    <color name="secondary">#795548</color>
-    <color name="secondary_light">#A98274</color>
-    <color name="secondary_dark">#4B2C20</color>
+    <color name="secondary">#5D4037</color>
+    <color name="secondary_light">#A1887F</color>
+    <color name="secondary_dark">#3E2723</color>
 
     <!-- Signal Colors for Diagnosis -->
     <color name="status_safe">#2E7D32</color>
-    <color name="status_warning">#FBC02D</color>
+    <color name="status_warning">#F9A825</color>
     <color name="status_danger">#D32F2F</color>
 
     <!-- Neutral Colors -->
-    <color name="background">#F5F7F2</color>
+    <color name="background">#F3F8F1</color>
     <color name="surface">#FFFFFF</color>
     <color name="error">#B00020</color>
-    <color name="black">#212121</color>
+    <color name="black">#1F2A1F</color>
     <color name="white">#FFFFFF</color>
-    <color name="gray_light">#F1F1F1</color>
-    <color name="gray_medium">#9E9E9E</color>
-    <color name="gray_dark">#616161</color>
+    <color name="gray_light">#EEF5EE</color>
+    <color name="gray_medium">#9AA39B</color>
+    <color name="gray_dark">#59635A</color>
+    <color name="accent_green">#E8F5E9</color>
+    <color name="accent_gold">#FFF3E0</color>
 </resources>

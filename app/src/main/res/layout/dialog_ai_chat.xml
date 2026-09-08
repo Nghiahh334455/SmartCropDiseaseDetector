@@ -17,13 +17,15 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
         android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:layout_marginBottom="20dp">
+        android:orientation="horizontal">
 
         <com.google.android.material.imageview.ShapeableImageView
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:background="@drawable/bg_auth_gradient"
+            android:padding="6dp"
             android:src="@drawable/logo_app"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
 
@@ -51,18 +53,17 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Hộp thoại phản hồi nhanh của AI -->
     <TextView
         android:id="@+id/tvAIQuickResponse"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
         android:background="@drawable/bg_comment_bubble"
+        android:lineSpacingExtra="4dp"
         android:padding="16dp"
         android:textColor="@color/black"
         android:textSize="15sp"
-        android:lineSpacingExtra="4dp"
-        android:visibility="gone"
-        android:layout_marginBottom="16dp" />
+        android:visibility="gone" />
 
     <ProgressBar
         android:id="@+id/pbChatLoading"
@@ -92,9 +93,9 @@
                 android:id="@+id/etAIQuestion"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minLines="3"
                 android:gravity="top"
-                android:inputType="textMultiLine" />
+                android:inputType="textMultiLine"
+                android:minLines="3" />
         </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
 
@@ -104,7 +105,9 @@
         android:layout_height="56dp"
         android:layout_marginTop="20dp"
         android:text="Gửi câu hỏi"
+        app:backgroundTint="@color/primary"
         app:cornerRadius="28dp"
-        app:icon="@android:drawable/ic_menu_send" />
+        app:icon="@android:drawable/ic_menu_send"
+        app:iconTint="@color/white" />
 
 </LinearLayout>

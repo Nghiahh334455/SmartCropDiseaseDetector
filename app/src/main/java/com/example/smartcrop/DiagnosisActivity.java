@@ -134,8 +134,6 @@ public class DiagnosisActivity extends AppCompatActivity {
             }
         });
 
-        setupChecklistListeners();
-
         // Handle intent from HomeFragment
         String action = getIntent().getStringExtra("action");
         if ("camera".equals(action)) {
@@ -508,27 +506,4 @@ public class DiagnosisActivity extends AppCompatActivity {
         });
     }
 
-    private void setupChecklistListeners() {
-        android.widget.CompoundButton.OnCheckedChangeListener listener = (buttonView, isChecked) -> updateChecklistProgress();
-        binding.cbStep1.setOnCheckedChangeListener(listener);
-        binding.cbStep2.setOnCheckedChangeListener(listener);
-        binding.cbStep3.setOnCheckedChangeListener(listener);
-    }
-
-    private void updateChecklistProgress() {
-        int count = 0;
-        if (binding.cbStep1.isChecked()) count++;
-        if (binding.cbStep2.isChecked()) count++;
-        if (binding.cbStep3.isChecked()) count++;
-
-        binding.tvChecklistProgress.setText(count + "/3 Hoàn thành");
-        if (count == 3) {
-            binding.tvChecklistProgress.setBackgroundResource(R.drawable.bg_badge_green);
-            Toast.makeText(this, "🎉 Xuất sắc! Bạn đã hoàn thành toàn bộ lộ trình chăm sóc!", Toast.LENGTH_SHORT).show();
-        } else if (count > 0) {
-            binding.tvChecklistProgress.setBackgroundResource(R.drawable.bg_badge_orange);
-        } else {
-            binding.tvChecklistProgress.setBackgroundResource(R.drawable.bg_badge_gray);
-        }
-    }
 }

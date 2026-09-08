@@ -3,19 +3,31 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background">
+    android:background="@drawable/bg_auth_gradient">
+
+    <View
+        android:layout_width="220dp"
+        android:layout_height="220dp"
+        android:layout_marginTop="-40dp"
+        android:layout_marginEnd="-30dp"
+        android:background="#DDF5E2"
+        android:alpha="0.9"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/ivLogo"
-        android:layout_width="160dp"
-        android:layout_height="160dp"
+        android:layout_width="170dp"
+        android:layout_height="170dp"
+        android:background="@color/white"
+        android:padding="16dp"
         android:src="@drawable/logo_app"
-        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Large"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.4" />
+        app:layout_constraintVertical_bias="0.36"
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Large" />
 
     <TextView
         android:id="@+id/tvAppName"
@@ -26,7 +38,7 @@
         android:textColor="@color/primary_dark"
         android:textSize="30sp"
         android:textStyle="bold"
-        android:letterSpacing="0.1"
+        android:letterSpacing="0.08"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/ivLogo" />
@@ -36,7 +48,7 @@
         style="?android:attr/progressBarStyleSmall"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="28dp"
         android:indeterminateTint="@color/primary"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

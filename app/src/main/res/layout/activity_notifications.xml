@@ -10,16 +10,27 @@
         android:id="@+id/toolbarNotifications"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/white"
+        android:background="@drawable/bg_profile_header"
         app:navigationIcon="@android:drawable/ic_menu_revert"
         app:title="Thông báo"
-        app:titleTextColor="@color/primary_dark" />
+        app:titleTextColor="@color/white" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:text="Tin nhắn và cập nhật mới"
+        android:textColor="@color/primary_dark"
+        android:textSize="16sp"
+        android:textStyle="bold" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvNotifications"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
+        android:paddingHorizontal="8dp"
         android:paddingVertical="8dp" />
 
 </LinearLayout>

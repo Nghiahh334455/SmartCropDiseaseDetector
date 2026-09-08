@@ -10,17 +10,21 @@
         android:id="@+id/toolbarManageUsers"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/white"
+        android:background="@drawable/bg_profile_header"
         app:navigationIcon="@android:drawable/ic_menu_revert"
+        app:navigationIconTint="@color/white"
         app:title="Quản lý Người dùng"
-        app:titleTextColor="@color/error" />
+        app:titleTextColor="@color/white" />
 
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="12dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="2dp">
+        app:cardBackgroundColor="#EAF7EA"
+        app:cardCornerRadius="18dp"
+        app:cardElevation="2dp"
+        app:strokeColor="#D7EEDB"
+        app:strokeWidth="1dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -41,7 +45,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"
                 android:text="Tổng số tài khoản: 0"
-                android:textColor="@color/black"
+                android:textColor="@color/primary_dark"
                 android:textSize="15sp"
                 android:textStyle="bold" />
 
@@ -52,7 +56,7 @@
         android:id="@+id/rvManageUsers"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingBottom="16dp"
-        android:clipToPadding="false" />
+        android:clipToPadding="false"
+        android:paddingBottom="16dp" />
 
 </LinearLayout>

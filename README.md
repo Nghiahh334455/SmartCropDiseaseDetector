@@ -38,11 +38,29 @@ Dự án có 2 server Python cần chạy song song:
 
 **B. Server SQL (Port 8001)**
 1. Di chuyển vào thư mục: `cd D:/Androi_DATN`
-2. Cài đặt thư viện: `pip install -r requirements.txt`
-3. Chạy server:
+2. Tạo file `.env` từ `.env.example` và điền đúng thông tin SQL / R2 của bạn.
+3. Cài đặt thư viện: `pip install -r requirements.txt`
+4. Chạy server:
    ```bash
    python backend_sql.py
    ```
+
+#### Cấu hình biến môi trường
+```bash
+# SQL Server
+SQL_SERVER=localhost
+SQL_DATABASE=ThanNongAI
+SQL_UID=sa
+SQL_PWD=Admin123
+SQL_DRIVER="ODBC Driver 17 for SQL Server"
+
+# Cloudflare R2
+R2_ACCOUNT_ID=...
+R2_ACCESS_KEY_ID=...
+R2_SECRET_ACCESS_KEY=...
+R2_BUCKET_NAME=smartcrop
+R2_PUBLIC_DOMAIN=https://your-public.r2.dev
+```
 
 ## 📂 Cấu trúc thư mục chính
 *   `app/src/main/java/com/example/smartcrop/ui/`: Chứa các màn hình giao diện (Auth, Library, Profile, History).

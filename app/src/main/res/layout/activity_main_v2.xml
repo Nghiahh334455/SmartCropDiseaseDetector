@@ -19,13 +19,26 @@
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_nav"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:background="@color/white"
+        android:layout_height="76dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="12dp"
+        android:background="#F6FBF7"
+        android:elevation="10dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        app:itemActiveIndicatorStyle="@style/Widget.Material3.BottomNavigationView.ActiveIndicator"
+        app:itemIconSize="22dp"
         app:itemIconTint="@color/primary"
-        app:itemTextColor="@color/primary"
+        app:itemPaddingBottom="8dp"
+        app:itemPaddingTop="8dp"
+        app:itemRippleColor="@color/accent_green"
+        app:itemTextColor="@color/primary_dark"
+        app:labelVisibilityMode="labeled"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:menu="@menu/bottom_nav_menu" />
+        app:menu="@menu/bottom_nav_menu"
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Large" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -17,23 +17,23 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
         android:text="Chia sẻ lên bảng tin"
-        android:textColor="@color/black"
+        android:textColor="@color/primary_dark"
         android:textSize="20sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="20dp" />
+        android:textStyle="bold" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:layout_marginBottom="16dp"
         android:gravity="center_vertical"
-        android:layout_marginBottom="16dp">
+        android:orientation="horizontal">
 
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/ivSharePreview"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
             android:scaleType="centerCrop"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Medium" />
 
@@ -52,20 +52,23 @@
         android:id="@+id/etShareStatus"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
         android:background="@drawable/bg_comment_bubble"
+        android:gravity="top"
         android:hint="Bạn muốn nói gì về bệnh này?"
         android:minLines="3"
         android:padding="16dp"
-        android:gravity="top"
-        android:textSize="15sp"
-        android:layout_marginBottom="24dp" />
+        android:textSize="15sp" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnConfirmShare"
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:text="CHIA SẺ NGAY"
+        android:textColor="@color/white"
+        app:backgroundTint="@color/primary"
         app:cornerRadius="28dp"
-        app:icon="@android:drawable/ic_menu_share" />
+        app:icon="@android:drawable/ic_menu_share"
+        app:iconTint="@color/white" />
 
 </LinearLayout>

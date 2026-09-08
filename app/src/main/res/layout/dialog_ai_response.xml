@@ -17,11 +17,11 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
         android:text="Lời khuyên từ Chuyên gia AI"
         android:textColor="@color/primary_dark"
         android:textSize="20sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="16dp" />
+        android:textStyle="bold" />
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
@@ -33,20 +33,22 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_comment_bubble"
+            android:lineSpacingExtra="4dp"
             android:padding="16dp"
             android:text="Đang phân tích dữ liệu..."
             android:textColor="@color/black"
-            android:textSize="16sp"
-            android:lineSpacingExtra="4dp" />
+            android:textSize="16sp" />
     </androidx.core.widget.NestedScrollView>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnCloseAI"
         style="@style/Widget.Material3.Button.TonalButton"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="56dp"
         android:layout_marginTop="24dp"
         android:text="Cảm ơn chuyên gia"
-        app:cornerRadius="12dp" />
+        app:backgroundTint="@color/primary"
+        app:cornerRadius="18dp"
+        android:textColor="@color/white" />
 
 </LinearLayout>

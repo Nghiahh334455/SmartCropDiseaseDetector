@@ -13,11 +13,11 @@
             android:id="@+id/toolbarAdmin"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/white"
+            android:background="@drawable/bg_profile_header"
             app:navigationIcon="@android:drawable/ic_menu_revert"
             app:title="Hệ thống Quản trị"
             app:titleCentered="true"
-            app:titleTextColor="@color/error" />
+            app:titleTextColor="@color/white" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -36,7 +36,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Thống kê tổng quan"
-                android:textColor="@color/black"
+                android:textColor="@color/primary_dark"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
@@ -51,7 +51,11 @@
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1"
                     android:layout_marginEnd="8dp"
-                    app:cardCornerRadius="16dp">
+                    app:cardBackgroundColor="#EAF7EA"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="2dp"
+                    app:strokeColor="#D8EEDC"
+                    app:strokeWidth="1dp">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -70,6 +74,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Người dùng"
+                            android:textColor="@color/gray_dark"
                             android:textSize="12sp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
@@ -79,7 +84,11 @@
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1"
                     android:layout_marginStart="8dp"
-                    app:cardCornerRadius="16dp">
+                    app:cardBackgroundColor="#FFF8E8"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="2dp"
+                    app:strokeColor="#F3E1B2"
+                    app:strokeWidth="1dp">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -98,6 +107,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Bài viết"
+                            android:textColor="@color/gray_dark"
                             android:textSize="12sp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
@@ -108,8 +118,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="350dp"
                 android:layout_marginTop="24dp"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="4dp">
+                app:cardBackgroundColor="#F7FBF7"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="4dp"
+                app:strokeColor="#DCEEE1"
+                app:strokeWidth="1dp">
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
@@ -119,7 +132,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Tỷ lệ bệnh hại phổ biến"
-                        android:textColor="@color/black"
+                        android:textColor="@color/primary_dark"
                         android:textStyle="bold" />
                     <com.github.mikephil.charting.charts.PieChart
                         android:id="@+id/pieChart"
@@ -135,7 +148,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
                 android:text="Quản lý hệ thống"
-                android:textColor="@color/black"
+                android:textColor="@color/primary_dark"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
@@ -152,8 +165,11 @@
                     android:layout_height="64dp"
                     android:layout_marginBottom="8dp"
                     android:text="Quản lý Người dùng"
-                    app:cornerRadius="16dp"
-                    app:icon="@android:drawable/ic_menu_myplaces" />
+                    android:textColor="@color/primary_dark"
+                    app:backgroundTint="#EAF7EA"
+                    app:cornerRadius="18dp"
+                    app:icon="@android:drawable/ic_menu_myplaces"
+                    app:iconTint="@color/primary" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnManagePosts"
@@ -162,8 +178,11 @@
                     android:layout_height="64dp"
                     android:layout_marginBottom="8dp"
                     android:text="Quản lý Bài viết &amp; Forum"
-                    app:cornerRadius="16dp"
-                    app:icon="@android:drawable/ic_menu_share" />
+                    android:textColor="@color/primary_dark"
+                    app:backgroundTint="#EAF7EA"
+                    app:cornerRadius="18dp"
+                    app:icon="@android:drawable/ic_menu_share"
+                    app:iconTint="@color/primary" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnManageLibrary"
@@ -172,8 +191,11 @@
                     android:layout_height="64dp"
                     android:layout_marginBottom="8dp"
                     android:text="Quản lý Thư viện bệnh"
-                    app:cornerRadius="16dp"
-                    app:icon="@android:drawable/ic_menu_search" />
+                    android:textColor="@color/primary_dark"
+                    app:backgroundTint="#EAF7EA"
+                    app:cornerRadius="18dp"
+                    app:icon="@android:drawable/ic_menu_search"
+                    app:iconTint="@color/primary" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnManageTips"
@@ -182,8 +204,11 @@
                     android:layout_height="64dp"
                     android:layout_marginBottom="40dp"
                     android:text="Quản lý Mẹo chăm sóc"
-                    app:cornerRadius="16dp"
-                    app:icon="@android:drawable/ic_menu_today" />
+                    android:textColor="@color/primary_dark"
+                    app:backgroundTint="#EAF7EA"
+                    app:cornerRadius="18dp"
+                    app:icon="@android:drawable/ic_menu_today"
+                    app:iconTint="@color/primary" />
 
             </LinearLayout>
 

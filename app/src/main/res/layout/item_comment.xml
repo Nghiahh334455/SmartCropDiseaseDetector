@@ -8,33 +8,35 @@
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/ivCommentAvatar"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
         android:src="@android:drawable/ic_menu_gallery"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
-        app:strokeColor="@color/gray_light"
-        app:strokeWidth="0.5dp" />
+        app:strokeColor="#E4F2E7"
+        app:strokeWidth="1dp" />
 
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
+        android:layout_marginStart="10dp"
+        android:layout_weight="1"
         android:orientation="vertical">
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_comment_bubble"
+            android:backgroundTint="#F3F9F4"
             android:orientation="vertical"
             android:paddingHorizontal="12dp"
-            android:paddingVertical="8dp">
+            android:paddingVertical="10dp">
 
             <TextView
                 android:id="@+id/tvCommentAuthor"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Tên người dùng"
-                android:textColor="@color/black"
+                android:textColor="@color/primary_dark"
                 android:textSize="13sp"
                 android:textStyle="bold" />
 
@@ -45,38 +47,38 @@
                 android:layout_marginTop="2dp"
                 android:maxWidth="260dp"
                 android:text="Nội dung bình luận của mọi người..."
-                android:textColor="#444444"
+                android:textColor="#374151"
                 android:textSize="14sp" />
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
             android:layout_marginStart="4dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:layout_marginTop="4dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <TextView
                 android:id="@+id/btnLikeComment"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:padding="4dp"
                 android:text="Thích"
                 android:textColor="@color/gray_dark"
                 android:textSize="12sp"
-                android:textStyle="bold"
-                android:padding="4dp" />
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/btnReplyComment"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"
+                android:padding="4dp"
                 android:text="Trả lời"
                 android:textColor="@color/gray_dark"
                 android:textSize="12sp"
-                android:textStyle="bold"
-                android:padding="4dp" />
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tvCommentTime"
@@ -93,7 +95,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"
                 android:background="@drawable/bg_circle_trans"
-                android:backgroundTint="#F0F2F5"
+                android:backgroundTint="#EAF5EB"
                 android:gravity="center_vertical"
                 android:paddingHorizontal="6dp"
                 android:paddingVertical="2dp"
