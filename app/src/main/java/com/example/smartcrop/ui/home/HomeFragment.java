@@ -28,6 +28,7 @@ import com.google.firebase.firestore.Query;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
@@ -204,7 +205,7 @@ public class HomeFragment extends Fragment {
                         for (Map<String, Object> map : response.body()) {
                             String name = (String) map.get("name");
                             if (name != null) {
-                                String lower = name.toLowerCase();
+                                String lower = name.toLowerCase(Locale.ROOT);
                                 if (!lower.contains("khỏe mạnh") && !lower.contains("healthy")) {
                                     filteredDiseases.add(map);
                                 }

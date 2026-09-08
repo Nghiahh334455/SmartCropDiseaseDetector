@@ -42,6 +42,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Executors;
 
@@ -146,7 +147,7 @@ public class DiagnosisActivity extends AppCompatActivity {
     private boolean checkPermissions() {
         String[] permissions;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissions = new String[]{Manifest.permission.CAMERA, Manifest.permission.READ_MEDIA_IMAGES};
+            permissions = new String[]{Manifest.permission.CAMERA, Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.POST_NOTIFICATIONS};
         } else {
             permissions = new String[]{Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE};
         }
@@ -278,7 +279,7 @@ public class DiagnosisActivity extends AppCompatActivity {
             binding.layoutResult.animate().alpha(1f).setDuration(500).start();
 
             binding.tvDiseaseName.setText(name);
-            binding.tvConfidence.setText(String.format("%.1f%%", confidence));
+            binding.tvConfidence.setText(String.format(Locale.US, "%.1f%%", confidence));
             binding.progressConfidence.setProgress((int) confidence);
             
             currentDiseaseName = name;
@@ -307,7 +308,7 @@ public class DiagnosisActivity extends AppCompatActivity {
             final Bitmap bitmapToCompress = originalBitmap;
             Executors.newSingleThreadExecutor().execute(() -> {
                 String base64Image = ImageUtils.bitmapToBase64(bitmapToCompress);
-                boolean isHealthy = name.toLowerCase().contains("khỏe mạnh") || name.toLowerCase().contains("healthy");
+                boolean isHealthy = name.toLowerCase(Locale.ROOT).contains("khỏe mạnh") || name.toLowerCase(Locale.ROOT).contains("healthy");
 
                 if (!isHealthy && !base64Image.isEmpty()) {
                     incrementDiseaseCount(name, base64Image);

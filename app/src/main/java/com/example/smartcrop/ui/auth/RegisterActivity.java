@@ -11,6 +11,8 @@ import com.example.smartcrop.MainActivity;
 import com.example.smartcrop.databinding.ActivityRegisterBinding;
 import com.google.firebase.auth.FirebaseAuth;
 
+import java.util.Locale;
+
 public class RegisterActivity extends AppCompatActivity {
 
     private ActivityRegisterBinding binding;
@@ -29,7 +31,7 @@ public class RegisterActivity extends AppCompatActivity {
     }
 
     private void registerUser() {
-        String email = binding.etEmail.getText().toString().trim().toLowerCase();
+        String email = binding.etEmail.getText().toString().trim().toLowerCase(Locale.ROOT);
         String password = binding.etPassword.getText().toString().trim();
 
         if (TextUtils.isEmpty(email) || TextUtils.isEmpty(password)) {

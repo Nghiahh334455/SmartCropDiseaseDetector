@@ -15,6 +15,7 @@ import com.example.smartcrop.models.DiseaseModel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class LibraryAdapter extends RecyclerView.Adapter<LibraryAdapter.ViewHolder> implements Filterable {
 
@@ -136,9 +137,9 @@ public class LibraryAdapter extends RecyclerView.Adapter<LibraryAdapter.ViewHold
             if (constraint == null || constraint.length() == 0) {
                 filteredList.addAll(diseaseListFull);
             } else {
-                String filterPattern = constraint.toString().toLowerCase().trim();
+                String filterPattern = constraint.toString().toLowerCase(Locale.ROOT).trim();
                 for (DiseaseModel item : diseaseListFull) {
-                    if (item.name.toLowerCase().contains(filterPattern)) {
+                    if (item.name.toLowerCase(Locale.ROOT).contains(filterPattern)) {
                         filteredList.add(item);
                     }
                 }

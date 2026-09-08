@@ -12,6 +12,8 @@ import com.example.smartcrop.MainActivity;
 import com.example.smartcrop.databinding.ActivityLoginBinding;
 import com.google.firebase.auth.FirebaseAuth;
 
+import java.util.Locale;
+
 public class LoginActivity extends AppCompatActivity {
 
     private ActivityLoginBinding binding;
@@ -68,7 +70,7 @@ public class LoginActivity extends AppCompatActivity {
         binding.pbLogin.setVisibility(View.VISIBLE);
         Toast.makeText(this, "Đang xác thực tài khoản...", Toast.LENGTH_SHORT).show();
 
-        final String formattedEmail = email.toLowerCase();
+        final String formattedEmail = email.toLowerCase(Locale.ROOT);
 
         mAuth.signInWithEmailAndPassword(formattedEmail, password)
                 .addOnCompleteListener(this, task -> {

@@ -14,6 +14,7 @@ import com.example.smartcrop.ui.history.HistoryActivity;
 import com.example.smartcrop.utils.ImageUtils;
 
 import java.util.List;
+import java.util.Locale;
 
 public class PersonalHistoryAdapter extends RecyclerView.Adapter<PersonalHistoryAdapter.ViewHolder> {
 
@@ -34,7 +35,7 @@ public class PersonalHistoryAdapter extends RecyclerView.Adapter<PersonalHistory
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         HistoryEntity history = historyList.get(position);
         holder.binding.tvCommonDiseaseName.setText(history.diseaseName);
-        holder.binding.tvCommonDiseaseCount.setText(String.format("%.1f%%", history.confidence));
+        holder.binding.tvCommonDiseaseCount.setText(String.format(Locale.US, "%.1f%%", history.confidence));
         
         // Hiển thị ngày giờ
         holder.binding.tvCommonDiseaseDate.setVisibility(android.view.View.VISIBLE);

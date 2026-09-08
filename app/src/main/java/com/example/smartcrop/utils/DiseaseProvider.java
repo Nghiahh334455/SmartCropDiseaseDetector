@@ -4,6 +4,7 @@ import com.example.smartcrop.models.DiseaseModel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 public class DiseaseProvider {
     public static List<DiseaseModel> getAllDiseases() {
@@ -193,9 +194,10 @@ public class DiseaseProvider {
 
     public static DiseaseModel getDiseaseByName(String name) {
         if (name == null) return null;
+        String normalizedName = name.toLowerCase(Locale.ROOT);
         for (DiseaseModel disease : getAllDiseases()) {
-            if (disease.name.toLowerCase().contains(name.toLowerCase()) || 
-                name.toLowerCase().contains(disease.name.toLowerCase())) {
+            String diseaseName = disease.name.toLowerCase(Locale.ROOT);
+            if (diseaseName.contains(normalizedName) || normalizedName.contains(diseaseName)) {
                 return disease;
             }
         }
