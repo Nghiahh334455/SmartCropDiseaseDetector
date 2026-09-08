@@ -13,7 +13,7 @@ import com.example.smartcrop.api.RetrofitClient;
 import com.example.smartcrop.databinding.ActivityNotificationsBinding;
 import com.example.smartcrop.models.NotificationModel;
 import com.example.smartcrop.ui.forum.PostDetailActivity;
-import com.google.firebase.auth.FirebaseAuth;
+import com.example.smartcrop.utils.FirebaseUtils;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
@@ -48,7 +48,7 @@ public class NotificationActivity extends AppCompatActivity {
 
     private void listenForNotifications() {
         boolean isAdmin = getSharedPreferences("SmartCropPrefs", MODE_PRIVATE).getBoolean("is_admin", false);
-        com.google.firebase.auth.FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        com.google.firebase.auth.FirebaseUser user = FirebaseUtils.getCurrentUser();
         String uid = isAdmin ? "12345N" : (user != null ? user.getUid() : getSharedPreferences("SmartCropPrefs", MODE_PRIVATE).getString("user_uid", null));
 
         if (uid == null) return;

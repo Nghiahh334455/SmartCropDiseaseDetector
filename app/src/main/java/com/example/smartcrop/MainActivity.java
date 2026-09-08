@@ -10,8 +10,8 @@ import androidx.navigation.ui.NavigationUI;
 import com.example.smartcrop.api.ApiService;
 import com.example.smartcrop.api.RetrofitClient;
 import com.example.smartcrop.databinding.ActivityMainV2Binding;
+import com.example.smartcrop.utils.FirebaseUtils;
 import com.google.android.material.badge.BadgeDrawable;
-import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.List;
 import java.util.Map;
@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void syncUserToSql() {
-        com.google.firebase.auth.FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        com.google.firebase.auth.FirebaseUser user = FirebaseUtils.getCurrentUser();
         boolean isAdmin = getSharedPreferences("SmartCropPrefs", MODE_PRIVATE).getBoolean("is_admin", false);
         
         if (user == null && !isAdmin) return;
@@ -84,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void listenForNotifications() {
         boolean isAdmin = getSharedPreferences("SmartCropPrefs", MODE_PRIVATE).getBoolean("is_admin", false);
-        com.google.firebase.auth.FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        com.google.firebase.auth.FirebaseUser user = FirebaseUtils.getCurrentUser();
         
         String uid = isAdmin ? "12345N" : (user != null ? user.getUid() : null);
         if (uid == null) return;

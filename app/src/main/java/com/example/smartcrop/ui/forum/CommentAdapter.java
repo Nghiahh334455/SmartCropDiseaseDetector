@@ -12,8 +12,8 @@ import com.bumptech.glide.Glide;
 import com.example.smartcrop.R;
 import com.example.smartcrop.databinding.ItemCommentBinding;
 import com.example.smartcrop.models.CommentModel;
+import com.example.smartcrop.utils.FirebaseUtils;
 import com.example.smartcrop.utils.ImageUtils;
-import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.List;
 
@@ -29,12 +29,14 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.ViewHold
         void onReply(CommentModel comment);
     }
 
-    public CommentAdapter(List<CommentModel> commentList, List<String> commentIds, OnCommentInteractionListener listener) {
+    public CommentAdapter(android.content.Context context, List<CommentModel> commentList, List<String> commentIds, OnCommentInteractionListener listener) {
         this.commentList = commentList;
         this.commentIds = commentIds;
         this.listener = listener;
-        this.currentUid = FirebaseAuth.getInstance().getUid();
+        this.currentUid = com.example.smartcrop.utils.FirebaseUtils.getUid(context);
     }
+
+
 
     @NonNull
     @Override

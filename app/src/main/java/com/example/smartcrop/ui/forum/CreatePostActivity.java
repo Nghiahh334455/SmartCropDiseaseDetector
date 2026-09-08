@@ -16,8 +16,8 @@ import com.bumptech.glide.Glide;
 import com.example.smartcrop.api.ApiService;
 import com.example.smartcrop.api.RetrofitClient;
 import com.example.smartcrop.databinding.ActivityCreatePostBinding;
+import com.example.smartcrop.utils.FirebaseUtils;
 import com.example.smartcrop.utils.ImageUtils;
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 import java.io.ByteArrayOutputStream;
@@ -70,7 +70,7 @@ public class CreatePostActivity extends AppCompatActivity {
     }
 
     private void setupUserInfo() {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        FirebaseUser user = FirebaseUtils.getCurrentUser();
         if (user != null) {
             binding.tvUserName.setText(user.getDisplayName() != null ? user.getDisplayName() : "Người dùng");
             
@@ -94,7 +94,7 @@ public class CreatePostActivity extends AppCompatActivity {
         binding.btnPost.setVisibility(View.GONE);
         binding.pbPosting.setVisibility(View.VISIBLE);
 
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        FirebaseUser user = FirebaseUtils.getCurrentUser();
         if (user == null) {
             Toast.makeText(this, "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
             return;

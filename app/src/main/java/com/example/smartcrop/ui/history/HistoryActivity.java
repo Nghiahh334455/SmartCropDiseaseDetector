@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.example.smartcrop.database.AppDatabase;
 import com.example.smartcrop.database.HistoryEntity;
 import com.example.smartcrop.databinding.ActivityHistoryBinding;
+import com.example.smartcrop.utils.FirebaseUtils;
 
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -33,7 +34,7 @@ public class HistoryActivity extends AppCompatActivity {
     }
 
     private void loadHistory() {
-        String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+        String uid = com.example.smartcrop.utils.FirebaseUtils.getUid(this);
         if (uid == null) return;
         
         Executors.newSingleThreadExecutor().execute(() -> {

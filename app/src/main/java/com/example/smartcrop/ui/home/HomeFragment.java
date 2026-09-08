@@ -20,12 +20,13 @@ import com.example.smartcrop.api.ApiService;
 import com.example.smartcrop.api.RetrofitClient;
 import com.example.smartcrop.databinding.FragmentHomeBinding;
 import com.example.smartcrop.ui.history.HistoryActivity;
-import com.google.firebase.auth.FirebaseAuth;
+import com.example.smartcrop.utils.FirebaseUtils;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 
 import java.io.File;
+import androidx.activity.result.contract.ActivityResultContracts;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -45,19 +46,39 @@ public class HomeFragment extends Fragment {
         return binding.getRoot();
     }
 
+    private final androidx.activity.result.ActivityResultLauncher<String[]> locationPermissionLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestMultiplePermissions(),
+            result -> {
+                boolean granted = false;
+                for (java.util.Map.Entry<String, Boolean> entry : result.entrySet()) {
+                    if (entry.getValue()) {
+                        granted = true;
+                        break;
+                    }
+                }
+                if (granted) {
+                    setupWeatherAdvisory();
+                }
+            }
+    );
+
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
         updateUserUI();
+        
+        // Request location permissions for accurate weather
+        locationPermissionLauncher.launch(new String[]{
+                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION
+        });
+
         setupWeatherAdvisory();
 
         // Common Diseases
         binding.rvCommonDiseases.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
         loadCommonDiseases();
-
-        // Personal History
-        binding.rvPersonalHistory.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
 
         // Care Tips ViewPager2
         setupTipsSlider();
@@ -163,7 +184,8 @@ public class HomeFragment extends Fragment {
     };
 
     private void smoothScrollToNext() {
-        if (binding == null) return;
+        if (binding == null || binding.vpTips.getAdapter() == null || tipsList == null || tipsList.isEmpty()) return;
+        
         int width = binding.vpTips.getWidth();
         if (width <= 0) return;
 
@@ -172,23 +194,34 @@ public class HomeFragment extends Fragment {
         animator.setDuration(2500); 
         
         final int[] lastValue = {0};
+        final boolean[] didBeginDrag = {false};
+        
         animator.addUpdateListener(animation -> {
+            if (binding == null || !didBeginDrag[0]) return;
             int currentValue = (int) animation.getAnimatedValue();
             float dragAmount = (float) (currentValue - lastValue[0]);
-            if (binding != null) {
-                binding.vpTips.fakeDragBy(-dragAmount);
-            }
+            try {
+                if (binding.vpTips.isFakeDragging()) {
+                    binding.vpTips.fakeDragBy(-dragAmount);
+                }
+            } catch (Exception ignored) {}
             lastValue[0] = currentValue;
         });
         
         animator.addListener(new android.animation.AnimatorListenerAdapter() {
             @Override
             public void onAnimationStart(android.animation.Animator animation) {
-                if (binding != null) binding.vpTips.beginFakeDrag();
+                if (binding != null) {
+                    didBeginDrag[0] = binding.vpTips.beginFakeDrag();
+                }
             }
             @Override
             public void onAnimationEnd(android.animation.Animator animation) {
-                if (binding != null) binding.vpTips.endFakeDrag();
+                if (binding != null && didBeginDrag[0]) {
+                    try {
+                        binding.vpTips.endFakeDrag();
+                    } catch (Exception ignored) {}
+                }
             }
         });
         animator.start();
@@ -201,17 +234,8 @@ public class HomeFragment extends Fragment {
             public void onResponse(retrofit2.Call<List<Map<String, Object>>> call, retrofit2.Response<List<Map<String, Object>>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     if (isAdded()) {
-                        List<Map<String, Object>> filteredDiseases = new ArrayList<>();
-                        for (Map<String, Object> map : response.body()) {
-                            String name = (String) map.get("name");
-                            if (name != null) {
-                                String lower = name.toLowerCase(Locale.ROOT);
-                                if (!lower.contains("khỏe mạnh") && !lower.contains("healthy")) {
-                                    filteredDiseases.add(map);
-                                }
-                            }
-                        }
-                        CommonDiseaseAdapter adapter = new CommonDiseaseAdapter(filteredDiseases);
+                        // Backend has already filtered "Healthy", so just show it
+                        CommonDiseaseAdapter adapter = new CommonDiseaseAdapter(response.body());
                         binding.rvCommonDiseases.setAdapter(adapter);
                     }
                 }
@@ -219,30 +243,9 @@ public class HomeFragment extends Fragment {
 
             @Override
             public void onFailure(retrofit2.Call<List<Map<String, Object>>> call, Throwable t) {
-                // Fail silently or log
+                // Fail silently
             }
         });
-    }
-
-    private void loadPersonalHistory(String uid) {
-        com.example.smartcrop.database.AppDatabase db = com.example.smartcrop.database.AppDatabase.getInstance(getContext());
-        new Thread(() -> {
-            // Lấy 10 chẩn đoán gần nhất của chính user này
-            List<com.example.smartcrop.database.HistoryEntity> list = db.historyDao().getRecentByUid(uid, 10);
-            if (isAdded() && getActivity() != null) {
-                getActivity().runOnUiThread(() -> {
-                    if (list != null && !list.isEmpty()) {
-                        binding.layoutPersonalHistory.setVisibility(View.VISIBLE);
-                        binding.rvPersonalHistory.setVisibility(View.VISIBLE);
-                        PersonalHistoryAdapter adapter = new PersonalHistoryAdapter(list);
-                        binding.rvPersonalHistory.setAdapter(adapter);
-                    } else {
-                        binding.layoutPersonalHistory.setVisibility(View.GONE);
-                        binding.rvPersonalHistory.setVisibility(View.GONE);
-                    }
-                });
-            }
-        }).start();
     }
 
     @Override
@@ -259,7 +262,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void updateUserUI() {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        FirebaseUser user = FirebaseUtils.getCurrentUser();
         if (user != null) {
             String name = user.getDisplayName() != null ? user.getDisplayName() : "Chào bạn!";
             binding.tvWelcome.setText(name);
@@ -273,11 +276,6 @@ public class HomeFragment extends Fragment {
             } else if (user.getPhotoUrl() != null) {
                 Glide.with(this).load(user.getPhotoUrl()).circleCrop().into(binding.ivHomeAvatar);
             }
-            
-            loadPersonalHistory(user.getUid());
-        } else {
-            binding.layoutPersonalHistory.setVisibility(View.GONE);
-            binding.rvPersonalHistory.setVisibility(View.GONE);
         }
     }
 

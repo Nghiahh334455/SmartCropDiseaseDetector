@@ -330,33 +330,6 @@
             android:orientation="horizontal"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
-        <!-- Personal History Section -->
-        <LinearLayout
-            android:id="@+id/layoutPersonalHistory"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Lịch sử của bạn"
-                android:textColor="@color/black"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvPersonalHistory"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:clipToPadding="false"
-            android:orientation="horizontal"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
-
         <!-- Care Tips Section -->
         <TextView
             android:layout_width="match_parent"

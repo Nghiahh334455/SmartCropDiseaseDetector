@@ -10,8 +10,11 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.smartcrop.MainActivity;
 import com.example.smartcrop.databinding.ActivityLoginBinding;
+import com.example.smartcrop.utils.FirebaseUtils;
 import com.google.firebase.auth.FirebaseAuth;
 
+import android.os.Handler;
+import android.os.Looper;
 import java.util.Locale;
 
 public class LoginActivity extends AppCompatActivity {
@@ -25,10 +28,10 @@ public class LoginActivity extends AppCompatActivity {
         binding = ActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        mAuth = FirebaseAuth.getInstance();
+        mAuth = FirebaseUtils.getAuth();
 
         // Check if user is already logged in
-        if (mAuth.getCurrentUser() != null) {
+        if (mAuth != null && mAuth.getCurrentUser() != null) {
             startActivity(new Intent(this, MainActivity.class));
             finish();
         }
@@ -55,26 +58,32 @@ public class LoginActivity extends AppCompatActivity {
                     .putString("admin_uid", "12345N")
                     .apply();
             Toast.makeText(this, "Chào mừng Quản trị viên!", Toast.LENGTH_SHORT).show();
-            // Chuyển hướng đến Admin Dashboard (Sẽ tạo sau)
-            // startActivity(new Intent(this, AdminDashboardActivity.class));
             startActivity(new Intent(this, com.example.smartcrop.MainActivity.class));
             finish();
             return;
         }
 
-        // Reset Admin flag if normal user logs in
-        getSharedPreferences("SmartCropPrefs", MODE_PRIVATE).edit().putBoolean("is_admin", false).apply();
+        setLoading(true);
 
-        // Hien thi trang thai dang tai
-        binding.btnLogin.setVisibility(View.GONE);
-        binding.pbLogin.setVisibility(View.VISIBLE);
-        Toast.makeText(this, "Đang xác thực tài khoản...", Toast.LENGTH_SHORT).show();
+        if (mAuth == null) {
+            checkSqlUserFallback(email.toLowerCase(Locale.ROOT), "Firebase chưa được cấu hình");
+            return;
+        }
 
         final String formattedEmail = email.toLowerCase(Locale.ROOT);
+
+        // Hủy loading sau 15s nếu mạng quá chậm
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (binding != null && binding.pbLogin.getVisibility() == View.VISIBLE) {
+                setLoading(false);
+                Toast.makeText(this, "Hết thời gian chờ. Vui lòng kiểm tra kết nối mạng.", Toast.LENGTH_SHORT).show();
+            }
+        }, 15000);
 
         mAuth.signInWithEmailAndPassword(formattedEmail, password)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
+                        setLoading(false);
                         Toast.makeText(LoginActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
                         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -83,32 +92,38 @@ public class LoginActivity extends AppCompatActivity {
                     } else {
                         Exception exception = task.getException();
                         if (exception instanceof com.google.firebase.auth.FirebaseAuthInvalidUserException) {
-                            // Tự động khởi tạo và đăng ký tài khoản mới trên Firebase nếu tài khoản Gmail chưa tồn tại
+                            // Tự động tạo tài khoản mới nếu chưa có
                             mAuth.createUserWithEmailAndPassword(formattedEmail, password)
                                     .addOnCompleteListener(this, createTaskId -> {
                                         if (createTaskId.isSuccessful()) {
-                                            Toast.makeText(LoginActivity.this, "Tự động kích hoạt tài khoản và đăng nhập thành công!", Toast.LENGTH_SHORT).show();
+                                            setLoading(false);
+                                            Toast.makeText(LoginActivity.this, "Tự động kích hoạt tài khoản và đăng nhập!", Toast.LENGTH_SHORT).show();
                                             Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                                             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                                             startActivity(intent);
                                             finish();
                                         } else {
-                                            checkSqlUserFallback(formattedEmail, "Tài khoản Gmail chưa được đăng ký trên Firebase");
+                                            checkSqlUserFallback(formattedEmail, "Email chưa đăng ký");
                                         }
                                     });
                         } else {
                             String errorDetail = "Mật khẩu hoặc email nhập chưa đúng";
                             if (exception instanceof com.google.firebase.auth.FirebaseAuthInvalidCredentialsException) {
                                 errorDetail = "Mật khẩu nhập chưa đúng. Vui lòng kiểm tra lại.";
-                            } else if (exception != null && exception.getMessage() != null) {
-                                errorDetail = exception.getMessage();
                             }
-
-                            final String userErrMsg = errorDetail;
-                            checkSqlUserFallback(formattedEmail, userErrMsg);
+                            checkSqlUserFallback(formattedEmail, errorDetail);
                         }
                     }
                 });
+    }
+
+    private void setLoading(boolean isLoading) {
+        if (binding == null) return;
+        binding.btnLogin.setEnabled(!isLoading);
+        binding.btnLogin.setText(isLoading ? "" : "ĐĂNG NHẬP");
+        binding.pbLogin.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        binding.etEmail.setEnabled(!isLoading);
+        binding.etPassword.setEnabled(!isLoading);
     }
 
     private void checkSqlUserFallback(String email, String defaultErrorMsg) {
@@ -116,9 +131,7 @@ public class LoginActivity extends AppCompatActivity {
         apiService.getUserByEmail(email).enqueue(new retrofit2.Callback<java.util.Map<String, Object>>() {
             @Override
             public void onResponse(@androidx.annotation.NonNull retrofit2.Call<java.util.Map<String, Object>> call, @androidx.annotation.NonNull retrofit2.Response<java.util.Map<String, Object>> response) {
-                binding.btnLogin.setVisibility(View.VISIBLE);
-                binding.pbLogin.setVisibility(View.GONE);
-
+                setLoading(false);
                 if (response.isSuccessful() && response.body() != null && "success".equals(response.body().get("status"))) {
                     String uid = (String) response.body().get("uid");
                     String name = (String) response.body().get("displayName");
@@ -141,9 +154,8 @@ public class LoginActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(@androidx.annotation.NonNull retrofit2.Call<java.util.Map<String, Object>> call, @androidx.annotation.NonNull Throwable t) {
-                binding.btnLogin.setVisibility(View.VISIBLE);
-                binding.pbLogin.setVisibility(View.GONE);
-                Toast.makeText(LoginActivity.this, "Đăng nhập thất bại: " + defaultErrorMsg, Toast.LENGTH_LONG).show();
+                setLoading(false);
+                Toast.makeText(LoginActivity.this, "Lỗi: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }

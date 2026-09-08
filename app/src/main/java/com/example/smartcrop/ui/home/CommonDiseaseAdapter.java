@@ -49,11 +49,19 @@ public class CommonDiseaseAdapter extends RecyclerView.Adapter<CommonDiseaseAdap
             if (realImageUrl.length() > 500) {
                 byte[] bytes = ImageUtils.base64ToBytes(realImageUrl);
                 if (bytes != null) Glide.with(holder.itemView.getContext()).load(bytes).placeholder(android.R.drawable.ic_menu_gallery).into(holder.binding.ivCommonDisease);
-            } else {
+            } else if (realImageUrl.startsWith("http")) {
                 Glide.with(holder.itemView.getContext())
                         .load(realImageUrl)
                         .placeholder(android.R.drawable.ic_menu_gallery)
                         .into(holder.binding.ivCommonDisease);
+            } else {
+                // Try to load as resource name
+                int resId = holder.itemView.getContext().getResources().getIdentifier(realImageUrl, "drawable", holder.itemView.getContext().getPackageName());
+                if (resId != 0) {
+                    Glide.with(holder.itemView.getContext()).load(resId).into(holder.binding.ivCommonDisease);
+                } else {
+                    Glide.with(holder.itemView.getContext()).load(android.R.drawable.ic_menu_gallery).into(holder.binding.ivCommonDisease);
+                }
             }
         } else {
             // Fallback: Load image from Provider (local resources)

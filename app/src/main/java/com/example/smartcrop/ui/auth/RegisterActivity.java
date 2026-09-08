@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.smartcrop.MainActivity;
 import com.example.smartcrop.databinding.ActivityRegisterBinding;
+import com.example.smartcrop.utils.FirebaseUtils;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.Locale;
@@ -24,7 +25,7 @@ public class RegisterActivity extends AppCompatActivity {
         binding = ActivityRegisterBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        mAuth = FirebaseAuth.getInstance();
+        mAuth = FirebaseUtils.getAuth();
 
         binding.btnRegister.setOnClickListener(v -> registerUser());
         binding.tvGoToLogin.setOnClickListener(v -> finish());
@@ -44,8 +45,16 @@ public class RegisterActivity extends AppCompatActivity {
             return;
         }
 
+        if (mAuth == null) {
+            Toast.makeText(this, "Firebase chưa được cấu hình.", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        setLoading(true);
+
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
+                    setLoading(false);
                     if (task.isSuccessful()) {
                         Toast.makeText(RegisterActivity.this, "Đăng ký thành công", Toast.LENGTH_SHORT).show();
                         Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
@@ -58,5 +67,14 @@ public class RegisterActivity extends AppCompatActivity {
                                 Toast.LENGTH_LONG).show();
                     }
                 });
+    }
+
+    private void setLoading(boolean isLoading) {
+        if (binding == null) return;
+        binding.btnRegister.setEnabled(!isLoading);
+        binding.btnRegister.setText(isLoading ? "" : "ĐĂNG KÝ NGAY");
+        binding.pbRegister.setVisibility(isLoading ? android.view.View.VISIBLE : android.view.View.GONE);
+        binding.etEmail.setEnabled(!isLoading);
+        binding.etPassword.setEnabled(!isLoading);
     }
 }

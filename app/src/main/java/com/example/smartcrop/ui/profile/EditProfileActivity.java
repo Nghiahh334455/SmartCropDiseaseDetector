@@ -14,6 +14,7 @@ import com.bumptech.glide.Glide;
 import com.example.smartcrop.api.ApiService;
 import com.example.smartcrop.api.RetrofitClient;
 import com.example.smartcrop.databinding.ActivityEditProfileBinding;
+import com.example.smartcrop.utils.FirebaseUtils;
 import com.example.smartcrop.utils.ImageUtils;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -48,8 +49,8 @@ public class EditProfileActivity extends AppCompatActivity {
         binding = ActivityEditProfileBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        mAuth = FirebaseAuth.getInstance();
-        currentUser = mAuth.getCurrentUser();
+        mAuth = FirebaseUtils.getAuth();
+        currentUser = mAuth == null ? null : mAuth.getCurrentUser();
 
         if (currentUser == null) {
             finish();

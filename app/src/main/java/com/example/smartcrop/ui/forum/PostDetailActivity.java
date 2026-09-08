@@ -15,8 +15,8 @@ import com.example.smartcrop.api.RetrofitClient;
 import com.example.smartcrop.databinding.ActivityPostDetailBinding;
 import com.example.smartcrop.models.CommentModel;
 import com.example.smartcrop.models.NotificationModel;
+import com.example.smartcrop.utils.FirebaseUtils;
 import com.example.smartcrop.utils.ImageUtils;
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
@@ -76,7 +76,24 @@ public class PostDetailActivity extends AppCompatActivity {
         }
 
         binding.btnSendComment.setOnClickListener(v -> sendComment());
-        loadUserAvatar();
+        updateUserAvatarUI();
+    }
+
+    private void updateUserAvatarUI() {
+        FirebaseUser user = FirebaseUtils.getCurrentUser();
+        if (user != null) {
+            String localPhoto = getSharedPreferences("SmartCropPrefs", MODE_PRIVATE)
+                    .getString("profile_image_" + user.getUid(), null);
+
+            if (localPhoto != null && localPhoto.startsWith("BASE64:")) {
+                byte[] bytes = ImageUtils.base64ToBytes(localPhoto);
+                if (bytes != null) {
+                    Glide.with(this).load(bytes).circleCrop().into(binding.ivUserAvatar);
+                }
+            } else if (user.getPhotoUrl() != null) {
+                Glide.with(this).load(user.getPhotoUrl()).circleCrop().into(binding.ivUserAvatar);
+            }
+        }
     }
 
     private void loadPostById(String pIdStr) {
@@ -112,22 +129,8 @@ public class PostDetailActivity extends AppCompatActivity {
         });
     }
 
-    private void loadUserAvatar() {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user != null) {
-            String localPath = getSharedPreferences("SmartCropPrefs", MODE_PRIVATE)
-                    .getString("profile_image_" + user.getUid(), null);
-
-            if (localPath != null && new File(localPath).exists()) {
-                Glide.with(this).load(new File(localPath)).into(binding.ivUserAvatar);
-            } else if (user.getPhotoUrl() != null) {
-                Glide.with(this).load(user.getPhotoUrl()).into(binding.ivUserAvatar);
-            }
-        }
-    }
-
     private void setupComments() {
-        adapter = new CommentAdapter(commentList, commentIds, new CommentAdapter.OnCommentInteractionListener() {
+        adapter = new CommentAdapter(this, commentList, commentIds, new CommentAdapter.OnCommentInteractionListener() {
             @Override
             public void onLike(String commentId, boolean isLike) {
                 toggleCommentReaction(commentId, isLike);
@@ -207,7 +210,7 @@ public class PostDetailActivity extends AppCompatActivity {
         String content = binding.etComment.getText().toString().trim();
         if (content.isEmpty()) return;
 
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        FirebaseUser user = FirebaseUtils.getCurrentUser();
         if (user == null) {
             Toast.makeText(this, "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
             return;
@@ -271,36 +274,43 @@ public class PostDetailActivity extends AppCompatActivity {
         }
     }
 
-    private void sendNotification(String targetUid, String type, String postId, String postContent) {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+    private void sendNotification(String targetUid, String type, String pIdStr, String postContent) {
+        FirebaseUser user = FirebaseUtils.getCurrentUser();
         if (user == null) return;
 
         String senderName = user.getDisplayName() != null ? user.getDisplayName() : "Một người dùng";
-        String senderAvatar = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : "";
+        
+        String senderAvatar = getSharedPreferences("SmartCropPrefs", MODE_PRIVATE)
+                .getString("profile_image_" + user.getUid(), "");
+        if (senderAvatar.startsWith("BASE64:")) senderAvatar = senderAvatar.substring(7);
+        // Tối ưu dung lượng ảnh gửi qua thông báo (nén thêm nếu là Base64 dài)
+        if (senderAvatar.length() > 1000) {
+            senderAvatar = "THUMBNAIL_BASE64"; 
+        }
+        if (senderAvatar.isEmpty() && user.getPhotoUrl() != null) {
+            senderAvatar = user.getPhotoUrl().toString();
+        }
 
-        int pId;
+        int cleanId;
         try {
-            double d = Double.parseDouble(postId);
-            pId = (int) d;
+            cleanId = (int) Double.parseDouble(pIdStr);
         } catch (Exception e) {
             try {
-                pId = Integer.parseInt(postId);
+                cleanId = Integer.parseInt(pIdStr);
             } catch (Exception ex) {
                 return;
             }
         }
 
         ApiService apiService = RetrofitClient.getSqlService();
-        apiService.sendNotification(targetUid, senderName, senderAvatar, user.getUid(), type, pId, postContent)
+        apiService.sendNotification(targetUid, senderName, senderAvatar, user.getUid(), type, cleanId, postContent)
                 .enqueue(new retrofit2.Callback<Map<String, String>>() {
                     @Override
-                    public void onResponse(retrofit2.Call<Map<String, String>> call, retrofit2.Response<Map<String, String>> response) {
-                        // Success
+                    public void onResponse(@androidx.annotation.NonNull retrofit2.Call<Map<String, String>> call, @androidx.annotation.NonNull retrofit2.Response<Map<String, String>> response) {
                     }
 
                     @Override
-                    public void onFailure(retrofit2.Call<Map<String, String>> call, Throwable t) {
-                        // Log
+                    public void onFailure(@androidx.annotation.NonNull retrofit2.Call<Map<String, String>> call, @androidx.annotation.NonNull Throwable t) {
                     }
                 });
     }
@@ -341,7 +351,7 @@ public class PostDetailActivity extends AppCompatActivity {
         binding.postItem.tvLikeCount.setText(likes + " lượt thích");
         binding.postItem.tvCommentCount.setText(comments + " bình luận");
 
-        String currentUid = FirebaseAuth.getInstance().getUid();
+        String currentUid = com.example.smartcrop.utils.FirebaseUtils.getUid(this);
         boolean isLikedByMe = false;
         try {
             List<String> likedBy = (List<String>) post.get("likedBy");

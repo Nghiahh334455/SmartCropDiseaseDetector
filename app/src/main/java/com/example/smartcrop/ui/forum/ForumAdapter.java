@@ -23,8 +23,8 @@ import com.example.smartcrop.models.DiseaseModel;
 import com.example.smartcrop.ui.library.DiseaseDetailActivity;
 import com.example.smartcrop.utils.DiseaseProvider;
 import com.example.smartcrop.models.NotificationModel;
+import com.example.smartcrop.utils.FirebaseUtils;
 import com.example.smartcrop.utils.ImageUtils;
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -40,13 +40,12 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
     private final List<String> postIds;
     private final Context context;
     private final String currentUid;
-    private final java.util.Set<String> locallyLikedPosts = new java.util.HashSet<>();
 
     public ForumAdapter(Context context, List<Map<String, Object>> postList, List<String> postIds) {
         this.context = context;
         this.postList = postList;
         this.postIds = postIds;
-        this.currentUid = FirebaseAuth.getInstance().getUid();
+        this.currentUid = com.example.smartcrop.utils.FirebaseUtils.getUid(context);
     }
 
     @NonNull
@@ -92,9 +91,10 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
         holder.binding.tvLikeCount.setText(likes + " lượt thích");
         holder.binding.tvCommentCount.setText(comments + " bình luận");
 
-        // Like logic: Kết hợp dữ liệu từ Server và trạng thái Click tạm thời
+        // Like logic: Sử dụng dữ liệu thực tế từ bài viết
         List<String> likedBy = (List<String>) post.get("likedBy");
-        boolean isLikedByMe = (likedBy != null && likedBy.contains(currentUid)) || locallyLikedPosts.contains(postId);
+        if (likedBy == null) likedBy = new ArrayList<>();
+        boolean isLikedByMe = likedBy.contains(currentUid);
         
         if (isLikedByMe) {
             holder.binding.btnLike.setIconResource(android.R.drawable.btn_star_big_on);
@@ -306,36 +306,51 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
         }
         final int pId = tempId;
 
-        // Optimistic update: Cập nhật UI ngay lập tức
-        if (locallyLikedPosts.contains(postId)) {
-            locallyLikedPosts.remove(postId);
+        // Optimistic update
+        List<String> likedBy = (List<String>) post.get("likedBy");
+        if (likedBy == null) {
+            likedBy = new ArrayList<>();
+            post.put("likedBy", likedBy);
+        }
+        
+        int currentLikes = 0;
+        try {
+            currentLikes = (int) Double.parseDouble(String.valueOf(post.get("likesCount")));
+        } catch (Exception ignored) {}
+
+        if (likedBy.contains(currentUid)) {
+            likedBy.remove(currentUid);
+            post.put("likesCount", Math.max(0, currentLikes - 1));
         } else {
-            locallyLikedPosts.add(postId);
+            likedBy.add(currentUid);
+            post.put("likesCount", currentLikes + 1);
         }
         notifyItemChanged(position);
 
         ApiService apiService = RetrofitClient.getSqlService();
         apiService.toggleLike(currentUid, pId).enqueue(new retrofit2.Callback<Map<String, String>>() {
             @Override
-            public void onResponse(retrofit2.Call<Map<String, String>> call, retrofit2.Response<Map<String, String>> response) {
+            public void onResponse(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull retrofit2.Response<Map<String, String>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     String action = response.body().get("action");
+                    // Sync state from server response if necessary
+                    List<String> serverLikedBy = (List<String>) post.get("likedBy"); // Current local list
                     if ("liked".equals(action)) {
+                        if (!serverLikedBy.contains(currentUid)) serverLikedBy.add(currentUid);
                         String ownerUid = (String) post.get("uid");
                         String question = (String) post.get("question");
                         if (ownerUid != null && !ownerUid.equals(currentUid)) {
                             sendNotification(ownerUid, "LIKE", pId, question != null ? question : "bài viết");
                         }
+                    } else {
+                        serverLikedBy.remove(currentUid);
                     }
+                    notifyItemChanged(position);
                 }
             }
 
             @Override
             public void onFailure(retrofit2.Call<Map<String, String>> call, Throwable t) {
-                // Rollback on failure
-                if (locallyLikedPosts.contains(postId)) locallyLikedPosts.remove(postId);
-                else locallyLikedPosts.add(postId);
-                notifyItemChanged(position);
                 Toast.makeText(context, "Lỗi đồng bộ lượt thích", Toast.LENGTH_SHORT).show();
             }
         });
@@ -374,14 +389,14 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
     }
 
     private void sendNotification(String targetUid, String type, int postId, String postContent) {
-        com.google.firebase.auth.FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        com.google.firebase.auth.FirebaseUser user = com.example.smartcrop.utils.FirebaseUtils.getCurrentUser();
         if (user == null) return;
 
         String senderName = user.getDisplayName() != null ? user.getDisplayName() : "Một người dùng";
         
-        // Fix: Lấy ảnh Base64 từ SharedPreferences để đồng bộ đúng avatar trong thông báo
         String senderAvatar = context.getSharedPreferences("SmartCropPrefs", Context.MODE_PRIVATE)
                 .getString("profile_image_" + user.getUid(), "");
+        if (senderAvatar.startsWith("BASE64:")) senderAvatar = senderAvatar.substring(7);
         if (senderAvatar.isEmpty() && user.getPhotoUrl() != null) {
             senderAvatar = user.getPhotoUrl().toString();
         }
@@ -390,13 +405,11 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
         apiService.sendNotification(targetUid, senderName, senderAvatar, user.getUid(), type, postId, postContent)
                 .enqueue(new retrofit2.Callback<Map<String, String>>() {
                     @Override
-                    public void onResponse(retrofit2.Call<Map<String, String>> call, retrofit2.Response<Map<String, String>> response) {
-                        // Success
+                    public void onResponse(@androidx.annotation.NonNull retrofit2.Call<Map<String, String>> call, @androidx.annotation.NonNull retrofit2.Response<Map<String, String>> response) {
                     }
 
                     @Override
-                    public void onFailure(retrofit2.Call<Map<String, String>> call, Throwable t) {
-                        // Log
+                    public void onFailure(@androidx.annotation.NonNull retrofit2.Call<Map<String, String>> call, @androidx.annotation.NonNull Throwable t) {
                     }
                 });
     }

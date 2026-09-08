@@ -135,8 +135,8 @@ public class LibraryFragment extends Fragment {
                 // Hiển thị trạng thái đang tải ngay trong Dialog
                 layoutInput.setVisibility(View.GONE);
                 progressBar.setVisibility(View.VISIBLE);
-                tvTitle.setText("Chuyên gia AI 3.5 đang phân tích...");
-                
+                tvTitle.setText("Chuyên gia AI đang phân tích...");
+                 
                 com.google.android.material.button.MaterialButton btn = view.findViewById(R.id.btnAskAI);
                 btn.setEnabled(false);
                 btn.setText("Đang soạn câu trả lời...");
@@ -151,13 +151,13 @@ public class LibraryFragment extends Fragment {
                     public void onResponse(Call<ChatResponse> call, Response<ChatResponse> response) {
                         if (isAdded() && dialog.isShowing()) {
                             progressBar.setVisibility(View.GONE);
-                            tvTitle.setText("Lời khuyên từ Chuyên gia AI 3.5");
+                            tvTitle.setText("Lời khuyên từ Chuyên gia AI");
                             tvResponse.setVisibility(View.VISIBLE);
 
                             if (response.isSuccessful() && response.body() != null && response.body().getResponse() != null) {
                                 tvResponse.setText(com.example.smartcrop.utils.ImageUtils.formatMarkdownHtml(response.body().getResponse()));
                             } else {
-                                tvResponse.setText(com.example.smartcrop.utils.ImageUtils.formatMarkdownHtml("🤖 **Chuyên gia AI 3.5 trả lời:**\n\nĐối với thắc mắc **'" + question + "'**: Bà con nên kiểm tra kỹ vết bệnh trên lá, đảm bảo thoát nước tốt cho vườn cây, cắt tỉa cành rậm sát gốc và sử dụng chế phẩm vi sinh **Trichoderma** định kỳ để nâng cao sức đề kháng cho cây trồng."));
+                                tvResponse.setText(com.example.smartcrop.utils.ImageUtils.formatMarkdownHtml("🤖 **Chuyên gia AI trả lời:**\n\nĐối với thắc mắc **'" + question + "'**: Nên giữ cây thông thoáng, theo dõi độ ẩm và vệ sinh vườn đều đặn để giảm nguy cơ bệnh lây lan."));
                             }
                             
                             com.google.android.material.button.MaterialButton btn = view.findViewById(R.id.btnAskAI);
@@ -171,9 +171,9 @@ public class LibraryFragment extends Fragment {
                     public void onFailure(Call<ChatResponse> call, Throwable t) {
                         if (isAdded() && dialog.isShowing()) {
                             progressBar.setVisibility(View.GONE);
-                            tvTitle.setText("Lời khuyên từ Chuyên gia AI 3.5");
+                            tvTitle.setText("Lời khuyên từ Chuyên gia AI");
                             tvResponse.setVisibility(View.VISIBLE);
-                            tvResponse.setText("🤖 **Chuyên gia AI 3.5 trả lời:**\n\nĐối với thắc mắc '" + question + "': Bà con nên đảm bảo vườn cây luôn thông thoáng, tránh tưới đạm quá mức, tỉa bớt lá già sát gốc và phun chế phẩm sinh học Trichoderma định kỳ 10-15 ngày/lần.");
+                            tvResponse.setText(com.example.smartcrop.utils.ImageUtils.formatMarkdownHtml("🤖 **Chuyên gia AI trả lời:**\n\nĐối với thắc mắc **'" + question + "'**: Nên giữ không khí trong vườn thoáng, theo dõi độ ẩm và chăm sóc cây đều đặn để phòng bệnh hiệu quả."));
 
                             com.google.android.material.button.MaterialButton btn = view.findViewById(R.id.btnAskAI);
                             btn.setEnabled(true);

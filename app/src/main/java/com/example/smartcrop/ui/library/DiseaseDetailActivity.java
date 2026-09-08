@@ -13,7 +13,7 @@ import com.example.smartcrop.api.RetrofitClient;
 import com.example.smartcrop.databinding.ActivityDiseaseDetailBinding;
 import com.example.smartcrop.models.DiseaseModel;
 import com.example.smartcrop.utils.DiseaseProvider;
-import com.google.firebase.auth.FirebaseAuth;
+import com.example.smartcrop.utils.FirebaseUtils;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -135,7 +135,7 @@ public class DiseaseDetailActivity extends AppCompatActivity {
     }
 
     private void shareToForum(String name, String status, String imageName) {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        FirebaseUser user = FirebaseUtils.getCurrentUser();
         if (user == null) {
             Toast.makeText(this, "Vui lòng đăng nhập để chia sẻ", Toast.LENGTH_SHORT).show();
             return;

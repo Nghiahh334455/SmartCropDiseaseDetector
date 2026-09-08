@@ -32,9 +32,9 @@ import com.example.smartcrop.database.AppDatabase;
 import com.example.smartcrop.database.HistoryEntity;
 import com.example.smartcrop.databinding.ActivityMainBinding;
 import com.example.smartcrop.models.PredictResponse;
+import com.example.smartcrop.utils.FirebaseUtils;
 import com.example.smartcrop.utils.ImageUtils;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 import java.io.File;
@@ -128,10 +128,10 @@ public class DiagnosisActivity extends AppCompatActivity {
             android.transition.TransitionManager.beginDelayedTransition(binding.layoutResult, new android.transition.AutoTransition());
             if (binding.layoutAdviceContainer.getVisibility() == View.VISIBLE) {
                 binding.layoutAdviceContainer.setVisibility(View.GONE);
-                binding.btnToggleAdvice.setText("Xem tư vấn từ Chuyên gia AI 3.5 🤖");
+                binding.btnToggleAdvice.setText("Xem khuyến nghị canh tác 🤖");
             } else {
                 binding.layoutAdviceContainer.setVisibility(View.VISIBLE);
-                binding.btnToggleAdvice.setText("Ẩn bớt lời khuyên 👆");
+                binding.btnToggleAdvice.setText("Ẩn khuyến nghị 👆");
             }
         });
 
@@ -198,12 +198,12 @@ public class DiagnosisActivity extends AppCompatActivity {
 
     private void uploadImageToFastAPI(File imageFile) {
         showLoading(true);
-        binding.tvAiAdvice.setText("Đang kết nối với Chuyên gia AI 3.5...");
+        binding.tvAiAdvice.setText("Đang kết nối với Chuyên gia AI...");
         binding.layoutAdviceContainer.setVisibility(View.GONE);
-        binding.btnToggleAdvice.setText("Xem tư vấn từ Chuyên gia AI 3.5 🤖");
+        binding.btnToggleAdvice.setText("Xem khuyến nghị canh tác 🤖");
         
         ApiService apiService = RetrofitClient.getAiService();
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        FirebaseUser user = FirebaseUtils.getCurrentUser();
         String userEmail = (user != null && user.getEmail() != null) ? user.getEmail() : "khach_hang@than-nong-ai.vn";
 
         RequestBody requestFile = RequestBody.create(imageFile, MediaType.parse("image/jpeg"));
@@ -443,7 +443,7 @@ public class DiagnosisActivity extends AppCompatActivity {
     private void postToForum(String question) {
         if (originalBitmap == null) return;
         showLoading(true);
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        FirebaseUser user = FirebaseUtils.getCurrentUser();
         if (user == null) {
             showLoading(false);
             return;
@@ -474,7 +474,7 @@ public class DiagnosisActivity extends AppCompatActivity {
     }
 
     private void saveToHistory(String disease, double confidence, String treatment, String base64) {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        FirebaseUser user = FirebaseUtils.getCurrentUser();
         String uid = (user != null) ? user.getUid() : "guest";
         Executors.newSingleThreadExecutor().execute(() -> {
             HistoryEntity history = new HistoryEntity(uid, disease, confidence, treatment, base64, System.currentTimeMillis());
@@ -497,12 +497,12 @@ public class DiagnosisActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null && response.body().get("advice") != null) {
                     runOnUiThread(() -> binding.tvAiAdvice.setText(ImageUtils.formatMarkdownHtml(response.body().get("advice"))));
                 } else {
-                    runOnUiThread(() -> binding.tvAiAdvice.setText(ImageUtils.formatMarkdownHtml("👨‍🌾 **CHUYÊN GIA AI 3.5 KHUYÊN:**\n• Cắt tỉa ngay các cành lá đốm bệnh đưa ra xa khu vực canh tác.\n• Phun ngay chế phẩm sinh học **Trichoderma** hoặc thuốc đặc trị **Ridomil Gold** / **Anvil**.\n• Tránh tưới nước lên lá vào buổi tối.")));
+                    runOnUiThread(() -> binding.tvAiAdvice.setText(ImageUtils.formatMarkdownHtml("👨‍🌾 **Chuyên gia AI khuyên:**\n• Cắt tỉa cành bệnh và giữ khoảng cách cây thông thoáng.\n• Duy trì tưới gốc vào buổi sáng và kiểm soát độ ẩm.\n• Dùng thuốc phù hợp và kết hợp biện pháp sinh học để phòng lây lan.")));
                 }
             }
             @Override
             public void onFailure(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull Throwable t) {
-                runOnUiThread(() -> binding.tvAiAdvice.setText(ImageUtils.formatMarkdownHtml("👨‍🌾 **CHUYÊN GIA AI 3.5 KHUYÊN:**\n• Cắt tỉa ngay các cành lá đốm bệnh đưa ra xa khu vực canh tác.\n• Phun ngay chế phẩm sinh học **Trichoderma** hoặc thuốc đặc trị **Ridomil Gold** / **Anvil**.\n• Tránh tưới nước lên lá vào buổi tối.")));
+                runOnUiThread(() -> binding.tvAiAdvice.setText(ImageUtils.formatMarkdownHtml("👨‍🌾 **Chuyên gia AI khuyên:**\n• Cắt tỉa cành bệnh và giữ khoảng cách cây thông thoáng.\n• Duy trì tưới gốc vào buổi sáng và kiểm soát độ ẩm.\n• Dùng thuốc phù hợp và kết hợp biện pháp sinh học để phòng lây lan.")));
             }
         });
     }

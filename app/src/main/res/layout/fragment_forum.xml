@@ -76,13 +76,6 @@
                     android:textSize="12sp" />
             </LinearLayout>
 
-            <ImageView
-                android:layout_width="42dp"
-                android:layout_height="42dp"
-                android:background="@drawable/bg_auth_gradient"
-                android:padding="9dp"
-                android:src="@android:drawable/ic_menu_share"
-                app:tint="@color/white" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 

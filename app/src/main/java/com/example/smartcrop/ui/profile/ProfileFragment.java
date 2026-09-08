@@ -15,6 +15,7 @@ import com.example.smartcrop.databinding.FragmentProfileBinding;
 import com.example.smartcrop.ui.admin.AdminDashboardActivity;
 import com.example.smartcrop.ui.auth.LoginActivity;
 import com.example.smartcrop.ui.history.HistoryActivity;
+import com.example.smartcrop.utils.FirebaseUtils;
 import com.example.smartcrop.utils.ImageUtils;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -36,7 +37,7 @@ public class ProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        mAuth = FirebaseAuth.getInstance();
+        mAuth = FirebaseUtils.getAuth();
 
         updateUserInfo();
 
@@ -49,7 +50,9 @@ public class ProfileFragment extends Fragment {
         });
 
         binding.btnLogout.setOnClickListener(v -> {
-            mAuth.signOut();
+            if (mAuth != null) {
+                mAuth.signOut();
+            }
             Intent intent = new Intent(getContext(), LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
@@ -82,7 +85,7 @@ public class ProfileFragment extends Fragment {
     private void updateUserInfo() {
         if (!isAdded() || binding == null) return;
         
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        FirebaseUser currentUser = FirebaseUtils.getCurrentUser();
         if (currentUser != null && getContext() != null) {
             binding.tvProfileEmail.setText(currentUser.getEmail());
             if (currentUser.getDisplayName() != null && !currentUser.getDisplayName().isEmpty()) {
@@ -113,7 +116,7 @@ public class ProfileFragment extends Fragment {
     }
 
     private void listenForUnreadNotifications() {
-        String uid = FirebaseAuth.getInstance().getUid();
+        String uid = com.example.smartcrop.utils.FirebaseUtils.getUid(getContext());
         if (uid == null) return;
 
         FirebaseFirestore.getInstance().collection("users")

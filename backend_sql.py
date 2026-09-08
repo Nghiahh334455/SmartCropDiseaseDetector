@@ -22,7 +22,7 @@ app.add_middleware(
 )
 
 def get_db():
-    """T? ??ng ph?t hi?n ODBC Driver v? th? danh s?ch Server name kh? thi ?? k?t n?i SQL Server."""
+    """Tự động phát hiện ODBC Driver và thử danh sách Server name khả thi để kết nối SQL Server."""
     drivers = pyodbc.drivers()
     preferred_drivers = [
         "ODBC Driver 17 for SQL Server",
@@ -248,23 +248,8 @@ def seed_real_world_data():
             cursor.executemany("INSERT INTO Tips (title, content, imageResource) VALUES (?, ?, ?)", tips)
 
         # 3. Bơm Thống Kê Bệnh Hại (DiseaseStats)
-        cursor.execute("SELECT COUNT(*) FROM DiseaseStats")
-        if cursor.fetchone()[0] < 3:
-            stats = [
-                ("Cây Khỏe Mạnh", 210, "img_tip_check"),
-                ("Bệnh Sương Mai (Late Blight)", 145, "img_tomato_late_blight_1"),
-                ("Bệnh Đạo Ôn Lúa (Rice Blast)", 120, "img_rice_blast_1"),
-                ("Bệnh Đốm Vòng (Early Blight)", 98, "img_tomato_early_blight_1"),
-                ("Bệnh Rỉ Sắt (Coffee Rust)", 85, "img_coffee_rust_1"),
-                ("Bệnh Thán Thư (Anthracnose)", 42, "img_chili_anthracnose_1")
-            ]
-            for name, count, img in stats:
-                cursor.execute("""
-                    IF EXISTS (SELECT 1 FROM DiseaseStats WHERE diseaseName = ?)
-                        UPDATE DiseaseStats SET count = ? WHERE diseaseName = ?
-                    ELSE
-                        INSERT INTO DiseaseStats (diseaseName, count, lastImageUrl) VALUES (?, ?, ?)
-                """, (name, count, name, name, count, img))
+        # Không bơm dữ liệu mẫu để thống kê chỉ lấy từ lượt quét thực tế của người dùng
+        pass
 
         # 4. Dọn dẹp tài khoản giả lập để Admin chỉ hiển thị 100% tài khoản thực tế từ Firebase
         cursor.execute("DELETE FROM Users WHERE uid LIKE 'user_0%'")
@@ -491,6 +476,7 @@ async def add_notif(
     postContent: str = Form(...)
 ):
     try:
+        print(f"🔔 [New Notification] {senderName} ({type}) -> {targetUid}")
         db = get_db()
         cursor = db.cursor()
         cursor.execute(
@@ -500,6 +486,7 @@ async def add_notif(
         db.commit()
         return {"status": "success"}
     except Exception as e:
+        print(f"❌ [Notification Error] {e}")
         return {"status": "error", "message": str(e)}
 
 @app.get("/notifications/{uid}")
@@ -658,9 +645,18 @@ async def get_top_diseases():
     try:
         db = get_db()
         cursor = db.cursor()
-        cursor.execute("SELECT diseaseName, count, lastImageUrl FROM DiseaseStats ORDER BY count DESC")
+        # Lọc bỏ các mục Cây Khỏe Mạnh và sắp xếp theo lượt quét giảm dần
+        cursor.execute("""
+            SELECT diseaseName, count, lastImageUrl
+            FROM DiseaseStats
+            WHERE diseaseName NOT LIKE '%Khỏe mạnh%'
+              AND diseaseName NOT LIKE '%Healthy%'
+              AND count > 0
+            ORDER BY count DESC
+        """)
         return [{"name": r[0], "count": r[1], "imageUrl": r[2]} for r in cursor.fetchall()]
     except Exception as e:
+        print(f"❌ Lỗi get_top_diseases: {e}")
         return []
 
 @app.post("/disease_stats/increment")
@@ -739,68 +735,42 @@ async def update_profile_photo(uid: str = Form(...), photoBase64: str = Form(...
         return {"status": "success"}
     except Exception as e: return {"status": "error", "message": str(e)}
 
-# --- CHUYÊN GIA AI 3.5 (CHAT AI API) ---
+# --- CHUYÊN GIA AI (CHAT AI API) ---
 def build_dynamic_chat_response(question: str) -> str:
     q = question.lower().strip()
 
     if "lúa" in q or "đạo ôn" in q or "bạc lá" in q or "cổ bông" in q:
         return (
-            f"👨‍🌾 **CHUYÊN GIA AI 3.5 TƯ VẤN CÂY LÚA:**\n\n"
-            f"📌 **Chẩn đoán thắc mắc:** '{question}'\n"
-            f"🚨 **PHÁC ĐỒ ĐIỀU TRỊ 3 BƯỚC ĐẶC TRỊ:**\n"
-            f"1️⃣ **Ngưng bón Đạm (N):** Tạm dừng ngay việc bón phân đạm hoặc phun phân bón lá có hàm lượng đạm cao.\n"
-            f"2️⃣ **Phác đồ phun thuốc đặc trị:**\n"
-            f"   - *Đạo ôn lá/cổ bông:* Phun ngay **Beam 75WP**, **Fuji-One 40EC** hoặc **Filia 525SE**.\n"
-            f"   - *Bạc lá vi khuẩn:* Phun **Starner 20WP** hoặc **Physan 20L**.\n"
-            f"   - *Lịch phun:* Phun lúc sáng sớm khô sương hoặc chiều mát. Phun lặp lại sau 5-7 ngày.\n"
-            f"3️⃣ **Quản lý nước:** Rút cạn nước ruộng 2-3 ngày nếu bị bạc lá vi khuẩn, giữ mực nước nông 3-5cm khi điều trị đạo ôn."
+            f"👨‍🌾 **Chuyên gia AI tư vấn cây lúa:**\n\n"
+            f"📌 **Thắc mắc:** '{question}'\n"
+            f"✅ **Khuyến nghị:** Giữ đồng ruộng luôn thông thoáng, ngưng bón ngay phân đạm nếu thấy vết bệnh. Phun thuốc đặc trị như **Beam 75WP**, **Fuji-One 40EC** đối với đạo ôn hoặc **Starner** đối với bạc lá vi khuẩn."
         )
 
     if "cà phê" in q or "rỉ sắt" in q or "tiêu" in q or "chết nhanh" in q or "cao su" in q:
         return (
-            f"👨‍🌾 **CHUYÊN GIA AI 3.5 TƯ VẤN CÂY CÔNG NGHIỆP:**\n\n"
-            f"📌 **Chẩn đoán thắc mắc:** '{question}'\n"
-            f"🚨 **PHÁC ĐỒ ĐIỀU TRỊ 3 BƯỚC:**\n"
-            f"1️⃣ **Cắt tỉa & Vệ sinh:** Cắt tỉa cành vô hiệu sát gốc, cành rậm rạp để tán cây thông thoáng, tăng ánh sáng.\n"
-            f"2️⃣ **Thuốc đặc trị:**\n"
-            f"   - *Rỉ sắt cà phê:* Phun **Tilt Super 300EC**, **Anvil 5SC** hoặc gốc đồng ướt kỹ 2 mặt lá.\n"
-            f"   - *Thối rễ chết nhanh hồ tiêu:* Tưới gốc **Agrifos 400** phối hợp **Ridomil Gold 68WG**.\n"
-            f"3️⃣ **Phục hồi gốc:** Trộn nấm vi sinh **Trichoderma** với phân hữu cơ ủ hoai bón quanh sườn tán cây."
+            f"👨‍🌾 **Chuyên gia AI tư vấn cây công nghiệp:**\n\n"
+            f"📌 **Thắc mắc:** '{question}'\n"
+            f"✅ **Khuyến nghị:** Cắt tỉa cành rậm rạp, vệ sinh vườn sạch sẽ. Đối với rỉ sắt cà phê nên phun **Anvil 5SC** hoặc **Tilt Super**. Với hồ tiêu bị chết nhanh, cần tưới gốc bằng **Agrifos 400** kết hợp **Ridomil Gold**."
         )
 
     if "ớt" in q or "xoài" in q or "thán thư" in q or "thối quả" in q or "thối trái" in q:
         return (
-            f"👨‍🌾 **CHUYÊN GIA AI 3.5 TƯ VẤN BỆNH THÁN THƯ / THỐI QUẢ:**\n\n"
-            f"📌 **Chẩn đoán thắc mắc:** '{question}'\n"
-            f"🚨 **PHÁC ĐỒ ĐIỀU TRỊ 3 BƯỚC:**\n"
-            f"1️⃣ **Thu gom quả thối:** Bẻ bỏ toàn bộ quả bị đốm thối đen dọn sạch ra khỏi vườn tiêu hủy.\n"
-            f"2️⃣ **Phun thuốc phòng trị lây lan:**\n"
-            f"   - Phun các thuốc chứa hoạt chất Azoxystrobin, Difenoconazole (**Amistar Top 325SC**, **Score 250EC**) hoặc **Antracol 70WP**.\n"
-            f"   - Phun ướt đều chùm quả và lá rậm rạp.\n"
-            f"3️⃣ **Bảo vệ trái:** Tiến hành bao trái xoài/ớt khi trái đạt kích thước thích hợp, bổ sung bón lá Canxi-Bo."
+            f"👨‍🌾 **Chuyên gia AI tư vấn bệnh thán thư:**\n\n"
+            f"📌 **Thắc mắc:** '{question}'\n"
+            f"✅ **Khuyến nghị:** Dọn sạch quả thối đem tiêu hủy xa vườn. Phun thuốc có hoạt chất Azoxystrobin như **Amistar Top 325SC** hoặc **Score 250EC**. Bổ sung thêm phân bón lá **Canxi-Bo** để vỏ trái chắc khỏe hơn."
         )
 
     if "cà chua" in q or "dưa" in q or "sương mai" in q or "phấn trắng" in q or "khảm" in q or "bọ trĩ" in q:
         return (
-            f"👨‍🌾 **CHUYÊN GIA AI 3.5 TƯ VẤN RAU MÀU & DƯA CÀ:**\n\n"
-            f"📌 **Chẩn đoán thắc mắc:** '{question}'\n"
-            f"🚨 **PHÁC ĐỒ ĐIỀU TRỊ 3 BƯỚC:**\n"
-            f"1️⃣ **Cắt tỉa lá già:** Ngắt bỏ các lá gốc bị vàng, xuất hiện đốm nấm bột trắng hoặc úng nước.\n"
-            f"2️⃣ **Hoạt chất điều trị:**\n"
-            f"   - *Bệnh Sương mai / Mốc lá:* Phun **Ridomil Gold 68WG** hoặc **Daconil 75WP**.\n"
-            f"   - *Phấn trắng / Bọ trĩ:* Phun **Microthiol Special 80WG** (Lưu huỳnh) & treo bẫy dính màu vàng.\n"
-            f"3️⃣ **Tưới nước chuẩn:** Tưới gốc lúc 6-8h sáng, tuyệt đối không tưới phun mưa lên lá lúc chiều tối."
+            f"👨‍🌾 **Chuyên gia AI tư vấn rau màu:**\n\n"
+            f"📌 **Thắc mắc:** '{question}'\n"
+            f"✅ **Khuyến nghị:** Cắt tỉa lá già sát gốc, tránh tưới phun mưa vào chiều tối. Phun **Ridomil Gold 68WG** hoặc **Daconil 75WP** đối với sương mai. Với phấn trắng, có thể dùng các thuốc gốc Lưu huỳnh hoặc **Anvil**."
         )
 
     return (
-        f"👨‍🌾 **CHUYÊN GIA AI 3.5 TƯ VẤN NÔNG NGHIỆP:**\n\n"
-        f"📌 **Giải đáp thắc mắc:** '{question}'\n\n"
-        f"🚨 **PHÁC ĐỒ XỬ LÝ NÔNG NGHIỆP CHUẨN:**\n"
-        f"1️⃣ **Vệ sinh tán cây:** Cắt tỉa ngay các cành lá có dấu hiệu biến màu, héo rũ hoặc xuất hiện đốm nấm.\n"
-        f"2️⃣ **Biện pháp kỹ thuật:**\n"
-        f"   - *Nếu do nấm bệnh:* Phun các thuốc chứa hoạt chất Mancozeb, Metalaxyl hoặc Hexaconazole (**Anvil 5SC**, **Ridomil Gold**).\n"
-        f"   - *Nếu do sâu bọ/rệp:* Treo bẫy dính màu vàng và phun chế phẩm sinh học Dầu Neem / BTI.\n"
-        f"3️⃣ **Cải thiện môi trường:** Đảm bảo khoảng cách trồng thông thoáng, bón phân hữu cơ vi sinh bồi dưỡng hệ rễ."
+        f"👨‍🌾 **Chuyên gia AI tư vấn nông nghiệp:**\n\n"
+        f"📌 **Giải đáp:** '{question}'\n\n"
+        f"✅ **Khuyến nghị:** Vệ sinh vườn sạch sẽ, giữ khoảng cách trồng hợp lý và theo dõi cây thường xuyên. Khi có dấu hiệu bệnh, hãy sử dụng các chế phẩm vi sinh như **Trichoderma** hoặc thuốc bảo vệ thực vật phù hợp với từng giai đoạn sinh trưởng."
     )
 
 @app.post("/chat")
@@ -809,7 +779,7 @@ async def chat_ai(question: str = Form(...)):
         reply = build_dynamic_chat_response(question)
         return {"response": reply}
     except Exception as e:
-        return {"response": f"🤖 **Chuyên gia AI 3.5 trả lời:**\n\nĐối với thắc mắc '{question}': Bà con nên cắt tỉa lá già sát gốc thông thoáng và sử dụng chế phẩm vi sinh Trichoderma định kỳ để phòng ngừa bệnh lây lan."}
+        return {"response": f"🤖 **Chuyên gia AI trả lời:**\n\nĐối với thắc mắc '{question}': Nên giữ cây thông thoáng, giảm độ ẩm và chăm sóc theo hướng dẫn phòng bệnh để duy trì sức khỏe cho cây trồng."}
 
 if __name__ == "__main__":
     import uvicorn
