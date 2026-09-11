@@ -275,19 +275,26 @@ public class PostDetailActivity extends AppCompatActivity {
     }
 
     private void sendNotification(String targetUid, String type, String pIdStr, String postContent) {
-        FirebaseUser user = FirebaseUtils.getCurrentUser();
-        if (user == null) return;
+        String currentUid = com.example.smartcrop.utils.FirebaseUtils.getUid(this);
+        if (currentUid == null || targetUid == null || targetUid.equals(currentUid)) return;
 
-        String senderName = user.getDisplayName() != null ? user.getDisplayName() : "Một người dùng";
-        
+        boolean isAdmin = getSharedPreferences("SmartCropPrefs", MODE_PRIVATE).getBoolean("is_admin", false);
+        com.google.firebase.auth.FirebaseUser user = FirebaseUtils.getCurrentUser();
+
+        String senderName = "Người dùng Thần Nông AI";
+        if (isAdmin) {
+            senderName = "Quản trị viên";
+        } else if (user != null && user.getDisplayName() != null) {
+            senderName = user.getDisplayName();
+        }
+
         String senderAvatar = getSharedPreferences("SmartCropPrefs", MODE_PRIVATE)
-                .getString("profile_image_" + user.getUid(), "");
+                .getString("profile_image_" + currentUid, "");
         if (senderAvatar.startsWith("BASE64:")) senderAvatar = senderAvatar.substring(7);
-        // Tối ưu dung lượng ảnh gửi qua thông báo (nén thêm nếu là Base64 dài)
         if (senderAvatar.length() > 1000) {
             senderAvatar = "THUMBNAIL_BASE64"; 
         }
-        if (senderAvatar.isEmpty() && user.getPhotoUrl() != null) {
+        if (senderAvatar.isEmpty() && user != null && user.getPhotoUrl() != null) {
             senderAvatar = user.getPhotoUrl().toString();
         }
 
@@ -303,7 +310,7 @@ public class PostDetailActivity extends AppCompatActivity {
         }
 
         ApiService apiService = RetrofitClient.getSqlService();
-        apiService.sendNotification(targetUid, senderName, senderAvatar, user.getUid(), type, cleanId, postContent)
+        apiService.sendNotification(targetUid, senderName, senderAvatar, currentUid, type, cleanId, postContent)
                 .enqueue(new retrofit2.Callback<Map<String, String>>() {
                     @Override
                     public void onResponse(@androidx.annotation.NonNull retrofit2.Call<Map<String, String>> call, @androidx.annotation.NonNull retrofit2.Response<Map<String, String>> response) {
