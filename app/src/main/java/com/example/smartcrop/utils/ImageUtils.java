@@ -62,7 +62,7 @@ public class ImageUtils {
         // Nén ảnh xuống 70%
         bitmap.compress(Bitmap.CompressFormat.JPEG, 70, outputStream);
         byte[] byteArray = outputStream.toByteArray();
-        return Base64.encodeToString(byteArray, Base64.DEFAULT);
+        return "BASE64:" + Base64.encodeToString(byteArray, Base64.NO_WRAP);
     }
 
     /**
@@ -70,6 +70,9 @@ public class ImageUtils {
      */
     public static byte[] base64ToBytes(String base64String) {
         if (base64String == null || base64String.isEmpty()) return null;
+        
+        // Sửa lỗi Base64 bị mất ký tự '+' khi gửi qua HTTP Form
+        base64String = base64String.replace(" ", "+");
         
         // Loại bỏ tiền tố BASE64: nếu có
         if (base64String.startsWith("BASE64:")) {

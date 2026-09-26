@@ -67,6 +67,20 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
                     .load(android.R.drawable.ic_menu_gallery)
                     .into(holder.binding.ivHistoryImage);
         }
+
+        // Thêm sự kiện onClick để xem chi tiết bệnh
+        holder.itemView.setOnClickListener(v -> {
+            android.content.Intent intent = new android.content.Intent(v.getContext(), com.example.smartcrop.ui.library.DiseaseDetailActivity.class);
+            intent.putExtra("name", history.diseaseName);
+            intent.putExtra("treatment", history.treatment);
+            // Gửi ảnh sang dạng List để tương thích với Activity chi tiết
+            java.util.ArrayList<String> images = new java.util.ArrayList<>();
+            if (history.imageBase64 != null) {
+                images.add(history.imageBase64);
+            }
+            intent.putStringArrayListExtra("images", images);
+            v.getContext().startActivity(intent);
+        });
     }
 
     @Override

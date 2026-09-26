@@ -84,14 +84,54 @@ public class AdminDashboardActivity extends AppCompatActivity {
         }
 
         PieDataSet dataSet = new PieDataSet(entries, "");
-        dataSet.setColors(ColorTemplate.MATERIAL_COLORS);
-        dataSet.setValueTextSize(12f);
+        
+        // Tạo dải 10+ màu riêng biệt cho các bệnh
+        ArrayList<Integer> colors = new ArrayList<>();
+        for (int c : ColorTemplate.VORDIPLOM_COLORS) colors.add(c);
+        for (int c : ColorTemplate.JOYFUL_COLORS) colors.add(c);
+        for (int c : ColorTemplate.COLORFUL_COLORS) colors.add(c);
+        for (int c : ColorTemplate.LIBERTY_COLORS) colors.add(c);
+        colors.add(android.graphics.Color.parseColor("#2ecc71"));
+        colors.add(android.graphics.Color.parseColor("#e74c3c"));
+        colors.add(android.graphics.Color.parseColor("#3498db"));
+        colors.add(android.graphics.Color.parseColor("#f1c40f"));
+        colors.add(android.graphics.Color.parseColor("#9b59b6"));
+        colors.add(android.graphics.Color.parseColor("#1abc9c"));
+        
+        dataSet.setColors(colors);
+        dataSet.setValueTextSize(14f);
+        dataSet.setValueTextColor(android.graphics.Color.WHITE);
         dataSet.setSliceSpace(3f);
+        
+        // Cấu hình định dạng số (hiện số trên biểu đồ, ẩn chữ)
+        dataSet.setDrawValues(true);
+        dataSet.setValueFormatter(new com.github.mikephil.charting.formatter.ValueFormatter() {
+            @Override
+            public String getFormattedValue(float value) {
+                return String.valueOf((int) value);
+            }
+        });
 
         PieData data = new PieData(dataSet);
         binding.pieChart.setData(data);
+        binding.pieChart.setDrawEntryLabels(false); // Ẩn tên bệnh trên biểu đồ
         binding.pieChart.getDescription().setEnabled(false);
-        binding.pieChart.setCenterText("Bệnh hại");
+        binding.pieChart.setCenterText("Tỷ lệ\nbệnh hại");
+        binding.pieChart.setCenterTextSize(14f);
+        
+        // Bật Legend (chú thích) xếp dọc bên dưới, có ngắt dòng
+        com.github.mikephil.charting.components.Legend legend = binding.pieChart.getLegend();
+        legend.setEnabled(true);
+        legend.setVerticalAlignment(com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM);
+        legend.setHorizontalAlignment(com.github.mikephil.charting.components.Legend.LegendHorizontalAlignment.LEFT);
+        legend.setOrientation(com.github.mikephil.charting.components.Legend.LegendOrientation.VERTICAL);
+        legend.setDrawInside(false);
+        legend.setWordWrapEnabled(true);
+        legend.setTextSize(12f);
+        legend.setFormSize(12f);
+        legend.setFormToTextSpace(5f);
+        legend.setYEntrySpace(5f);
+
         binding.pieChart.animateY(1000);
         binding.pieChart.invalidate();
     }

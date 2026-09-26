@@ -85,13 +85,21 @@ public class PostDetailActivity extends AppCompatActivity {
             String localPhoto = getSharedPreferences("SmartCropPrefs", MODE_PRIVATE)
                     .getString("profile_image_" + user.getUid(), null);
 
-            if (localPhoto != null && localPhoto.startsWith("BASE64:")) {
-                byte[] bytes = ImageUtils.base64ToBytes(localPhoto);
-                if (bytes != null) {
-                    Glide.with(this).load(bytes).circleCrop().into(binding.ivUserAvatar);
+            if (localPhoto != null && !localPhoto.isEmpty()) {
+                if (localPhoto.startsWith("http")) {
+                    Glide.with(this).load(localPhoto).placeholder(R.drawable.logo_app).circleCrop().into(binding.ivUserAvatar);
+                } else {
+                    byte[] bytes = ImageUtils.base64ToBytes(localPhoto);
+                    if (bytes != null) {
+                        Glide.with(this).load(bytes).placeholder(R.drawable.logo_app).circleCrop().into(binding.ivUserAvatar);
+                    } else {
+                        Glide.with(this).load(R.drawable.logo_app).circleCrop().into(binding.ivUserAvatar);
+                    }
                 }
             } else if (user.getPhotoUrl() != null) {
-                Glide.with(this).load(user.getPhotoUrl()).circleCrop().into(binding.ivUserAvatar);
+                Glide.with(this).load(user.getPhotoUrl()).placeholder(R.drawable.logo_app).circleCrop().into(binding.ivUserAvatar);
+            } else {
+                Glide.with(this).load(R.drawable.logo_app).circleCrop().into(binding.ivUserAvatar);
             }
         }
     }

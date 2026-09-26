@@ -53,6 +53,14 @@ public class ProfileFragment extends Fragment {
             if (mAuth != null) {
                 mAuth.signOut();
             }
+            if (getContext() != null) {
+                getContext().getSharedPreferences("SmartCropPrefs", android.content.Context.MODE_PRIVATE)
+                        .edit()
+                        .putBoolean("is_admin", false)
+                        .putString("admin_uid", null)
+                        .putString("user_uid", null)
+                        .apply();
+            }
             Intent intent = new Intent(getContext(), LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
@@ -65,6 +73,9 @@ public class ProfileFragment extends Fragment {
         binding.btnAdminDashboard.setOnClickListener(v -> {
             startActivity(new Intent(getContext(), AdminDashboardActivity.class));
         });
+
+        binding.btnAdminDashboard.setVisibility(View.GONE);
+        binding.dividerAdmin.setVisibility(View.GONE);
 
         boolean isAdmin = getContext().getSharedPreferences("SmartCropPrefs", android.content.Context.MODE_PRIVATE)
                 .getBoolean("is_admin", false);
@@ -96,11 +107,18 @@ public class ProfileFragment extends Fragment {
             String photoData = getContext().getSharedPreferences("SmartCropPrefs", android.content.Context.MODE_PRIVATE)
                     .getString("profile_image_" + currentUser.getUid(), null);
 
-            if (photoData != null && photoData.startsWith("BASE64:")) {
+            if (photoData != null && photoData.length() > 20) {
+                if (photoData.startsWith("BASE64:")) {
+                    photoData = photoData.substring(7);
+                }
                 byte[] bytes = ImageUtils.base64ToBytes(photoData);
                 if (bytes != null) {
                     Glide.with(this).load(bytes)
-                            .placeholder(android.R.drawable.ic_menu_gallery)
+                            .placeholder(com.example.smartcrop.R.drawable.logo_app)
+                            .circleCrop()
+                            .into(binding.ivProfile);
+                } else {
+                    Glide.with(this).load(com.example.smartcrop.R.drawable.logo_app)
                             .circleCrop()
                             .into(binding.ivProfile);
                 }
@@ -108,7 +126,11 @@ public class ProfileFragment extends Fragment {
                 // 2. Nếu không có ảnh cục bộ, load từ Firebase (dành cho tk mới hoặc ảnh cũ)
                 Glide.with(this)
                         .load(currentUser.getPhotoUrl())
-                        .placeholder(android.R.drawable.ic_menu_gallery)
+                        .placeholder(com.example.smartcrop.R.drawable.logo_app)
+                        .circleCrop()
+                        .into(binding.ivProfile);
+            } else {
+                Glide.with(this).load(com.example.smartcrop.R.drawable.logo_app)
                         .circleCrop()
                         .into(binding.ivProfile);
             }

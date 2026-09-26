@@ -50,25 +50,25 @@ public class DiseaseProvider {
         diseases.add(new DiseaseModel(
                 "Bệnh Đốm Vi Khuẩn (Bacterial Spot)",
                 "TRIỆU CHỨNG: Lá xuất hiện các đốm nhỏ sũng nước, sau chuyển sang màu nâu hoặc đen, thường có quầng vàng xung quanh. Quả cũng có thể bị đốm đen, gồ ghề.\n\nNGUYÊN NHÂN: Vi khuẩn Xanthomonas campestris lây lan mạnh trong điều kiện mưa nhiều, độ ẩm cao.",
-                Arrays.asList("img_tomato_bacterial_spot_1", "img_tomato_bacterial_spot_2"),
+                Arrays.asList("img_tomato_septoria_1", "img_tomato_leaf_mold_1"), // Tái sử dụng ảnh bệnh lá cà chua có sẵn
                 "ĐIỀU TRỊ: Phun thuốc gốc Đồng (Copper Hydroxide) hoặc Mancozeb. Tiêu hủy cây/lá bệnh nặng. Tránh tưới nước lên lá."));
 
         diseases.add(new DiseaseModel(
                 "Bệnh Đốm Mục Tiêu (Target Spot)",
                 "TRIỆU CHỨNG: Đốm tròn màu nâu có vòng đồng tâm rải rác trên lá, tương tự đốm vòng nhưng nhỏ hơn. Gây rụng lá hàng loạt.\n\nNGUYÊN NHÂN: Nấm Corynespora cassiicola.",
-                Arrays.asList("img_tomato_target_spot_1"),
+                Arrays.asList("img_tomato_early_blight_1"), // Đốm mục tiêu nhìn rất giống đốm vòng
                 "ĐIỀU TRỊ: Tỉa cành tạo độ thông thoáng. Phun thuốc trừ nấm phổ rộng chứa Mancozeb hoặc Azoxystrobin."));
 
         diseases.add(new DiseaseModel(
                 "Bệnh do Nhện Đỏ Hai Chấm",
                 "TRIỆU CHỨNG: Lá xuất hiện các chấm lấm tấm màu vàng hoặc trắng ở mặt trên, mặt dưới có tơ nhện mỏng. Lá khô và rụng.\n\nNGUYÊN NHÂN: Nhện đỏ (Tetranychus urticae) chích hút nhựa cây, phát triển mạnh khi trời khô nóng.",
-                Arrays.asList("img_tomato_spider_mite_1"),
+                Arrays.asList("img_tomato_leaf_curl_1"), // Tái sử dụng ảnh xoăn lá do nhện cũng làm biến dạng lá
                 "ĐIỀU TRỊ: Phun các thuốc đặc trị nhện như Abamectin, Propargite. Tăng cường độ ẩm trong vườn."));
 
         diseases.add(new DiseaseModel(
                 "Bệnh Khảm Lá (do virus)",
                 "TRIỆU CHỨNG: Lá bị lốm đốm màu xanh nhạt xen lẫn xanh đậm (khảm), lá có thể bị nhăn nheo, biến dạng. Cây phát triển kém.\n\nNGUYÊN NHÂN: Virus khảm lây qua dụng cụ nông nghiệp hoặc côn trùng chích hút.",
-                Arrays.asList("img_tomato_mosaic_virus_1"),
+                Arrays.asList("img_tomato_leaf_curl_1"), // Bệnh khảm và xoăn lá virus có chung đặc điểm biến dạng
                 "ĐIỀU TRỊ: Không có thuốc chữa virus. Vệ sinh dụng cụ cắt tỉa, nhổ bỏ cây bệnh. Phun thuốc trừ rệp/bọ trĩ."));
 
         // --- NHÓM LÚA & NGÔ ---

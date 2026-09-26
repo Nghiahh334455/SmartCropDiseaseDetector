@@ -474,13 +474,15 @@ public class DiagnosisActivity extends AppCompatActivity {
     }
 
     private void saveToHistory(String disease, double confidence, String treatment, String base64) {
-        FirebaseUser user = FirebaseUtils.getCurrentUser();
-        String uid = (user != null) ? user.getUid() : "guest";
+        String uid = com.example.smartcrop.utils.FirebaseUtils.getUid(this);
+        if (uid == null) uid = "guest";
+        
+        final String finalUid = uid;
         Executors.newSingleThreadExecutor().execute(() -> {
-            HistoryEntity history = new HistoryEntity(uid, disease, confidence, treatment, base64, System.currentTimeMillis());
+            HistoryEntity history = new HistoryEntity(finalUid, disease, confidence, treatment, base64, System.currentTimeMillis());
             AppDatabase.getInstance(this).historyDao().insert(history);
-            if (user != null) {
-                RetrofitClient.getSqlService().saveHistoryToCloud(uid, disease, confidence, treatment, base64).enqueue(new retrofit2.Callback<Map<String, String>>() {
+            if (!finalUid.equals("guest")) {
+                RetrofitClient.getSqlService().saveHistoryToCloud(finalUid, disease, confidence, treatment, base64).enqueue(new retrofit2.Callback<Map<String, String>>() {
                     @Override
                     public void onResponse(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull retrofit2.Response<Map<String, String>> response) {}
                     @Override

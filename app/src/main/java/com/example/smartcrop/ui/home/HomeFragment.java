@@ -270,11 +270,21 @@ public class HomeFragment extends Fragment {
             String localPhoto = getContext().getSharedPreferences("SmartCropPrefs", android.content.Context.MODE_PRIVATE)
                     .getString("profile_image_" + user.getUid(), null);
 
-            if (localPhoto != null && localPhoto.startsWith("BASE64:")) {
-                byte[] bytes = com.example.smartcrop.utils.ImageUtils.base64ToBytes(localPhoto);
-                if (bytes != null) Glide.with(this).load(bytes).circleCrop().into(binding.ivHomeAvatar);
+            if (localPhoto != null && !localPhoto.isEmpty()) {
+                if (localPhoto.startsWith("http")) {
+                    Glide.with(this).load(localPhoto).placeholder(R.drawable.logo_app).circleCrop().into(binding.ivHomeAvatar);
+                } else {
+                    byte[] bytes = com.example.smartcrop.utils.ImageUtils.base64ToBytes(localPhoto);
+                    if (bytes != null) {
+                        Glide.with(this).load(bytes).placeholder(R.drawable.logo_app).circleCrop().into(binding.ivHomeAvatar);
+                    } else {
+                        Glide.with(this).load(R.drawable.logo_app).circleCrop().into(binding.ivHomeAvatar);
+                    }
+                }
             } else if (user.getPhotoUrl() != null) {
-                Glide.with(this).load(user.getPhotoUrl()).circleCrop().into(binding.ivHomeAvatar);
+                Glide.with(this).load(user.getPhotoUrl()).placeholder(R.drawable.logo_app).circleCrop().into(binding.ivHomeAvatar);
+            } else {
+                Glide.with(this).load(R.drawable.logo_app).circleCrop().into(binding.ivHomeAvatar);
             }
         }
     }
