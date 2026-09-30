@@ -80,28 +80,17 @@ public class PostDetailActivity extends AppCompatActivity {
     }
 
     private void updateUserAvatarUI() {
+        String uid = FirebaseUtils.getUid(this);
         FirebaseUser user = FirebaseUtils.getCurrentUser();
-        if (user != null) {
-            String localPhoto = getSharedPreferences("SmartCropPrefs", MODE_PRIVATE)
-                    .getString("profile_image_" + user.getUid(), null);
-
-            if (localPhoto != null && !localPhoto.isEmpty()) {
-                if (localPhoto.startsWith("http")) {
-                    Glide.with(this).load(localPhoto).placeholder(R.drawable.logo_app).circleCrop().into(binding.ivUserAvatar);
-                } else {
-                    byte[] bytes = ImageUtils.base64ToBytes(localPhoto);
-                    if (bytes != null) {
-                        Glide.with(this).load(bytes).placeholder(R.drawable.logo_app).circleCrop().into(binding.ivUserAvatar);
-                    } else {
-                        Glide.with(this).load(R.drawable.logo_app).circleCrop().into(binding.ivUserAvatar);
-                    }
-                }
-            } else if (user.getPhotoUrl() != null) {
-                Glide.with(this).load(user.getPhotoUrl()).placeholder(R.drawable.logo_app).circleCrop().into(binding.ivUserAvatar);
-            } else {
-                Glide.with(this).load(R.drawable.logo_app).circleCrop().into(binding.ivUserAvatar);
-            }
+        String localPhoto = null;
+        if (uid != null) {
+            localPhoto = getSharedPreferences("SmartCropPrefs", MODE_PRIVATE)
+                    .getString("profile_image_" + uid, null);
         }
+        if ((localPhoto == null || localPhoto.isEmpty()) && user != null && user.getPhotoUrl() != null) {
+            localPhoto = user.getPhotoUrl().toString();
+        }
+        ImageUtils.loadUserAvatar(this, binding.ivUserAvatar, localPhoto);
     }
 
     private void loadPostById(String pIdStr) {
@@ -385,13 +374,7 @@ public class PostDetailActivity extends AppCompatActivity {
 
         // Avatar logic
         String userPhotoUrl = (String) post.get("userPhotoUrl");
-
-        if (userPhotoUrl != null && userPhotoUrl.length() > 500) {
-            byte[] bytes = ImageUtils.base64ToBytes(userPhotoUrl);
-            if (bytes != null) Glide.with(this).load(bytes).placeholder(android.R.drawable.ic_menu_gallery).into(binding.postItem.ivPostAvatar);
-        } else {
-            Glide.with(this).load(userPhotoUrl).placeholder(android.R.drawable.ic_menu_gallery).into(binding.postItem.ivPostAvatar);
-        }
+        ImageUtils.loadUserAvatar(this, binding.postItem.ivPostAvatar, userPhotoUrl);
 
         String imageUrl = (String) post.get("imageUrl");
         if (imageUrl != null && !imageUrl.isEmpty()) {

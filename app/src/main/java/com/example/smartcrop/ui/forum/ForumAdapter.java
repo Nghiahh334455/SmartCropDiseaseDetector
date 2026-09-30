@@ -118,34 +118,14 @@ public class ForumAdapter extends RecyclerView.Adapter<ForumAdapter.ViewHolder> 
         String userPhotoUrl = (String) post.get("userPhotoUrl");
         
         if (currentUid != null && currentUid.equals(ownerUid)) {
-            // Kiểm tra SharedPreferences xem có ảnh Base64 mới nhất không
             String localPhoto = context.getSharedPreferences("SmartCropPrefs", Context.MODE_PRIVATE)
                     .getString("profile_image_" + currentUid, null);
-            if (localPhoto != null && localPhoto.startsWith("BASE64:")) {
+            if (localPhoto != null && !localPhoto.isEmpty()) {
                 userPhotoUrl = localPhoto;
             }
         }
 
-        if (userPhotoUrl != null && !userPhotoUrl.isEmpty()) {
-            if (userPhotoUrl.startsWith("BASE64:") || userPhotoUrl.length() > 500) {
-                byte[] imageBytes = ImageUtils.base64ToBytes(userPhotoUrl);
-                if (imageBytes != null) {
-                    Glide.with(context).load(imageBytes)
-                            .placeholder(android.R.drawable.ic_menu_gallery)
-                            .circleCrop()
-                            .into(holder.binding.ivPostAvatar);
-                }
-            } else {
-                Glide.with(context).load(userPhotoUrl)
-                        .placeholder(android.R.drawable.ic_menu_gallery)
-                        .circleCrop()
-                        .into(holder.binding.ivPostAvatar);
-            }
-        } else {
-            Glide.with(context).load(android.R.drawable.ic_menu_gallery)
-                    .circleCrop()
-                    .into(holder.binding.ivPostAvatar);
-        }
+        ImageUtils.loadUserAvatar(context, holder.binding.ivPostAvatar, userPhotoUrl);
 
         String imageUrl = (String) post.get("imageUrl");
         if (imageUrl != null && !imageUrl.isEmpty()) {

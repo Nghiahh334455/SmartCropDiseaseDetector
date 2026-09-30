@@ -63,16 +63,7 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.ViewHold
         holder.binding.tvCommentTime.setText(DateUtils.getRelativeTimeSpanString(comment.timestamp));
         
         // Load Avatar
-        String avatarStr = comment.authorPhotoUrl;
-        if (avatarStr != null && avatarStr.length() > 500) {
-            byte[] bytes = ImageUtils.base64ToBytes(avatarStr);
-            if (bytes != null) Glide.with(holder.itemView.getContext()).load(bytes).placeholder(android.R.drawable.ic_menu_gallery).into(holder.binding.ivCommentAvatar);
-        } else {
-            Glide.with(holder.itemView.getContext())
-                    .load(avatarStr)
-                    .placeholder(android.R.drawable.ic_menu_gallery)
-                    .into(holder.binding.ivCommentAvatar);
-        }
+        ImageUtils.loadUserAvatar(holder.itemView.getContext(), holder.binding.ivCommentAvatar, comment.authorPhotoUrl);
 
         // Reactions logic
         int likeCount = comment.likedBy.size();

@@ -21,6 +21,7 @@ import com.example.smartcrop.api.RetrofitClient;
 import com.example.smartcrop.databinding.FragmentHomeBinding;
 import com.example.smartcrop.ui.history.HistoryActivity;
 import com.example.smartcrop.utils.FirebaseUtils;
+import com.example.smartcrop.utils.ImageUtils;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
@@ -262,31 +263,58 @@ public class HomeFragment extends Fragment {
     }
 
     private void updateUserUI() {
-        FirebaseUser user = FirebaseUtils.getCurrentUser();
-        if (user != null) {
-            String name = user.getDisplayName() != null ? user.getDisplayName() : "Chào bạn!";
-            binding.tvWelcome.setText(name);
+        if (!isAdded() || binding == null || getContext() == null) return;
 
+        String uid = FirebaseUtils.getUid(getContext());
+        FirebaseUser user = FirebaseUtils.getCurrentUser();
+
+        boolean isAdmin = getContext().getSharedPreferences("SmartCropPrefs", android.content.Context.MODE_PRIVATE)
+                .getBoolean("is_admin", false);
+
+        String name = isAdmin ? "Quản trị viên" : (user != null && user.getDisplayName() != null ? user.getDisplayName() : "Chào bạn!");
+        binding.tvWelcome.setText(name);
+
+        if (uid != null) {
             String localPhoto = getContext().getSharedPreferences("SmartCropPrefs", android.content.Context.MODE_PRIVATE)
-                    .getString("profile_image_" + user.getUid(), null);
+                    .getString("profile_image_" + uid, null);
 
             if (localPhoto != null && !localPhoto.isEmpty()) {
-                if (localPhoto.startsWith("http")) {
-                    Glide.with(this).load(localPhoto).placeholder(R.drawable.logo_app).circleCrop().into(binding.ivHomeAvatar);
-                } else {
-                    byte[] bytes = com.example.smartcrop.utils.ImageUtils.base64ToBytes(localPhoto);
-                    if (bytes != null) {
-                        Glide.with(this).load(bytes).placeholder(R.drawable.logo_app).circleCrop().into(binding.ivHomeAvatar);
+                ImageUtils.loadUserAvatar(getContext(), binding.ivHomeAvatar, localPhoto);
+            } else if (user != null && user.getPhotoUrl() != null) {
+                ImageUtils.loadUserAvatar(getContext(), binding.ivHomeAvatar, user.getPhotoUrl().toString());
+            } else {
+                fetchAvatarFromSql(uid);
+            }
+        } else {
+            ImageUtils.loadUserAvatar(getContext(), binding.ivHomeAvatar, null);
+        }
+    }
+
+    private void fetchAvatarFromSql(String uid) {
+        RetrofitClient.getSqlService().getUser(uid).enqueue(new retrofit2.Callback<Map<String, Object>>() {
+            @Override
+            public void onResponse(@NonNull retrofit2.Call<Map<String, Object>> call, @NonNull retrofit2.Response<Map<String, Object>> response) {
+                if (isAdded() && binding != null && getContext() != null && response.isSuccessful() && response.body() != null) {
+                    String photoBase64 = (String) response.body().get("photoBase64");
+                    if (photoBase64 != null && !photoBase64.isEmpty()) {
+                        getContext().getSharedPreferences("SmartCropPrefs", android.content.Context.MODE_PRIVATE)
+                                .edit()
+                                .putString("profile_image_" + uid, photoBase64)
+                                .apply();
+                        ImageUtils.loadUserAvatar(getContext(), binding.ivHomeAvatar, photoBase64);
                     } else {
-                        Glide.with(this).load(R.drawable.logo_app).circleCrop().into(binding.ivHomeAvatar);
+                        ImageUtils.loadUserAvatar(getContext(), binding.ivHomeAvatar, null);
                     }
                 }
-            } else if (user.getPhotoUrl() != null) {
-                Glide.with(this).load(user.getPhotoUrl()).placeholder(R.drawable.logo_app).circleCrop().into(binding.ivHomeAvatar);
-            } else {
-                Glide.with(this).load(R.drawable.logo_app).circleCrop().into(binding.ivHomeAvatar);
             }
-        }
+
+            @Override
+            public void onFailure(@NonNull retrofit2.Call<Map<String, Object>> call, @NonNull Throwable t) {
+                if (isAdded() && binding != null && getContext() != null) {
+                    ImageUtils.loadUserAvatar(getContext(), binding.ivHomeAvatar, null);
+                }
+            }
+        });
     }
 
     @SuppressWarnings("MissingPermission")

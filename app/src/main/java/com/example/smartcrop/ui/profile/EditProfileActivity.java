@@ -125,11 +125,11 @@ public class EditProfileActivity extends AppCompatActivity {
         currentUser.updateProfile(profileUpdates)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        // Lưu Base64 vào SharedPreferences để đồng bộ UI trên App
+                        // Lưu Base64 vào SharedPreferences để đồng bộ UI trên App (photoBase64 đã có sẵn tiền tố BASE64:)
                         if (photoBase64 != null) {
                             getSharedPreferences("SmartCropPrefs", MODE_PRIVATE)
                                     .edit()
-                                    .putString("profile_image_" + currentUser.getUid(), "BASE64:" + photoBase64)
+                                    .putString("profile_image_" + currentUser.getUid(), photoBase64)
                                     .apply();
                         }
                         

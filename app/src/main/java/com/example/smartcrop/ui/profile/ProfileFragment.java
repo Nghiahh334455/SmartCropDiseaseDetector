@@ -94,47 +94,65 @@ public class ProfileFragment extends Fragment {
     }
 
     private void updateUserInfo() {
-        if (!isAdded() || binding == null) return;
-        
+        if (!isAdded() || binding == null || getContext() == null) return;
+
+        String uid = FirebaseUtils.getUid(getContext());
         FirebaseUser currentUser = FirebaseUtils.getCurrentUser();
-        if (currentUser != null && getContext() != null) {
+
+        boolean isAdmin = getContext().getSharedPreferences("SmartCropPrefs", android.content.Context.MODE_PRIVATE)
+                .getBoolean("is_admin", false);
+
+        if (isAdmin) {
+            binding.tvProfileName.setText("Quản trị viên");
+            binding.tvProfileEmail.setText("admin@thannongai.vn");
+        } else if (currentUser != null) {
             binding.tvProfileEmail.setText(currentUser.getEmail());
             if (currentUser.getDisplayName() != null && !currentUser.getDisplayName().isEmpty()) {
                 binding.tvProfileName.setText(currentUser.getDisplayName());
             }
-
-            // 1. Kiểm tra ảnh lưu cục bộ trong SharedPreferences
-            String photoData = getContext().getSharedPreferences("SmartCropPrefs", android.content.Context.MODE_PRIVATE)
-                    .getString("profile_image_" + currentUser.getUid(), null);
-
-            if (photoData != null && photoData.length() > 20) {
-                if (photoData.startsWith("BASE64:")) {
-                    photoData = photoData.substring(7);
-                }
-                byte[] bytes = ImageUtils.base64ToBytes(photoData);
-                if (bytes != null) {
-                    Glide.with(this).load(bytes)
-                            .placeholder(com.example.smartcrop.R.drawable.logo_app)
-                            .circleCrop()
-                            .into(binding.ivProfile);
-                } else {
-                    Glide.with(this).load(com.example.smartcrop.R.drawable.logo_app)
-                            .circleCrop()
-                            .into(binding.ivProfile);
-                }
-            } else if (currentUser.getPhotoUrl() != null) {
-                // 2. Nếu không có ảnh cục bộ, load từ Firebase (dành cho tk mới hoặc ảnh cũ)
-                Glide.with(this)
-                        .load(currentUser.getPhotoUrl())
-                        .placeholder(com.example.smartcrop.R.drawable.logo_app)
-                        .circleCrop()
-                        .into(binding.ivProfile);
-            } else {
-                Glide.with(this).load(com.example.smartcrop.R.drawable.logo_app)
-                        .circleCrop()
-                        .into(binding.ivProfile);
-            }
         }
+
+        if (uid != null) {
+            String photoData = getContext().getSharedPreferences("SmartCropPrefs", android.content.Context.MODE_PRIVATE)
+                    .getString("profile_image_" + uid, null);
+
+            if (photoData != null && !photoData.isEmpty()) {
+                ImageUtils.loadUserAvatar(getContext(), binding.ivProfile, photoData);
+            } else if (currentUser != null && currentUser.getPhotoUrl() != null) {
+                ImageUtils.loadUserAvatar(getContext(), binding.ivProfile, currentUser.getPhotoUrl().toString());
+            } else {
+                fetchAvatarFromSql(uid);
+            }
+        } else {
+            ImageUtils.loadUserAvatar(getContext(), binding.ivProfile, null);
+        }
+    }
+
+    private void fetchAvatarFromSql(String uid) {
+        com.example.smartcrop.api.RetrofitClient.getSqlService().getUser(uid).enqueue(new retrofit2.Callback<java.util.Map<String, Object>>() {
+            @Override
+            public void onResponse(@NonNull retrofit2.Call<java.util.Map<String, Object>> call, @NonNull retrofit2.Response<java.util.Map<String, Object>> response) {
+                if (isAdded() && binding != null && getContext() != null && response.isSuccessful() && response.body() != null) {
+                    String photoBase64 = (String) response.body().get("photoBase64");
+                    if (photoBase64 != null && !photoBase64.isEmpty()) {
+                        getContext().getSharedPreferences("SmartCropPrefs", android.content.Context.MODE_PRIVATE)
+                                .edit()
+                                .putString("profile_image_" + uid, photoBase64)
+                                .apply();
+                        ImageUtils.loadUserAvatar(getContext(), binding.ivProfile, photoBase64);
+                    } else {
+                        ImageUtils.loadUserAvatar(getContext(), binding.ivProfile, null);
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull retrofit2.Call<java.util.Map<String, Object>> call, @NonNull Throwable t) {
+                if (isAdded() && binding != null && getContext() != null) {
+                    ImageUtils.loadUserAvatar(getContext(), binding.ivProfile, null);
+                }
+            }
+        });
     }
 
     private void listenForUnreadNotifications() {

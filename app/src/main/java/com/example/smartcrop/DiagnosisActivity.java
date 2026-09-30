@@ -497,14 +497,26 @@ public class DiagnosisActivity extends AppCompatActivity {
             @Override
             public void onResponse(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull retrofit2.Response<Map<String, String>> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().get("advice") != null) {
-                    runOnUiThread(() -> binding.tvAiAdvice.setText(ImageUtils.formatMarkdownHtml(response.body().get("advice"))));
+                    runOnUiThread(() -> {
+                        binding.tvAiAdvice.setText(ImageUtils.formatMarkdownHtml(response.body().get("advice")));
+                        binding.layoutAdviceContainer.setVisibility(View.VISIBLE);
+                        binding.btnToggleAdvice.setText("Ẩn khuyến nghị 👆");
+                    });
                 } else {
-                    runOnUiThread(() -> binding.tvAiAdvice.setText(ImageUtils.formatMarkdownHtml("👨‍🌾 **Chuyên gia AI khuyên:**\n• Cắt tỉa cành bệnh và giữ khoảng cách cây thông thoáng.\n• Duy trì tưới gốc vào buổi sáng và kiểm soát độ ẩm.\n• Dùng thuốc phù hợp và kết hợp biện pháp sinh học để phòng lây lan.")));
+                    runOnUiThread(() -> {
+                        binding.tvAiAdvice.setText(ImageUtils.formatMarkdownHtml("👨‍🌾 **Chuyên gia AI khuyên:**\n• Cắt tỉa cành bệnh và giữ khoảng cách cây thông thoáng.\n• Duy trì tưới gốc vào buổi sáng và kiểm soát độ ẩm.\n• Dùng thuốc phù hợp và kết hợp biện pháp sinh học để phòng lây lan."));
+                        binding.layoutAdviceContainer.setVisibility(View.VISIBLE);
+                        binding.btnToggleAdvice.setText("Ẩn khuyến nghị 👆");
+                    });
                 }
             }
             @Override
             public void onFailure(@NonNull retrofit2.Call<Map<String, String>> call, @NonNull Throwable t) {
-                runOnUiThread(() -> binding.tvAiAdvice.setText(ImageUtils.formatMarkdownHtml("👨‍🌾 **Chuyên gia AI khuyên:**\n• Cắt tỉa cành bệnh và giữ khoảng cách cây thông thoáng.\n• Duy trì tưới gốc vào buổi sáng và kiểm soát độ ẩm.\n• Dùng thuốc phù hợp và kết hợp biện pháp sinh học để phòng lây lan.")));
+                runOnUiThread(() -> {
+                    binding.tvAiAdvice.setText(ImageUtils.formatMarkdownHtml("👨‍🌾 **Chuyên gia AI khuyên:**\n• Cắt tỉa cành bệnh và giữ khoảng cách cây thông thoáng.\n• Duy trì tưới gốc vào buổi sáng và kiểm soát độ ẩm.\n• Dùng thuốc phù hợp và kết hợp biện pháp sinh học để phòng lây lan."));
+                    binding.layoutAdviceContainer.setVisibility(View.VISIBLE);
+                    binding.btnToggleAdvice.setText("Ẩn khuyến nghị 👆");
+                });
             }
         });
     }

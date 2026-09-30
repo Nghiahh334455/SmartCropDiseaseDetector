@@ -72,11 +72,11 @@ public class ImageUtils {
         if (base64String == null || base64String.isEmpty()) return null;
         
         // Sửa lỗi Base64 bị mất ký tự '+' khi gửi qua HTTP Form
-        base64String = base64String.replace(" ", "+");
+        base64String = base64String.replace(" ", "+").trim();
         
-        // Loại bỏ tiền tố BASE64: nếu có
-        if (base64String.startsWith("BASE64:")) {
-            base64String = base64String.substring(7);
+        // Loại bỏ TẤT CẢ các tiền tố BASE64: lặp lại nếu có
+        while (base64String.startsWith("BASE64:")) {
+            base64String = base64String.substring(7).trim();
         }
         
         try {
@@ -84,6 +84,42 @@ public class ImageUtils {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    /**
+     * Hàm tiện ích chuẩn hóa nạp Avatar người dùng trên toàn bộ ứng dụng
+     */
+    public static void loadUserAvatar(Context context, android.widget.ImageView imageView, String photoData) {
+        if (context == null || imageView == null) return;
+
+        if (photoData != null && !photoData.isEmpty()) {
+            if (photoData.startsWith("http://") || photoData.startsWith("https://")) {
+                com.bumptech.glide.Glide.with(context)
+                        .load(photoData)
+                        .placeholder(com.example.smartcrop.R.drawable.logo_app)
+                        .error(com.example.smartcrop.R.drawable.logo_app)
+                        .circleCrop()
+                        .into(imageView);
+                return;
+            }
+
+            byte[] bytes = base64ToBytes(photoData);
+            if (bytes != null && bytes.length > 0) {
+                com.bumptech.glide.Glide.with(context)
+                        .load(bytes)
+                        .placeholder(com.example.smartcrop.R.drawable.logo_app)
+                        .error(com.example.smartcrop.R.drawable.logo_app)
+                        .circleCrop()
+                        .into(imageView);
+                return;
+            }
+        }
+
+        // Ảnh mặc định nếu không có dữ liệu hoặc bị lỗi
+        com.bumptech.glide.Glide.with(context)
+                .load(com.example.smartcrop.R.drawable.logo_app)
+                .circleCrop()
+                .into(imageView);
     }
 
     /**
